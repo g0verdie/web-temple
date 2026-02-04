@@ -8,6 +8,17 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || 'localhost';
 
+// Trust proxy (required for secure cookies and rate limiting behind Nginx)
+app.enable('trust proxy');
+
+// HTTPS Redirection Middleware
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && req.headers['x-forwarded-proto'] !== 'https') {
+    return res.redirect(301, `https://${req.hostname}${req.originalUrl}`);
+  }
+  next();
+});
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
@@ -23,6 +34,11 @@ app.use(helmet({
       frameSrc: ["'self'", "https://www.facebook.com", "https://www.youtube.com"],
     },
   },
+  hsts: {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true
+  }
 }));
 
 // Compression middleware
@@ -37,10 +53,10 @@ app.set('views', path.join(__dirname, 'views'));
 
 // Helper functions for views
 app.locals.formatEventDate = (date) => {
-  const options = { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
+  const options = {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit'
@@ -64,16 +80,18 @@ app.use((req, res) => {
 // Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).render('error', { 
+  res.status(500).render('error', {
     title: '500 - Server Error',
     message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message
   });
 });
 
 // Start server
-app.listen(PORT, HOST, () => {
-  console.log(`✅ Server running at http://${HOST}:${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+if (require.main === module) {
+  app.listen(PORT, HOST, () => {
+    console.log(`✅ Server running at http://${HOST}:${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  });
+}
 
 module.exports = app;
