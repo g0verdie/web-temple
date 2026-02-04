@@ -1,0 +1,118 @@
+FR1: 7 (homepage), FR84 (notifications), FR114 (search)
+FR2: ** Public visitors can see the next upcoming service with a countdown timer
+FR3: ** Members can view a public calendar of all temple services and events
+FR4: 5, FR84, FR53-54 (archive, notifications, recurring donations)
+FR5: ** Members can filter recording archive by date range, Torah portion, or service type
+FR6: ** Public visitors can view an "About the Temple" page with community values and welcome message
+FR7: ** Public visitors can access a "Contact Us" page with messaging form
+FR8: 13): Complete
+FR9: ** Public visitors can view embedded Facebook Live stream directly on the website without login
+FR10: ** The website displays stream status (live, upcoming, offline) with clear messaging
+FR11: ** If Facebook Live stream becomes unavailable, visitors see graceful error message directing them to alternative
+FR12: ** Rabbi can manually publish recorded services to the archive after livestream ends
+FR13: ** Each recording displays service date, Rabbi, Torah portion (if applicable), and duration
+FR14: 20, FR112 (user experience)
+FR15: ** Live chat displays messages in real-time with poster name and timestamp
+FR16: ** Chat messages are moderated (approved by Rabbi/Ilya before appearing)
+FR17: ** Moderators can delete inappropriate messages from chat history
+FR18: ** Chat supports up to 20 concurrent users with <500ms message delivery
+FR19: ** Chat persists during service (logs available after for member review)
+FR20: Chat polling frequency (3 sec) and indicator
+FR21: 28): Complete
+FR22: ** Members can log in with email + password to access members-only content
+FR23: ** Members can reset forgotten passwords via email link
+FR24: ** Authorized users (Rabbi, Admin, Social Chair when added) can log in to admin interface
+FR25: ** Admin role can see all metrics, messages, and content across the site
+FR26: ** Rabbi role can post announcements, manage calendars, reply to messages, view donations
+FR27: ** Social Chair role (Phase 2) can post announcements and manage public calendar only
+FR28: ** Member sessions time out after 30 days of inactivity (security)
+FR29: 43, FR107 (empowerment + onboarding)
+FR30: ** Announcements appear in chronological order (newest first) on homepage
+FR31: ** Rabbi can edit published announcements after posting
+FR32: ** Rabbi can delete announcements (removed from homepage, not from archive)
+FR33: ** Announcement posts trigger automatic email to all members with "New Announcement" subject
+FR34: ** Members can opt in/out of announcement emails
+FR35: ** Announcements can include text, images, and links
+FR36: 43, FR87): Complete with reminder detail
+FR37: ** Rabbi can create members-only calendar events (board meetings, private classes)
+FR38: ** Public calendar is visible to all visitors (no login required)
+FR39: ** Members-only calendar is only visible to logged-in members
+FR40: ** Calendar events show date, time, title, and description
+FR41: ** Calendar events can include a Zoom link or meeting location (optional)
+FR42: ** Members receive email notification when new events added to calendar
+FR43: ** Calendar displays next 3 months of events + past 1 month archive
+FR44: 47 (service without login, messaging)
+FR45: ** Visitor messages are queued in Rabbi's inbox with visitor name and email
+FR46: ** Rabbi can read and reply to visitor messages directly from admin dashboard
+FR47: ** Visitor receives email reply when Rabbi responds to their message
+FR48: ** Members can send messages to Rabbi/community through a member-only message form
+FR49: ** All messages are logged with timestamps for accountability
+FR50: ** Admin can view all messages (visitor + member) in unified inbox
+FR51: 60 (donation flow), FR115 (receipts), FR118 (error handling)
+FR52: ** Donations page explains giving options and suggests donation levels ($18, $36, $100+)
+FR53: ** Visitors can make one-time donations via PayPal (no account required)
+FR54: ** Visitors can set up recurring monthly donations via PayPal
+FR55: ** Donors can choose to give anonymously (no name/email tracking)
+FR56: ** Donors receive automated tax receipt via email after donation (PDF with donation date)
+FR57: ** Rabbi/Admin can view donation dashboard with total donated, donor count, recurring donors
+FR58: ** Donation dashboard shows month-to-date and year-to-date totals
+FR59: ** All donations are logged with date, amount, donor email (if not anonymous), recurring status
+FR60: ** Rabbi receives email notification when major donation (>$100) is received
+FR61: 6 specific dashboard metrics
+FR62: ** Admin can view analytics: page views, recording views, live chat users, donation trends
+FR63: ** Admin can access moderation queue (pending messages, chat messages to approve)
+FR64: ** Admin can set system-wide notifications (maintenance alerts, system status)
+FR65: ** Admin can view audit logs of all sensitive actions (donations, admin edits, message deletions)
+FR66: ** Admin dashboard is accessible from desktop and mobile browsers
+FR67: ** Admin receives email alerts for critical issues (site down, PayPal error, spam detected)
+FR68: 76): Complete WCAG AA
+FR69: ** All images have descriptive alt text for screen readers
+FR70: ** All service recordings have captions (burned-in or WebVTT subtitle files)
+FR71: ** All interactive elements have visible focus indicators (3px outline visible on Tab)
+FR72: ** Text can be resized up to 200% zoom without horizontal scrolling
+FR73: ** Color contrast ratio meets 4.5:1 minimum (WCAG AA standard)
+FR74: ** Form labels are explicitly associated with inputs for screen readers
+FR75: ** Website has skip-to-main-content link for keyboard users
+FR76: ** Videos include audio descriptions for visually impaired users (Phase 2 enhancement)
+FR77: 83): Complete
+FR78: ** All pages render correctly on tablets (768px width and up)
+FR79: ** All pages render correctly on desktop (1200px width and up)
+FR80: ** Touch targets (buttons, links) are minimum 44px for mobile accessibility
+FR81: ** Navigation collapses to hamburger menu on mobile (<768px)
+FR82: ** Videos and images scale responsively without distortion
+FR83: ** Forms are touch-friendly (large input fields, mobile-optimized)
+FR84: 86, FR88-90): Complete
+FR85: ** Members receive email when Rabbi replies to their message
+FR86: ** Members receive email when new announcements are posted
+FR87: Members-only, email reminder, ical attachment
+FR88: ** All emails include unsubscribe link (allow members to opt out per email type)
+FR89: ** Donation thank-you emails are sent within 1 hour of donation
+FR90: ** Tax receipts are included in donation confirmation emails
+FR91: 95): Complete with version control
+FR92: ** Static pages support rich text formatting (bold, italic, links, images)
+FR93: ** Static pages can be published and unpublished without deletion
+FR94: 10 versions stored, timestamps visible
+FR95: ** Pages are publicly visible once published, draft until published
+FR96: 99, FR117): Complete with recording archival
+FR97: ** Database backups include all user data, messages, donations, settings
+FR98: ** Backup restore can be tested without affecting live site
+FR99: ** Rabbi/Admin can view last backup timestamp and status
+FR100: 106, FR113): Complete with spam filtering
+FR101: ** Database is encrypted at rest (AES-256)
+FR102: ** Sensitive audit logs (donations, admin actions, messages) are stored securely
+FR103: ** Password reset tokens expire after 24 hours
+FR104: ** Admin sessions automatically log out after 30 minutes of inactivity
+FR105: ** PayPal payment processing delegates PCI compliance to PayPal (no card data stored locally)
+FR106: ** Contact forms include CAPTCHA to prevent spam submissions
+FR107: 108): New—critical for Rabbi adoption
+FR108: ** Members can access account settings page to manage notification preferences (announcements, calendars, messages) and update profile information
+FR109: ** Live chat requires poster name (member can log in or anonymous visitor can enter name). Name displays with each message
+FR110: ** After service ends, Rabbi can publish recording from admin dashboard. Once published, recording is immediately visible in archive to all members within 5 minutes
+FR111: ** Rabbi can mark an announcement as "featured" to pin it to the top of the homepage for up to 30 days
+FR112: ** If live chat disconnects, user sees "connection lost" indicator and can reconnect with one click. Unsent message is preserved in text field
+FR113: ** System flags likely spam messages using simple heuristics (all caps, external links, repeated identical messages). Admin can auto-delete marked spam or review first
+FR114: ** Recording archive search supports date range, keyword search (title/description), and service type filters. Results show thumbnail, date, and description
+FR115: ** Tax receipts include donation date, amount, donor name (if not anonymous), confirmation of tax-deductible status per IRS guidelines, and temple EIN
+FR116: ** Audit logs record: all announcements posted/edited/deleted (user, timestamp, before/after text), all calendar changes, all donation records, all admin logins, password changes, and user role changes
+FR117: ** Website displays latest 52 weeks of recordings; older recordings available on request
+FR118: ** If PayPal payment fails, user sees clear error message and can retry immediately. Failed payment attempt is logged for review. Repeat failures (3+) trigger admin alert
