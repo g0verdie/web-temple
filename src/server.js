@@ -70,7 +70,12 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 const homeRoutes = require('./routes/home');
+const aboutRoutes = require('./routes/about');
+const adminPagesRoutes = require('./routes/admin/pages');
+
 app.use('/', homeRoutes);
+app.use('/about', aboutRoutes);
+app.use('/admin/pages', adminPagesRoutes);
 
 // 404 handler
 app.use((req, res) => {
