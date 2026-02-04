@@ -1,47 +1,11 @@
 /**
  * pageController.js
  * Manages static page CRUD operations, versioning, and publishing
+ * Uses PostgreSQL for data persistence
  */
 
+const db = require('../config/db');
 const { sanitizeHtml } = require('../utils/sanitizeHtml');
-
-/**
- * Get a published page by slug
- * In production, this would query a database
- * For MVP, we'll use an in-memory storage with mock data
- */
-const pages = {
-  about: {
-    id: 'about-001',
-    slug: 'about',
-    title: 'About the Temple',
-    content: `
-      <h2>Welcome to Temple B'nai Israel</h2>
-      <p>Temple B'nai Israel is a vibrant and inclusive Jewish community dedicated to preserving Jewish tradition while embracing contemporary values.</p>
-      <h3>Our Mission</h3>
-      <p>To foster spiritual growth, community connection, and social justice through Jewish education, meaningful worship, and service to our community.</p>
-      <h3>Our Community Values</h3>
-      <ul>
-        <li>Inclusivity and Welcome</li>
-        <li>Spiritual Growth</li>
-        <li>Community Service</li>
-        <li>Social Justice</li>
-        <li>Jewish Education</li>
-      </ul>
-    `,
-    published: true,
-    created_at: new Date('2026-02-04'),
-    updated_at: new Date('2026-02-04'),
-    versions: [
-      {
-        version_number: 1,
-        title: 'About the Temple',
-        content: '<h2>Welcome to Temple B\'nai Israel</h2><p>Temple B\'nai Israel is a vibrant community...</p>',
-        created_at: new Date('2026-02-04'),
-      },
-    ],
-  },
-};
 
 /**
  * Retrieve a published page by slug
@@ -50,25 +14,18 @@ const pages = {
  */
 async function getPublishedPage(slug) {
   try {
-    if (!pages[slug]) {
+    const query = `
+      SELECT id, slug, title, content, published, updated_at
+      FROM static_pages
+      WHERE slug = $1 AND published = true
+    `;
+    const result = await db.query(query, [slug]);
+
+    if (result.rows.length === 0) {
       return null;
     }
 
-    const page = pages[slug];
-    
-    // Only return published pages
-    if (!page.published) {
-      return null;
-    }
-
-    return {
-      id: page.id,
-      slug: page.slug,
-      title: page.title,
-      content: page.content,
-      published: page.published,
-      updated_at: page.updated_at,
-    };
+    return result.rows[0];
   } catch (error) {
     console.error(`Error retrieving page ${slug}:`, error);
     throw error;
@@ -82,22 +39,29 @@ async function getPublishedPage(slug) {
  */
 async function getPageForAdmin(slug) {
   try {
-    const page = pages[slug];
-    
-    if (!page) {
+    const pageQuery = `
+      SELECT id, slug, title, content, published, created_at, updated_at
+      FROM static_pages
+      WHERE slug = $1
+    `;
+    const pageResult = await db.query(pageQuery, [slug]);
+
+    if (pageResult.rows.length === 0) {
       return null;
     }
 
-    return {
-      id: page.id,
-      slug: page.slug,
-      title: page.title,
-      content: page.content,
-      published: page.published,
-      created_at: page.created_at,
-      updated_at: page.updated_at,
-      versions: page.versions || [],
-    };
+    const page = pageResult.rows[0];
+
+    const versionsQuery = `
+      SELECT version_number, title, content, created_at, created_by
+      FROM static_page_versions
+      WHERE static_page_id = $1
+      ORDER BY version_number DESC
+    `;
+    const versionsResult = await db.query(versionsQuery, [page.id]);
+
+    page.versions = versionsResult.rows;
+    return page;
   } catch (error) {
     console.error(`Error retrieving page for admin ${slug}:`, error);
     throw error;
@@ -112,54 +76,73 @@ async function getPageForAdmin(slug) {
  * @returns {Promise<Object>} - Updated page data
  */
 async function updatePage(slug, pageData, userId) {
+  const client = await db.pool.connect();
+
   try {
-    const page = pages[slug];
-    
-    if (!page) {
+    // Authorization check
+    if (!userId) {
+      throw new Error('Unauthorized: User ID is required');
+    }
+
+    await client.query('BEGIN');
+
+    // 1. Get current page
+    const getPageQuery = 'SELECT * FROM static_pages WHERE slug = $1 FOR UPDATE';
+    const pageResult = await client.query(getPageQuery, [slug]);
+
+    if (pageResult.rows.length === 0) {
       throw new Error(`Page not found: ${slug}`);
     }
 
-    // Sanitize content to prevent XSS
+    const page = pageResult.rows[0];
+
+    // 2. Create version snapshot of current state
+    const versionQuery = `
+      INSERT INTO static_page_versions 
+      (static_page_id, version_number, title, content, created_at, created_by)
+      SELECT id, 
+             COALESCE((SELECT MAX(version_number) FROM static_page_versions WHERE static_page_id = $1), 0) + 1,
+             title, content, CURRENT_TIMESTAMP, $2
+      FROM static_pages WHERE id = $1
+      RETURNING version_number
+    `;
+    await client.query(versionQuery, [page.id, userId]);
+
+    // 3. Update page with new sanitized content
     const sanitizedContent = sanitizeHtml(pageData.content);
+    const updateQuery = `
+      UPDATE static_pages
+      SET title = $1, content = $2, updated_at = CURRENT_TIMESTAMP, updated_by = $3
+      WHERE id = $4
+      RETURNING *
+    `;
+    const updateResult = await client.query(updateQuery, [
+      pageData.title || page.title,
+      sanitizedContent,
+      userId,
+      page.id
+    ]);
 
-    // Create version snapshot of current state before updating
-    const currentVersion = page.versions ? page.versions.length : 0;
-    const newVersion = {
-      version_number: currentVersion + 1,
-      title: page.title,
-      content: page.content,
-      created_at: new Date(),
-      created_by: userId,
-    };
+    // 4. Prune old versions (keep last 10)
+    const pruneQuery = `
+      DELETE FROM static_page_versions
+      WHERE static_page_id = $1 AND id NOT IN (
+        SELECT id FROM static_page_versions
+        WHERE static_page_id = $1
+        ORDER BY version_number DESC
+        LIMIT 10
+      )
+    `;
+    await client.query(pruneQuery, [page.id]);
 
-    if (!page.versions) {
-      page.versions = [];
-    }
-
-    // Keep only last 10 versions
-    if (page.versions.length >= 10) {
-      page.versions.shift();
-    }
-
-    page.versions.push(newVersion);
-
-    // Update page
-    page.title = pageData.title || page.title;
-    page.content = sanitizedContent;
-    page.updated_at = new Date();
-    page.updated_by = userId;
-
-    return {
-      id: page.id,
-      slug: page.slug,
-      title: page.title,
-      content: page.content,
-      published: page.published,
-      updated_at: page.updated_at,
-    };
+    await client.query('COMMIT');
+    return updateResult.rows[0];
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error(`Error updating page ${slug}:`, error);
     throw error;
+  } finally {
+    client.release();
   }
 }
 
@@ -172,23 +155,24 @@ async function updatePage(slug, pageData, userId) {
  */
 async function publishPage(slug, published, userId) {
   try {
-    const page = pages[slug];
-    
-    if (!page) {
+    // Authorization check
+    if (!userId) {
+      throw new Error('Unauthorized: User ID is required');
+    }
+
+    const query = `
+      UPDATE static_pages
+      SET published = $1, updated_at = CURRENT_TIMESTAMP, updated_by = $2
+      WHERE slug = $3
+      RETURNING *
+    `;
+    const result = await db.query(query, [published, userId, slug]);
+
+    if (result.rows.length === 0) {
       throw new Error(`Page not found: ${slug}`);
     }
 
-    page.published = published;
-    page.updated_at = new Date();
-    page.updated_by = userId;
-
-    return {
-      id: page.id,
-      slug: page.slug,
-      title: page.title,
-      published: page.published,
-      updated_at: page.updated_at,
-    };
+    return result.rows[0];
   } catch (error) {
     console.error(`Error publishing page ${slug}:`, error);
     throw error;
@@ -202,18 +186,15 @@ async function publishPage(slug, published, userId) {
  */
 async function getVersionHistory(slug) {
   try {
-    const page = pages[slug];
-    
-    if (!page || !page.versions) {
-      return [];
-    }
-
-    return page.versions.map((v) => ({
-      version_number: v.version_number,
-      title: v.title,
-      created_at: v.created_at,
-      created_by: v.created_by,
-    }));
+    const query = `
+      SELECT v.version_number, v.title, v.created_at, v.created_by
+      FROM static_page_versions v
+      JOIN static_pages p ON v.static_page_id = p.id
+      WHERE p.slug = $1
+      ORDER BY v.version_number DESC
+    `;
+    const result = await db.query(query, [slug]);
+    return result.rows;
   } catch (error) {
     console.error(`Error retrieving version history for ${slug}:`, error);
     throw error;
@@ -228,52 +209,68 @@ async function getVersionHistory(slug) {
  * @returns {Promise<Object>} - Restored page
  */
 async function restoreVersion(slug, versionNumber, userId) {
+  const client = await db.pool.connect();
+
   try {
-    const page = pages[slug];
-    
-    if (!page) {
-      throw new Error(`Page not found: ${slug}`);
+    if (!userId) {
+      throw new Error('Unauthorized: User ID is required');
     }
 
-    if (!page.versions) {
-      throw new Error(`No version history found for ${slug}`);
-    }
+    await client.query('BEGIN');
 
-    const targetVersion = page.versions.find((v) => v.version_number === versionNumber);
-    
-    if (!targetVersion) {
+    // Get page id
+    const pageRes = await client.query('SELECT id FROM static_pages WHERE slug = $1', [slug]);
+    if (pageRes.rows.length === 0) throw new Error(`Page not found: ${slug}`);
+    const pageId = pageRes.rows[0].id;
+
+    // Get target version
+    const versionRes = await client.query(
+      'SELECT title, content FROM static_page_versions WHERE static_page_id = $1 AND version_number = $2',
+      [pageId, versionNumber]
+    );
+
+    if (versionRes.rows.length === 0) {
       throw new Error(`Version ${versionNumber} not found for ${slug}`);
     }
+    const targetVersion = versionRes.rows[0];
 
-    // Create version snapshot of current state before restoring
-    const newVersion = {
-      version_number: page.versions.length + 1,
-      title: page.title,
-      content: page.content,
-      created_at: new Date(),
-      created_by: userId,
-    };
+    // Snapshot current state
+    const snapshotQuery = `
+      INSERT INTO static_page_versions 
+      (static_page_id, version_number, title, content, created_at, created_by)
+      SELECT id, 
+             COALESCE((SELECT MAX(version_number) FROM static_page_versions WHERE static_page_id = $1), 0) + 1,
+             title, content, CURRENT_TIMESTAMP, $2
+      FROM static_pages WHERE id = $1
+    `;
+    await client.query(snapshotQuery, [pageId, userId]);
 
-    page.versions.push(newVersion);
+    // Restore
+    const updateQuery = `
+      UPDATE static_pages
+      SET title = $1, content = $2, updated_at = CURRENT_TIMESTAMP, updated_by = $3
+      WHERE id = $4
+      RETURNING *
+    `;
+    const result = await client.query(updateQuery, [
+      targetVersion.title,
+      targetVersion.content,
+      userId,
+      pageId
+    ]);
 
-    // Restore from target version
-    page.title = targetVersion.title;
-    page.content = targetVersion.content;
-    page.updated_at = new Date();
-    page.updated_by = userId;
+    await client.query('COMMIT');
 
     return {
-      id: page.id,
-      slug: page.slug,
-      title: page.title,
-      content: page.content,
-      published: page.published,
-      updated_at: page.updated_at,
-      restored_from_version: versionNumber,
+      ...result.rows[0],
+      restored_from_version: versionNumber
     };
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error(`Error restoring version for ${slug}:`, error);
     throw error;
+  } finally {
+    client.release();
   }
 }
 
