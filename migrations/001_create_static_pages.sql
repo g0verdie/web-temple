@@ -21,9 +21,9 @@ CREATE TABLE IF NOT EXISTS static_pages (
     REFERENCES users(id) ON DELETE SET NULL
 );
 
-CREATE INDEX idx_static_pages_slug ON static_pages(slug);
-CREATE INDEX idx_static_pages_published ON static_pages(published);
-CREATE INDEX idx_static_pages_updated_at ON static_pages(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_static_pages_slug ON static_pages(slug);
+CREATE INDEX IF NOT EXISTS idx_static_pages_published ON static_pages(published);
+CREATE INDEX IF NOT EXISTS idx_static_pages_updated_at ON static_pages(updated_at DESC);
 
 -- Create static_page_versions table for version history
 CREATE TABLE IF NOT EXISTS static_page_versions (
@@ -41,8 +41,8 @@ CREATE TABLE IF NOT EXISTS static_page_versions (
     REFERENCES users(id) ON DELETE SET NULL
 );
 
-CREATE INDEX idx_static_page_versions_page_id ON static_page_versions(static_page_id);
-CREATE INDEX idx_static_page_versions_created_at ON static_page_versions(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_static_page_versions_page_id ON static_page_versions(static_page_id);
+CREATE INDEX IF NOT EXISTS idx_static_page_versions_created_at ON static_page_versions(created_at DESC);
 
 -- Insert initial About page (draft)
 INSERT INTO static_pages (slug, title, content, published, created_by, updated_by)
@@ -64,6 +64,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS static_pages_update_timestamp ON static_pages;
 CREATE TRIGGER static_pages_update_timestamp
 BEFORE UPDATE ON static_pages
 FOR EACH ROW

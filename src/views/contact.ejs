@@ -1,0 +1,151 @@
+<section class="contact-page" aria-labelledby="contact-heading">
+    <!-- Hero Section -->
+    <div class="contact-hero">
+        <div class="container">
+            <h1 id="contact-heading" class="contact-hero__title">Contact Us</h1>
+            <p class="contact-hero__subtitle">We're here to help and answer any questions you might have.</p>
+        </div>
+    </div>
+
+    <div class="container contact-wrapper">
+        <!-- Contact Info Side -->
+        <aside class="contact-info">
+            <div class="info-card">
+                <h2>Visit Us</h2>
+                <address>
+                    <strong>Temple B'nai Israel</strong><br>
+                    5371 U.S. 49<br>
+                    Hattiesburg, MS 39401
+                </address>
+                <!-- Embedded Google Map -->
+                <div class="map-container">
+                    <iframe
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3372.645678901234!2d-89.337583!3d31.334567!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x889cdf3a1a1a1a1a%3A0x1a1a1a1a1a1a1a1a!2s5371%20US-49%2C%20Hattiesburg%2C%20MS%2039401!5e0!3m2!1sen!2sus!4v1612345678901!5m2!1sen!2sus"
+                        width="100%" height="200" style="border:0;" allowfullscreen="" loading="lazy">
+                    </iframe>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <h2>Contact Info</h2>
+                <ul class="contact-list">
+                    <li>
+                        <span class="icon" aria-hidden="true">📞</span>
+                        <a href="tel:+16012688989">(601) 268-8989</a>
+                    </li>
+                    <li>
+                        <span class="icon" aria-hidden="true">✉️</span>
+                        <a href="mailto:info@hattiesburgtemple.com">info@hattiesburgtemple.com</a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="info-card">
+                <h2>Office Hours</h2>
+                <p>There are no regular office hours; please leave a message or email us.</p>
+            </div>
+        </aside>
+
+        <!-- Contact Form Side -->
+        <main class="contact-form-section">
+            <div class="form-card">
+                <h2>Send a Message</h2>
+                <p class="form-intro">Fill out the form below and we'll get back to you shortly.</p>
+
+                <form id="contactForm" action="/contact" method="POST" class="contact-form">
+                    <div class="form-group">
+                        <label for="name">Name <span class="required">*</span></label>
+                        <input type="text" id="name" name="name" required class="form-control" autocomplete="name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email <span class="required">*</span></label>
+                        <input type="email" id="email" name="email" required class="form-control" autocomplete="email">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="subject">Subject <span class="required">*</span></label>
+                        <input type="text" id="subject" name="subject" required class="form-control">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="message">Message <span class="required">*</span></label>
+                        <textarea id="message" name="message" required class="form-control" rows="5"
+                            minlength="10"></textarea>
+                        <small class="form-text text-muted">Minimum 10 characters.</small>
+                    </div>
+
+                    <!-- CAPTCHA -->
+                    <div class="form-group captcha-group">
+                        <div class="h-captcha" data-sitekey="<%= captchaSiteKey %>"></div>
+                        <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+                    </div>
+
+                    <div id="formMessages" aria-live="polite"></div>
+
+                    <button type="submit" class="btn btn--primary btn--block">Send Message</button>
+                </form>
+            </div>
+        </main>
+    </div>
+</section>
+
+<!-- Page Specific CSS -->
+<link rel="stylesheet" href="/css/contact.css">
+
+<script>
+    document.getElementById('contactForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const form = e.target;
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        // Get CAPTCHA token specifically
+        const hcaptchaResponse = form.querySelector('[name="h-captcha-response"]');
+        if (hcaptchaResponse) {
+            data.captchaToken = hcaptchaResponse.value;
+        }
+
+        const msgDiv = document.getElementById('formMessages');
+        const btn = form.querySelector('button[type="submit"]');
+
+        // Basic client-side validation check
+        if (!data.captchaToken) {
+            msgDiv.innerHTML = '<div class="alert alert-error">Please complete the CAPTCHA.</div>';
+            return;
+        }
+
+        // Disable button
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+
+        try {
+            const response = await fetch('/contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                msgDiv.innerHTML = '<div class="alert alert-success">Message sent successfully! We will be in touch.</div>';
+                form.reset();
+                if (window.hcaptcha) hcaptcha.reset();
+            } else {
+                const errorMsg = result.errors ? result.errors.map(e => e.msg).join('<br>') : (result.error || 'Failed to send message.');
+                msgDiv.innerHTML = `<div class="alert alert-error">${errorMsg}</div>`;
+            }
+        } catch (err) {
+            msgDiv.innerHTML = '<div class="alert alert-error">An unexpected error occurred. Please try again.</div>';
+            console.error(err);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Send Message';
+        }
+    });
+</script>
