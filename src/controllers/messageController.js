@@ -24,7 +24,8 @@ const verifyCaptcha = async (token) => {
 exports.submitMessage = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        if (req.xhr || req.headers.accept.indexOf('json') > -1) {
+        const acceptsJson = req.xhr || (req.headers && req.headers.accept && req.headers.accept.indexOf('json') > -1);
+        if (acceptsJson) {
             return res.status(400).json({ errors: errors.array() });
         }
         // For non-AJAX, render back with errors (if we were doing full page reload submissions)
@@ -33,7 +34,8 @@ exports.submitMessage = async (req, res) => {
         return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, email, subject, message, captchaToken } = req.body;
+    const { name, email, subject, message } = req.body;
+    const captchaToken = req.body.captchaToken || req.body['h-captcha-response'];
 
     // Verify CAPTCHA
     const isCaptchaValid = await verifyCaptcha(captchaToken);
@@ -52,7 +54,8 @@ exports.submitMessage = async (req, res) => {
         const newMessage = result.rows[0];
 
         // Trigger Email Notification (Async)
-        emailService.sendContactNotification({ name, email, subject, message }).catch(err => console.error('Email failed:', err));
+        Promise.resolve(emailService.sendContactNotification({ name, email, subject, message }))
+            .catch(err => console.error('Email failed:', err));
 
         res.status(201).json({
             success: true,

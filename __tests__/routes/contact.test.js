@@ -2,6 +2,7 @@ const request = require('supertest');
 const app = require('../../src/server');
 const pool = require('../../src/config/db');
 const axios = require('axios');
+const emailService = require('../../src/services/emailService');
 
 // Mock external dependencies to avoid actual calls during integration tests
 jest.mock('../../src/services/emailService');
@@ -20,6 +21,7 @@ describe('Contact Route Integration', () => {
         // Setup default DB mock behavior
         pool.query.mockResolvedValue({ rows: [{ id: '123' }] });
         axios.post.mockResolvedValue({ data: { success: true } });
+        emailService.sendContactNotification.mockResolvedValue(true);
     });
 
     describe('GET /contact', () => {

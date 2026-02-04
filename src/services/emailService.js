@@ -10,7 +10,7 @@ exports.sendContactNotification = async (message) => {
         console.log(`From: ${message.name} <${message.email}>`);
         console.log(`Message: ${message.message}`);
         console.log('---------------------------------------------------');
-        return;
+        return Promise.resolve();
     }
 
     try {
@@ -43,5 +43,6 @@ exports.sendContactNotification = async (message) => {
         console.error('Error sending email:', error);
         // Do not throw, just log. We don't want to fail the user request if notification fails.
         // Or maybe we should? The plan said "fail gracefully".
+        return Promise.resolve();
     }
 };

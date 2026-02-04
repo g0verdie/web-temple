@@ -36,8 +36,12 @@
   "devDependencies": {
     "eslint": "^8.56.0",
     "jest": "^29.7.0",
+    "jest-axe": "^7.0.1",
+    "jest-environment-jsdom": "^29.7.0",
+    "jsdom": "^24.0.0",
     "nodemon": "^3.0.2",
-    "supertest": "^6.3.3"
+    "supertest": "^6.3.3",
+    "axe-core": "^4.9.0"
   },
   "engines": {
     "node": ">=18.0.0"

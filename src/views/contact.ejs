@@ -81,7 +81,7 @@
                         <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
                     </div>
 
-                    <div id="formMessages" aria-live="polite"></div>
+                    <div id="formMessages" role="alert" aria-live="assertive" tabindex="-1"></div>
 
                     <button type="submit" class="btn btn--primary btn--block">Send Message</button>
                 </form>
@@ -110,9 +110,13 @@
         const msgDiv = document.getElementById('formMessages');
         const btn = form.querySelector('button[type="submit"]');
 
+        // Reset previous error states
+        form.querySelectorAll('[aria-invalid="true"]').forEach((el) => el.removeAttribute('aria-invalid'));
+
         // Basic client-side validation check
         if (!data.captchaToken) {
             msgDiv.innerHTML = '<div class="alert alert-error">Please complete the CAPTCHA.</div>';
+            msgDiv.focus();
             return;
         }
 
@@ -139,6 +143,18 @@
             } else {
                 const errorMsg = result.errors ? result.errors.map(e => e.msg).join('<br>') : (result.error || 'Failed to send message.');
                 msgDiv.innerHTML = `<div class="alert alert-error">${errorMsg}</div>`;
+                if (result.errors && result.errors.length) {
+                    const firstError = result.errors[0];
+                    const field = form.querySelector(`[name="${firstError.param}"]`);
+                    if (field) {
+                        field.setAttribute('aria-invalid', 'true');
+                        field.focus();
+                    } else {
+                        msgDiv.focus();
+                    }
+                } else {
+                    msgDiv.focus();
+                }
             }
         } catch (err) {
             msgDiv.innerHTML = '<div class="alert alert-error">An unexpected error occurred. Please try again.</div>';
