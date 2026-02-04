@@ -114,7 +114,7 @@ exports.getHomepage = (req, res) => {
       statement: 'A warm, inclusive Jewish community in Hattiesburg, MS, celebrating tradition, fostering spiritual growth, and building lasting connections.',
       cta: {
         text: 'New Here? Learn More',
-        link: '/about'
+        link: '/visit-us'
       }
     },
     nextService,
