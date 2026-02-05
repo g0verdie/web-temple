@@ -14,7 +14,12 @@
     <nav role="navigation" aria-label="Main navigation">
       <div class="nav-container">
         <h1 class="site-title">Temple B'nai Israel</h1>
-        <ul class="nav-menu">
+        <button class="hamburger-btn" aria-label="Menu" aria-expanded="false" aria-controls="nav-menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <ul class="nav-menu" id="nav-menu">
           <li><a href="/" aria-current="page">Home</a></li>
           <li><a href="/calendar">Calendar</a></li>
           <li><a href="/about">About</a></li>
@@ -34,5 +39,7 @@
       <p>5371 U.S. 49, Hattiesburg, MS 39401</p>
     </div>
   </footer>
+
+  <script src="/js/hamburger.js"></script>
 </body>
 </html>

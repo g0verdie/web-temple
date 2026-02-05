@@ -42,10 +42,10 @@ story_location: /Users/g0verdie/workspace/web-temple/_bmad-output/implementation
 development_status:
   epic-1: in-progress
   1-1-homepage-with-temple-mission-upcoming-services: done
-  1-2-ssl-tls-security-configuration: review
+  1-2-ssl-tls-security-configuration: done
   1-3-about-the-temple-page: done
   1-4-contact-us-page: done
-  1-5-mobile-responsive-design-foundation: backlog
+  1-5-mobile-responsive-design-foundation: done
   epic-1-retrospective: optional
   epic-2: backlog
   2-1-user-registration: backlog

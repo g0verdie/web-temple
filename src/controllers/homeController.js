@@ -107,29 +107,32 @@ exports.getHomepage = (req, res) => {
     formattedDate: formatEventDate(event.date)
   }));
   
-  res.render('home', {
+  res.render('layout', {
     title: 'Temple B\'nai Israel - Welcome Home',
-    mission: {
-      headline: 'Welcome to Temple B\'nai Israel',
-      statement: 'A warm, inclusive Jewish community in Hattiesburg, MS, celebrating tradition, fostering spiritual growth, and building lasting connections.',
-      cta: {
-        text: 'New Here? Learn More',
-        link: '/visit-us'
+    bodyView: 'home',
+    viewData: {
+      mission: {
+        headline: 'Welcome to Temple B\'nai Israel',
+        statement: 'A warm, inclusive Jewish community in Hattiesburg, MS, celebrating tradition, fostering spiritual growth, and building lasting connections.',
+        cta: {
+          text: 'New Here? Learn More',
+          link: '/visit-us'
+        }
+      },
+      nextService,
+      countdown,
+      events: formattedEvents,
+      formatEventDate: (date) => {
+        const options = { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit'
+        };
+        return date.toLocaleDateString('en-US', options);
       }
-    },
-    nextService,
-    countdown,
-    events: formattedEvents,
-    formatEventDate: (date) => {
-      const options = { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit'
-      };
-      return date.toLocaleDateString('en-US', options);
     }
   });
 };

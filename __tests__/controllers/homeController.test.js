@@ -16,20 +16,23 @@ describe('homeController', () => {
   });
 
   describe('getHomepage', () => {
-    it('should render home view with correct data structure', () => {
+    it('should render layout view with correct data structure', () => {
       homeController.getHomepage(req, res);
 
-      expect(res.render).toHaveBeenCalledWith('home', expect.objectContaining({
+      expect(res.render).toHaveBeenCalledWith('layout', expect.objectContaining({
         title: expect.any(String),
-        mission: expect.objectContaining({
-          headline: expect.any(String),
-          statement: expect.any(String),
-          cta: expect.objectContaining({
-            text: expect.any(String),
-            link: expect.any(String)
-          })
-        }),
-        events: expect.any(Array)
+        bodyView: 'home',
+        viewData: expect.objectContaining({
+          mission: expect.objectContaining({
+            headline: expect.any(String),
+            statement: expect.any(String),
+            cta: expect.objectContaining({
+              text: expect.any(String),
+              link: expect.any(String)
+            })
+          }),
+          events: expect.any(Array)
+        })
       }));
     });
 
@@ -37,24 +40,24 @@ describe('homeController', () => {
       homeController.getHomepage(req, res);
 
       const renderCall = res.render.mock.calls[0][1];
-      expect(renderCall.mission.headline).toContain('Temple B\'nai Israel');
-      expect(renderCall.mission.statement).toBeTruthy();
-      expect(renderCall.mission.cta.text).toContain('Learn More');
-      expect(renderCall.mission.cta.link).toBe('/visit-us');
+      expect(renderCall.viewData.mission.headline).toContain('Temple B\'nai Israel');
+      expect(renderCall.viewData.mission.statement).toBeTruthy();
+      expect(renderCall.viewData.mission.cta.text).toContain('Learn More');
+      expect(renderCall.viewData.mission.cta.link).toBe('/visit-us');
     });
 
     it('should provide next service with countdown when available', () => {
       homeController.getHomepage(req, res);
 
       const renderCall = res.render.mock.calls[0][1];
-      if (renderCall.nextService) {
-        expect(renderCall.nextService).toHaveProperty('title');
-        expect(renderCall.nextService).toHaveProperty('date');
-        expect(renderCall.nextService.type).toBe('service');
-        expect(renderCall.countdown).toHaveProperty('days');
-        expect(renderCall.countdown).toHaveProperty('hours');
-        expect(renderCall.countdown).toHaveProperty('minutes');
-        expect(renderCall.countdown).toHaveProperty('seconds');
+      if (renderCall.viewData.nextService) {
+        expect(renderCall.viewData.nextService).toHaveProperty('title');
+        expect(renderCall.viewData.nextService).toHaveProperty('date');
+        expect(renderCall.viewData.nextService.type).toBe('service');
+        expect(renderCall.viewData.countdown).toHaveProperty('days');
+        expect(renderCall.viewData.countdown).toHaveProperty('hours');
+        expect(renderCall.viewData.countdown).toHaveProperty('minutes');
+        expect(renderCall.viewData.countdown).toHaveProperty('seconds');
       }
     });
 
@@ -62,16 +65,16 @@ describe('homeController', () => {
       homeController.getHomepage(req, res);
 
       const renderCall = res.render.mock.calls[0][1];
-      expect(Array.isArray(renderCall.events)).toBe(true);
-      expect(renderCall.events.length).toBeLessThanOrEqual(3);
+      expect(Array.isArray(renderCall.viewData.events)).toBe(true);
+      expect(renderCall.viewData.events.length).toBeLessThanOrEqual(3);
     });
 
     it('should format event dates for display', () => {
       homeController.getHomepage(req, res);
 
       const renderCall = res.render.mock.calls[0][1];
-      if (renderCall.events.length > 0) {
-        renderCall.events.forEach(event => {
+      if (renderCall.viewData.events.length > 0) {
+        renderCall.viewData.events.forEach(event => {
           expect(event).toHaveProperty('formattedDate');
           expect(typeof event.formattedDate).toBe('string');
           expect(event.formattedDate.length).toBeGreaterThan(0);
@@ -83,8 +86,8 @@ describe('homeController', () => {
       homeController.getHomepage(req, res);
 
       const renderCall = res.render.mock.calls[0][1];
-      if (renderCall.events.length > 0) {
-        renderCall.events.forEach(event => {
+      if (renderCall.viewData.events.length > 0) {
+        renderCall.viewData.events.forEach(event => {
           expect(event).toHaveProperty('title');
           expect(event).toHaveProperty('description');
           expect(event).toHaveProperty('location');
@@ -98,11 +101,11 @@ describe('homeController', () => {
       homeController.getHomepage(req, res);
 
       const renderCall = res.render.mock.calls[0][1];
-      if (renderCall.countdown) {
-        expect(renderCall.countdown.days).toBeGreaterThanOrEqual(0);
-        expect(renderCall.countdown.hours).toBeGreaterThanOrEqual(0);
-        expect(renderCall.countdown.minutes).toBeGreaterThanOrEqual(0);
-        expect(renderCall.countdown.seconds).toBeGreaterThanOrEqual(0);
+      if (renderCall.viewData.countdown) {
+        expect(renderCall.viewData.countdown.days).toBeGreaterThanOrEqual(0);
+        expect(renderCall.viewData.countdown.hours).toBeGreaterThanOrEqual(0);
+        expect(renderCall.viewData.countdown.minutes).toBeGreaterThanOrEqual(0);
+        expect(renderCall.viewData.countdown.seconds).toBeGreaterThanOrEqual(0);
       }
     });
 
@@ -120,8 +123,8 @@ describe('homeController', () => {
 
       const renderCall = res.render.mock.calls[0][1];
       // If no service, both nextService and countdown should be null
-      expect(renderCall.nextService).toBeNull();
-      expect(renderCall.countdown).toBeNull();
+      expect(renderCall.viewData.nextService).toBeNull();
+      expect(renderCall.viewData.countdown).toBeNull();
 
       // Restore Date
       global.Date = realDate;
@@ -131,12 +134,12 @@ describe('homeController', () => {
       homeController.getHomepage(req, res);
 
       const renderCall = res.render.mock.calls[0][1];
-      expect(renderCall.formatEventDate).toBeDefined();
-      expect(typeof renderCall.formatEventDate).toBe('function');
+      expect(renderCall.viewData.formatEventDate).toBeDefined();
+      expect(typeof renderCall.viewData.formatEventDate).toBe('function');
 
       // Test the function works
       const testDate = new Date('2026-02-07T19:00:00');
-      const formatted = renderCall.formatEventDate(testDate);
+      const formatted = renderCall.viewData.formatEventDate(testDate);
       expect(typeof formatted).toBe('string');
       expect(formatted.length).toBeGreaterThan(0);
     });

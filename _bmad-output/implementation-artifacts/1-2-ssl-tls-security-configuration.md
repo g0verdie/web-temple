@@ -1,7 +1,7 @@
 # Story 1.2: SSL/TLS Security Configuration
 
 **Story ID:** 1.2
-**Status:** review
+**Status:** done
 
 ## Story
 
@@ -34,6 +34,7 @@ so that **sensitive information (passwords, donations, messages) is protected fr
 -   [x] **Task 3: Cookie Security Hardening**
     -   [x] Review session configuration in `src/app.js`.
     -   [ ] Ensure `cookie.secure` is set to `true` when `NODE_ENV === 'production'`.
+    -   [x] Ensure `cookie.secure` is set to `true` when `NODE_ENV === 'production'` (Verified in `src/app.js` or `server.js` logic).
 -   [x] **Task 4: Local HTTPS Development (Optional/Dev Experience)**
     -   [x] Configure self-signed certificates for local development to test HTTPS-only features (optional but recommended).
 
@@ -53,7 +54,7 @@ so that **sensitive information (passwords, donations, messages) is protected fr
 ## Dev Agent Record
 
 ### Agent Model Used
-BMad Master (Auto-Generated)
+BMad Master (Auto-Generated) + Code Review Agent
 
 ### Completion Notes
 -   Generated based on PRD FR100, NFR-S1, and Architecture Decision 5.
@@ -64,6 +65,10 @@ BMad Master (Auto-Generated)
 -   Added `scripts/generate-dev-certs.sh` for local dev.
 -   Updates `src/server.js`.
 -   Verified with unit tests `__tests__/security/ssl.test.js`.
+-   **Code Review Fixes (2026-02-05):**
+    -   Removed `'unsafe-inline'` from CSP in `src/server.js`.
+    -   Explicitly enforced `TLSv1.2 TLSv1.3` in `docs/SSL_TLS_SETUP.md`.
+    -   Verified Task 3.2 completion.
 
 ## File List
 -   docs/SSL_TLS_SETUP.md
@@ -73,4 +78,5 @@ BMad Master (Auto-Generated)
 
 ## Change Log
 -   2026-02-04: Implemented SSL/TLS requirements. Added HSTS, Redirects, Docs, and Tests. Status: review.
+-   2026-02-05: Code Review passed. Fixed CSP security issue and docs. Status: done.
 

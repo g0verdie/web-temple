@@ -57,6 +57,10 @@ server {
     ssl_certificate /etc/letsencrypt/live/templebnaiisrael.org/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/templebnaiisrael.org/privkey.pem;
     
+    # Enforce secure TLS versions
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    
     # ... other SSL settings ...
     
     location / {
