@@ -1,0 +1,268 @@
+const db = require('../config/db');
+const { hashPassword, comparePassword } = require('../utils/authHelper');
+const { logAudit, AUDIT_ACTIONS } = require('../utils/auditHelper');
+
+/**
+ * Authentication service
+ * Handles user registration, login, and password management
+ */
+
+/**
+ * Register a new user
+ * @param {Object} userData - User registration data
+ * @param {string} userData.email - User email
+ * @param {string} userData.password - Plain text password (will be hashed)
+ * @param {string} userData.first_name - First name
+ * @param {string} userData.last_name - Last name
+ * @param {string} userData.ip_address - IP address for audit logging
+ * @returns {Promise<Object>} Newly created user (without password_hash)
+ * @throws {Error} if email already exists or validation fails
+ */
+const registerUser = async (userData) => {
+    const { email, password, first_name, last_name, ip_address } = userData;
+
+    // Validate input
+    if (!email || !password) {
+        throw new Error('Email and password are required');
+    }
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{12,}$/;
+    if (!passwordRegex.test(password)) {
+        throw new Error('Password must be at least 12 characters and include uppercase, lowercase, number, and symbol');
+    }
+
+    // Verify email is not already registered
+    const existingUser = await db.query(
+        'SELECT id FROM users WHERE email = $1',
+        [email]
+    );
+
+    if (existingUser.rows.length > 0) {
+        throw new Error('Email already registered');
+    }
+
+    // Hash password with Bcrypt
+    const password_hash = await hashPassword(password);
+
+    // Insert user into database
+    const result = await db.query(
+        `INSERT INTO users (email, password_hash, first_name, last_name, role, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+         RETURNING id, email, first_name, last_name, role, created_at`,
+        [email, password_hash, first_name || null, last_name || null, 'member']
+    );
+
+    const user = result.rows[0];
+
+    // Log audit event
+    await logAudit({
+        user_id: user.id,
+        action: AUDIT_ACTIONS.USER_REGISTERED,
+        entity_type: 'user',
+        entity_id: user.id,
+        description: `User registered: ${email}`,
+        ip_address,
+    });
+
+    return user;
+};
+
+/**
+ * Authenticate user with email and password
+ * @param {Object} credentials - Login credentials
+ * @param {string} credentials.email - User email
+ * @param {string} credentials.password - Plain text password
+ * @param {string} credentials.ip_address - IP address for audit logging
+ * @returns {Promise<Object>} Authenticated user (without password_hash)
+ * @throws {Error} if credentials are invalid
+ */
+const authenticateUser = async (credentials) => {
+    const { email, password, ip_address } = credentials;
+
+    if (!email || !password) {
+        throw new Error('Email and password are required');
+    }
+
+    // Find user by email
+    const result = await db.query(
+        'SELECT id, email, password_hash, role, first_name, last_name FROM users WHERE email = $1',
+        [email]
+    );
+
+    if (result.rows.length === 0) {
+        // Log failed login attempt
+        await logAudit({
+            action: AUDIT_ACTIONS.USER_LOGIN,
+            description: `Failed login attempt: user not found (${email})`,
+            ip_address,
+        });
+        throw new Error('Invalid email or password');
+    }
+
+    const user = result.rows[0];
+
+    // Compare password with stored hash using Bcrypt
+    const passwordMatch = await comparePassword(password, user.password_hash);
+
+    if (!passwordMatch) {
+        // Log failed login attempt
+        await logAudit({
+            user_id: user.id,
+            action: AUDIT_ACTIONS.USER_LOGIN,
+            description: `Failed login attempt: incorrect password`,
+            ip_address,
+        });
+        throw new Error('Invalid email or password');
+    }
+
+    // Log successful login
+    await logAudit({
+        user_id: user.id,
+        action: AUDIT_ACTIONS.USER_LOGIN,
+        description: `User logged in: ${email}`,
+        ip_address,
+    });
+
+    // Return user without password hash
+    return {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        first_name: user.first_name,
+        last_name: user.last_name,
+    };
+};
+
+/**
+ * Change user password
+ * @param {Object} options - Password change options
+ * @param {string} options.user_id - User ID
+ * @param {string} options.current_password - Current password (plain text)
+ * @param {string} options.new_password - New password (plain text)
+ * @param {string} options.ip_address - IP address for audit logging
+ * @returns {Promise<void>}
+ * @throws {Error} if current password is invalid or new password fails validation
+ */
+const changePassword = async (options) => {
+    const { user_id, current_password, new_password, ip_address } = options;
+
+    if (!user_id || !current_password || !new_password) {
+        throw new Error('User ID, current password, and new password are required');
+    }
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{12,}$/;
+    if (!passwordRegex.test(new_password)) {
+        throw new Error('New password must be at least 12 characters and include uppercase, lowercase, number, and symbol');
+    }
+
+    if (current_password === new_password) {
+        throw new Error('New password cannot be the same as current password');
+    }
+
+    // Fetch user
+    const userResult = await db.query(
+        'SELECT id, email, password_hash FROM users WHERE id = $1',
+        [user_id]
+    );
+
+    if (userResult.rows.length === 0) {
+        throw new Error('User not found');
+    }
+
+    const user = userResult.rows[0];
+
+    // Verify current password
+    const passwordMatch = await comparePassword(current_password, user.password_hash);
+
+    if (!passwordMatch) {
+        await logAudit({
+            user_id,
+            action: AUDIT_ACTIONS.PASSWORD_CHANGED,
+            description: 'Failed password change: current password incorrect',
+            ip_address,
+        });
+        throw new Error('Current password is incorrect');
+    }
+
+    // Hash new password
+    const new_password_hash = await hashPassword(new_password);
+
+    // Update password in database
+    await db.query(
+        'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+        [new_password_hash, user_id]
+    );
+
+    // Log password change
+    await logAudit({
+        user_id,
+        action: AUDIT_ACTIONS.PASSWORD_CHANGED,
+        entity_type: 'user',
+        entity_id: user_id,
+        description: `Password changed for user: ${user.email}`,
+        ip_address,
+    });
+};
+
+/**
+ * Request password reset
+ * @param {Object} options - Password reset options
+ * @param {string} options.email - User email
+ * @param {string} options.ip_address - IP address for audit logging
+ * @returns {Promise<Object>} Reset token and expiry (token should be sent via email)
+ */
+const requestPasswordReset = async (options) => {
+    const { email, ip_address } = options;
+
+    if (!email) {
+        throw new Error('Email is required');
+    }
+
+    const result = await db.query(
+        'SELECT id FROM users WHERE email = $1',
+        [email]
+    );
+
+    // Always return success even if email not found (security: don't reveal if email exists)
+    if (result.rows.length === 0) {
+        await logAudit({
+            action: AUDIT_ACTIONS.PASSWORD_RESET_REQUESTED,
+            description: `Password reset requested for non-existent email: ${email}`,
+            ip_address,
+        });
+        return { message: 'If an account exists with this email, a reset link will be sent' };
+    }
+
+    const user = result.rows[0];
+
+    // Generate reset token
+    const resetToken = require('crypto').randomBytes(32).toString('hex');
+    const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Insert token into database
+    await db.query(
+        'INSERT INTO password_resets (user_id, token, expires_at) VALUES ($1, $2, $3)',
+        [user.id, resetToken, tokenExpiry]
+    );
+
+    await logAudit({
+        user_id: user.id,
+        action: AUDIT_ACTIONS.PASSWORD_RESET_REQUESTED,
+        entity_type: 'user',
+        entity_id: user.id,
+        description: `Password reset requested for: ${email}`,
+        ip_address,
+    });
+
+    return {
+        message: 'If an account exists with this email, a reset link will be sent',
+        // In production, token would be sent via email service here
+    };
+};
+
+module.exports = {
+    registerUser,
+    authenticateUser,
+    changePassword,
+    requestPasswordReset,
+};
