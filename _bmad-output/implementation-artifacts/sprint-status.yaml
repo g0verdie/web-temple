@@ -46,6 +46,16 @@ development_status:
   1-3-about-the-temple-page: done
   1-4-contact-us-page: done
   1-5-mobile-responsive-design-foundation: done
+  1-6-database-encryption-at-rest: ready-for-dev
+  1-7-automated-daily-backups: ready-for-dev
+  1-8-audit-logging-infrastructure: ready-for-dev
+  1-9-local-logging-and-monitoring: ready-for-dev
+  1-10-operational-documentation-and-runbook: ready-for-dev
+  1-11-wcag-compliance-validation: ready-for-dev
+  1-12-performance-benchmarking: ready-for-dev
+  1-13-redis-caching-infrastructure: ready-for-dev
+  1-14-automated-test-infrastructure: ready-for-dev
+  1-15-email-queue-infrastructure: ready-for-dev
   epic-1-retrospective: optional
   epic-2: backlog
   2-1-user-registration: backlog
