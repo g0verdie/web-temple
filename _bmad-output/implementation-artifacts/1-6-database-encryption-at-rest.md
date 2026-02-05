@@ -1,7 +1,7 @@
 # Story 1.6: Database Encryption at Rest
 
 **Story ID:** 1.6
-**Status:** review
+**Status:** done
 
 ## Story
 
@@ -101,3 +101,12 @@ Claude Haiku 4.5 (Code Review + Fixes)
 7. ⏳ Performance overhead <5% (Benchmarking deferred to Story 1.12)
 8. ✅ Decryption process documented (SECURITY_ENCRYPTION.md with examples + recovery procedures)
 
+
+### Review Fixes Applied (2026-02-05)
+- Removed plaintext `amount_cents` from donations table (Critical)
+- Implemented password reset token storage (High)
+- Hardened audit logging to fail-closed (High)
+- Enforced password complexity (Medium)
+- Secured backup script (Medium)
+- Added migration 005_create_password_resets_table.sql
+- Verified with updated integration tests
