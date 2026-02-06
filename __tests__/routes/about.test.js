@@ -4,7 +4,29 @@
  */
 
 const request = require('supertest');
+const pageController = require('../../src/controllers/pageController');
+
+jest.mock('../../src/controllers/pageController', () => ({
+  getPublishedPage: jest.fn()
+}));
+
 const app = require('../../src/server');
+
+const originalEnv = { ...process.env };
+
+beforeEach(() => {
+  process.env.NODE_ENV = 'test';
+  pageController.getPublishedPage.mockResolvedValue({
+    title: 'About the Temple',
+    published: true,
+    content: '<h2>Community Values</h2><p>Mission</p>'
+  });
+});
+
+afterEach(() => {
+  process.env = { ...originalEnv };
+  jest.clearAllMocks();
+});
 
 describe('About Page Route', () => {
   describe('GET /about', () => {
@@ -95,10 +117,37 @@ describe('About Page Route', () => {
 
   describe('Error Handling', () => {
     it('should return 404 if page not found', async () => {
-      // Create a test for non-existent page slug
-      // This would require updating pageController to handle different slugs
-      const res = await request(app).get('/about'); // existing page should work
+      pageController.getPublishedPage.mockResolvedValueOnce(null);
+      process.env.NODE_ENV = 'production';
+
+      const res = await request(app)
+        .get('/about')
+        .set('x-forwarded-proto', 'https');
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('Fallback Content', () => {
+    it('should render fallback content in test mode when CMS is empty', async () => {
+      pageController.getPublishedPage.mockResolvedValueOnce(null);
+      process.env.NODE_ENV = 'test';
+
+      const res = await request(app).get('/about');
+
       expect(res.status).toBe(200);
+      expect(res.text).toContain('Community Values');
+      expect(res.text).toContain('Mission');
+    });
+  });
+
+  describe('Error Handling (Server)', () => {
+    it('should handle errors from page controller', async () => {
+      pageController.getPublishedPage.mockImplementationOnce(() => {
+        throw new Error('DB Error');
+      });
+
+      const res = await request(app).get('/about');
+      expect(res.status).toBe(500);
     });
   });
 });

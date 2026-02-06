@@ -1,7 +1,105 @@
 const { registerUser, authenticateUser, changePassword } = require('../../src/services/authService');
 const db = require('../../src/config/db');
 
+jest.mock('../../src/config/db', () => {
+    let users = [];
+    let idCounter = 1;
+
+    const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const query = jest.fn(async (text, params = []) => {
+        if (text.startsWith('DELETE FROM users WHERE email LIKE')) {
+            const pattern = params[0] || '';
+            const regex = new RegExp(`^${escapeRegex(pattern).replace(/%/g, '.*')}$`);
+            users = users.filter((user) => !regex.test(user.email));
+            return { rowCount: 1, rows: [] };
+        }
+
+        if (text.startsWith('DELETE FROM users WHERE email = $1')) {
+            const email = params[0];
+            users = users.filter((user) => user.email !== email);
+            return { rowCount: 1, rows: [] };
+        }
+
+        if (text.startsWith('SELECT id FROM users WHERE email = $1')) {
+            const email = params[0];
+            const user = users.find((u) => u.email === email);
+            return { rows: user ? [{ id: user.id }] : [] };
+        }
+
+        if (text.startsWith('SELECT id, email, password_hash, role, first_name, last_name FROM users WHERE email = $1')) {
+            const email = params[0];
+            const user = users.find((u) => u.email === email);
+            return { rows: user ? [user] : [] };
+        }
+
+        if (text.startsWith('INSERT INTO users')) {
+            const [email, password_hash, first_name, last_name, role] = params;
+            const newUser = {
+                id: `user-${idCounter++}`,
+                email,
+                password_hash,
+                first_name: first_name || null,
+                last_name: last_name || null,
+                role,
+                created_at: new Date()
+            };
+            users.push(newUser);
+            return {
+                rows: [
+                    {
+                        id: newUser.id,
+                        email: newUser.email,
+                        first_name: newUser.first_name,
+                        last_name: newUser.last_name,
+                        role: newUser.role,
+                        created_at: newUser.created_at
+                    }
+                ]
+            };
+        }
+
+        if (text.startsWith('SELECT id, email, password_hash FROM users WHERE id = $1')) {
+            const id = params[0];
+            const user = users.find((u) => u.id === id);
+            return { rows: user ? [user] : [] };
+        }
+
+        if (text.startsWith('UPDATE users SET password_hash')) {
+            const [password_hash, id] = params;
+            const user = users.find((u) => u.id === id);
+            if (user) user.password_hash = password_hash;
+            return { rows: [] };
+        }
+
+        if (text.startsWith('SELECT password_hash FROM users WHERE id = $1')) {
+            const id = params[0];
+            const user = users.find((u) => u.id === id);
+            return { rows: user ? [{ password_hash: user.password_hash }] : [] };
+        }
+
+        return { rows: [] };
+    });
+
+    const reset = () => {
+        users = [];
+        idCounter = 1;
+    };
+
+    return {
+        query,
+        pool: { query },
+        __reset: reset
+    };
+});
+
 describe('Integration: Authentication Service', () => {
+    beforeEach(() => {
+        if (typeof db.__reset === 'function') {
+            db.__reset();
+        }
+    });
+
     beforeAll(async () => {
         // Clean up test data before running
         await db.query('DELETE FROM users WHERE email LIKE $1', ['test-auth-%@example.com']);

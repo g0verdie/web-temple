@@ -83,6 +83,8 @@ describe('Page Controller', () => {
       const userId = 'user-1';
       const mockPage = { id: 'uuid-1', title: 'Old', content: 'OldContent' };
 
+      // Transaction handling
+      mockClient.query.mockResolvedValueOnce({}); // BEGIN
       // 1. Get current page
       mockClient.query.mockResolvedValueOnce({ rows: [mockPage] });
       // 2. Insert version (mock return not used logic-wise but good for completeness)
@@ -91,10 +93,8 @@ describe('Page Controller', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [{ ...mockPage, title: 'New' }] });
       // 4. Prune versions
       mockClient.query.mockResolvedValueOnce({ rows: [] });
-
-      // Transaction handling
-      mockClient.query.mockResolvedValueOnce({}); // BEGIN
-      mockClient.query.mockResolvedValueOnce({}); // COMMIT
+      // COMMIT
+      mockClient.query.mockResolvedValueOnce({});
 
       const updated = await pageController.updatePage('about', {
         title: 'New',

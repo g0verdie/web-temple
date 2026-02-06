@@ -1,8 +1,16 @@
 const adminController = require('../../src/controllers/adminController');
-const fs = require('fs');
-const path = require('path');
+const backupLogService = require('../../src/services/backupLogService');
+const auditService = require('../../src/services/auditService');
 
-jest.mock('fs');
+jest.mock('../../src/services/backupLogService', () => ({
+    getLastSuccessfulBackup: jest.fn(),
+    getLastBackupAttempt: jest.fn()
+}));
+
+jest.mock('../../src/services/auditService', () => ({
+    queryLogs: jest.fn(),
+    AUDIT_ACTIONS: {}
+}));
 
 describe('Admin Controller - Backup Status', () => {
     let req, res;
@@ -17,13 +25,18 @@ describe('Admin Controller - Backup Status', () => {
     });
 
     test('should render dashboard with last successful backup', async () => {
-        const mockLog = [
-            '{"timestamp": "2023-01-01T10:00:00Z", "status": "START", "message": "Start"}',
-            '{"timestamp": "2023-01-01T10:05:00Z", "status": "SUCCESS", "message": "Done", "size_bytes": 1024}'
-        ].join('\n');
-
-        fs.existsSync.mockReturnValue(true);
-        fs.readFileSync.mockReturnValue(mockLog);
+        backupLogService.getLastSuccessfulBackup.mockResolvedValue({
+            timestamp: '2023-01-01T10:05:00Z',
+            status: 'SUCCESS',
+            message: 'Done',
+            size_bytes: 1024
+        });
+        backupLogService.getLastBackupAttempt.mockResolvedValue({
+            timestamp: '2023-01-01T10:05:00Z',
+            status: 'SUCCESS',
+            message: 'Done',
+            size_bytes: 1024
+        });
 
         await adminController.getDashboard(req, res);
 
@@ -39,7 +52,8 @@ describe('Admin Controller - Backup Status', () => {
     });
 
     test('should handle missing log file', async () => {
-        fs.existsSync.mockReturnValue(false);
+        backupLogService.getLastSuccessfulBackup.mockResolvedValue(null);
+        backupLogService.getLastBackupAttempt.mockResolvedValue(null);
 
         await adminController.getDashboard(req, res);
 
@@ -52,8 +66,12 @@ describe('Admin Controller - Backup Status', () => {
     });
 
     test('should handle corrupt log file', async () => {
-        fs.existsSync.mockReturnValue(true);
-        fs.readFileSync.mockReturnValue('INVALID JSON\nANOTHER BAD LINE');
+        backupLogService.getLastSuccessfulBackup.mockResolvedValue(null);
+        backupLogService.getLastBackupAttempt.mockResolvedValue({
+            timestamp: '2023-01-02T09:00:00Z',
+            status: 'ERROR',
+            message: 'Corrupt log'
+        });
 
         await adminController.getDashboard(req, res);
 
@@ -63,5 +81,30 @@ describe('Admin Controller - Backup Status', () => {
                 lastBackup: null
             })
         }));
+    });
+
+    test('should handle dashboard errors', async () => {
+        backupLogService.getLastSuccessfulBackup.mockRejectedValue(new Error('Read error'));
+        backupLogService.getLastBackupAttempt.mockRejectedValue(new Error('Read error'));
+
+        await adminController.getDashboard(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.render).toHaveBeenCalledWith('error', expect.any(Object));
+    });
+
+    test('should handle audit logs errors', async () => {
+        const auditReq = { query: {} };
+        const auditRes = {
+            render: jest.fn(),
+            status: jest.fn().mockReturnThis()
+        };
+
+        auditService.queryLogs.mockRejectedValue(new Error('Audit error'));
+
+        await adminController.getAuditLogs(auditReq, auditRes);
+
+        expect(auditRes.status).toHaveBeenCalledWith(500);
+        expect(auditRes.render).toHaveBeenCalledWith('error', expect.any(Object));
     });
 });

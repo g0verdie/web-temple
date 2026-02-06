@@ -6,4 +6,7 @@ const requireAdmin = require('../../middleware/requireAdmin');
 // Dashboard Route
 router.get('/', requireAdmin, adminController.getDashboard);
 
+// Audit Logs Route
+router.get('/audit-logs', requireAdmin, adminController.getAuditLogs);
+
 module.exports = router;

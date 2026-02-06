@@ -1,6 +1,7 @@
 const { validationResult } = require('express-validator');
 const axios = require('axios');
 const pool = require('../config/db');
+const { logAudit, AUDIT_ACTIONS } = require('../services/auditService');
 // We will implement emailService later, but requiring it now to structure usage
 const emailService = require('../services/emailService');
 
@@ -57,10 +58,20 @@ exports.submitMessage = async (req, res) => {
         Promise.resolve(emailService.sendContactNotification({ name, email, subject, message }))
             .catch(err => console.error('Email failed:', err));
 
+        // Audit Log
+        logAudit({
+            action: AUDIT_ACTIONS.MESSAGE_RECEIVED,
+            entity_type: 'message',
+            entity_id: newMessage.id,
+            description: `Message from ${name} (${email})`,
+            ip_address: req.ip
+        });
+
         res.status(201).json({
             success: true,
             message: 'Message sent successfully',
-            data: newMessage
+            data: newMessage,
+            id: newMessage.id // Ensure ID is returned for confirmation if needed
         });
 
     } catch (error) {

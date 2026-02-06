@@ -1,6 +1,6 @@
 const db = require('../config/db');
 const { hashPassword, comparePassword } = require('../utils/authHelper');
-const { logAudit, AUDIT_ACTIONS } = require('../utils/auditHelper');
+const { logAudit, AUDIT_ACTIONS } = require('./auditService');
 
 /**
  * Authentication service
@@ -54,15 +54,15 @@ const registerUser = async (userData) => {
 
     const user = result.rows[0];
 
-    // Log audit event
-    await logAudit({
+    // Log audit event (fire-and-forget)
+    logAudit({
         user_id: user.id,
         action: AUDIT_ACTIONS.USER_REGISTERED,
         entity_type: 'user',
         entity_id: user.id,
         description: `User registered: ${email}`,
         ip_address,
-    });
+    }).catch(err => console.error('Audit log error:', err));
 
     return user;
 };
@@ -91,11 +91,11 @@ const authenticateUser = async (credentials) => {
 
     if (result.rows.length === 0) {
         // Log failed login attempt
-        await logAudit({
+        logAudit({
             action: AUDIT_ACTIONS.USER_LOGIN,
             description: `Failed login attempt: user not found (${email})`,
             ip_address,
-        });
+        }).catch(err => console.error('Audit log error:', err));
         throw new Error('Invalid email or password');
     }
 
@@ -106,22 +106,22 @@ const authenticateUser = async (credentials) => {
 
     if (!passwordMatch) {
         // Log failed login attempt
-        await logAudit({
+        logAudit({
             user_id: user.id,
             action: AUDIT_ACTIONS.USER_LOGIN,
             description: `Failed login attempt: incorrect password`,
             ip_address,
-        });
+        }).catch(err => console.error('Audit log error:', err));
         throw new Error('Invalid email or password');
     }
 
     // Log successful login
-    await logAudit({
+    logAudit({
         user_id: user.id,
         action: AUDIT_ACTIONS.USER_LOGIN,
         description: `User logged in: ${email}`,
         ip_address,
-    });
+    }).catch(err => console.error('Audit log error:', err));
 
     // Return user without password hash
     return {
@@ -175,12 +175,12 @@ const changePassword = async (options) => {
     const passwordMatch = await comparePassword(current_password, user.password_hash);
 
     if (!passwordMatch) {
-        await logAudit({
+        logAudit({
             user_id,
             action: AUDIT_ACTIONS.PASSWORD_CHANGED,
             description: 'Failed password change: current password incorrect',
             ip_address,
-        });
+        }).catch(err => console.error('Audit log error:', err));
         throw new Error('Current password is incorrect');
     }
 
@@ -194,14 +194,14 @@ const changePassword = async (options) => {
     );
 
     // Log password change
-    await logAudit({
+    logAudit({
         user_id,
         action: AUDIT_ACTIONS.PASSWORD_CHANGED,
         entity_type: 'user',
         entity_id: user_id,
         description: `Password changed for user: ${user.email}`,
         ip_address,
-    });
+    }).catch(err => console.error('Audit log error:', err));
 };
 
 /**
@@ -225,11 +225,11 @@ const requestPasswordReset = async (options) => {
 
     // Always return success even if email not found (security: don't reveal if email exists)
     if (result.rows.length === 0) {
-        await logAudit({
+        logAudit({
             action: AUDIT_ACTIONS.PASSWORD_RESET_REQUESTED,
             description: `Password reset requested for non-existent email: ${email}`,
             ip_address,
-        });
+        }).catch(err => console.error('Audit log error:', err));
         return { message: 'If an account exists with this email, a reset link will be sent' };
     }
 
@@ -245,14 +245,14 @@ const requestPasswordReset = async (options) => {
         [user.id, resetToken, tokenExpiry]
     );
 
-    await logAudit({
+    logAudit({
         user_id: user.id,
         action: AUDIT_ACTIONS.PASSWORD_RESET_REQUESTED,
         entity_type: 'user',
         entity_id: user.id,
         description: `Password reset requested for: ${email}`,
         ip_address,
-    });
+    }).catch(err => console.error('Audit log error:', err));
 
     return {
         message: 'If an account exists with this email, a reset link will be sent',

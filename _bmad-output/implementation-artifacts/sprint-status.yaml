@@ -48,7 +48,7 @@ development_status:
   1-5-mobile-responsive-design-foundation: done
   1-6-database-encryption-at-rest: done
   1-7-automated-daily-backups: done
-  1-8-audit-logging-infrastructure: ready-for-dev
+  1-8-audit-logging-infrastructure: done
   1-9-local-logging-and-monitoring: ready-for-dev
   1-10-operational-documentation-and-runbook: ready-for-dev
   1-11-wcag-compliance-validation: ready-for-dev

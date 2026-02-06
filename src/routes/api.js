@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const requireAdmin = require('../middleware/requireAdmin');
 const backupLogService = require('../services/backupLogService');
+const auditService = require('../services/auditService');
 
 // GET /api/admin/backups/status
 router.get('/admin/backups/status', requireAdmin, async (req, res) => {
@@ -60,6 +61,35 @@ router.get('/admin/backups/status', requireAdmin, async (req, res) => {
 
     } catch (error) {
         console.error('API Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+// GET /api/admin/audit-logs
+router.get('/admin/audit-logs', requireAdmin, async (req, res) => {
+    try {
+        const { action, userId, entityType, startDate, endDate, limit, offset } = req.query;
+        const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 1000);
+        const parsedOffset = Math.max(parseInt(offset, 10) || 0, 0);
+
+        const logsData = await auditService.queryLogs({
+            action,
+            user_id: userId,
+            entity_type: entityType,
+            startDate,
+            endDate,
+            limit: parsedLimit,
+            offset: parsedOffset
+        });
+
+        res.json({
+            logs: logsData.logs,
+            total: logsData.total,
+            limit: parsedLimit,
+            offset: parsedOffset
+        });
+    } catch (error) {
+        console.error('API Error (audit logs):', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });

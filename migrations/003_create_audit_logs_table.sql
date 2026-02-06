@@ -25,6 +25,9 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entity_type, enti
 -- Enforce append-only behavior: prevent UPDATE and DELETE
 -- Users table should have no UPDATE/DELETE permissions on audit_logs
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_logs FORCE ROW LEVEL SECURITY;
+
+REVOKE UPDATE, DELETE ON TABLE audit_logs FROM PUBLIC;
 
 -- Policy: Only INSERT allowed, no UPDATE or DELETE
 CREATE POLICY audit_logs_insert_only ON audit_logs

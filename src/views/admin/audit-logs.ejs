@@ -1,0 +1,181 @@
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Audit Logs</h1>
+        <a href="/admin" class="btn btn-outline-secondary">Back to Dashboard</a>
+    </div>
+
+    <!-- Filter Form -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Filter Logs</h5>
+        </div>
+        <div class="card-body">
+            <% const buildQuery = (overrides) => {
+                const params = new URLSearchParams();
+                const merged = { ...filters, limit, ...overrides };
+                Object.keys(merged).forEach((key) => {
+                    const value = merged[key];
+                    if (value !== undefined && value !== null && value !== '') {
+                        params.append(key, value);
+                    }
+                });
+                return params.toString();
+            }; %>
+            <form action="/admin/audit-logs" method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="action" class="form-label">Action</label>
+                    <select class="form-select" id="action" name="action">
+                        <option value="">All Actions</option>
+                        <% Object.values(actions).forEach(act=> { %>
+                            <option value="<%= act %>" <%=filters.action===act ? 'selected' : '' %>><%= act %>
+                            </option>
+                            <% }); %>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="entityType" class="form-label">Entity Type</label>
+                    <input type="text" class="form-control" id="entityType" name="entityType"
+                        value="<%= filters.entityType || '' %>" placeholder="e.g. user, announcement">
+                </div>
+                <div class="col-md-3">
+                    <label for="userId" class="form-label">User ID</label>
+                    <input type="text" class="form-control" id="userId" name="userId"
+                        value="<%= filters.userId || '' %>">
+                </div>
+                <div class="col-md-3">
+                    <label for="startDate" class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="startDate" name="startDate"
+                        value="<%= filters.startDate || '' %>">
+                </div>
+                <div class="col-md-3">
+                    <label for="endDate" class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="endDate" name="endDate"
+                        value="<%= filters.endDate || '' %>">
+                </div>
+                <div class="col-md-2">
+                    <label for="limit" class="form-label">Page Size</label>
+                    <select class="form-select" id="limit" name="limit">
+                        <% [25, 50, 100, 250].forEach(size => { %>
+                            <option value="<%= size %>" <%= limit === size ? 'selected' : '' %>><%= size %></option>
+                        <% }); %>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <a href="/admin/audit-logs" class="btn btn-outline-secondary w-100">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Time</th>
+                            <th>Action</th>
+                            <th>User</th>
+                            <th>Entity</th>
+                            <th>Description</th>
+                            <th>IP</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (logs && logs.length> 0) { %>
+                            <% logs.forEach(log=> { %>
+                                <tr>
+                                    <td>
+                                        <%= new Date(log.timestamp).toLocaleString() %>
+                                    </td>
+                                    <td><span class="badge bg-secondary">
+                                            <%= log.action %>
+                                        </span></td>
+                                    <td>
+                                        <% if (log.user_id) { %>
+                                            <small class="text-muted">
+                                                <%= log.user_id.substring(0, 8) %>...
+                                            </small>
+                                            <% } else { %>
+                                                <span class="text-muted">-</span>
+                                                <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (log.entity_type) { %>
+                                            <%= log.entity_type %>
+                                                <% if (log.entity_id) { %>
+                                                    <small class="text-muted">(<%= log.entity_id %>)</small>
+                                                    <% } %>
+                                                        <% } else { %>
+                                                            <span class="text-muted">-</span>
+                                                            <% } %>
+                                    </td>
+                                    <td class="text-break">
+                                        <%= log.description %>
+                                    </td>
+                                    <td>
+                                        <%= log.ip_address || '-' %>
+                                    </td>
+                                    <td>
+                                        <% if (log.before_state || log.after_state) { %>
+                                            <button class="btn btn-sm btn-outline-info" type="button"
+                                                data-bs-toggle="collapse" data-bs-target="#details-<%= log.id %>">
+                                                View
+                                            </button>
+                                            <% } %>
+                                    </td>
+                                </tr>
+                                <% if (log.before_state || log.after_state) { %>
+                                    <tr class="collapse" id="details-<%= log.id %>">
+                                        <td colspan="7" class="bg-light p-3">
+                                            <div class="row">
+                                                <% if (log.before_state) { %>
+                                                    <div class="col-md-6">
+                                                        <strong>Before:</strong>
+                                                        <pre
+                                                            class="bg-white p-2 border rounded"><code><%= JSON.stringify(log.before_state, null, 2) %></code></pre>
+                                                    </div>
+                                                    <% } %>
+                                                        <% if (log.after_state) { %>
+                                                            <div class="col-md-6">
+                                                                <strong>After:</strong>
+                                                                <pre
+                                                                    class="bg-white p-2 border rounded"><code><%= JSON.stringify(log.after_state, null, 2) %></code></pre>
+                                                            </div>
+                                                            <% } %>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <% } %>
+                                        <% }); %>
+                                            <% } else { %>
+                                                <tr>
+                                                    <td colspan="7" class="text-center py-4">No audit logs found
+                                                        matching your criteria.</td>
+                                                </tr>
+                                                <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            <small class="text-muted">Total Records: <%= total %></small>
+            <small class="text-muted">Page <%= currentPage %> of <%= totalPages %></small>
+            <div class="btn-group">
+                <a class="btn btn-outline-secondary <%= offset === 0 ? 'disabled' : '' %>"
+                   href="/admin/audit-logs?<%= buildQuery({ offset: Math.max(offset - limit, 0) }) %>">
+                    Previous
+                </a>
+                <a class="btn btn-outline-secondary <%= (offset + limit) >= total ? 'disabled' : '' %>"
+                   href="/admin/audit-logs?<%= buildQuery({ offset: offset + limit }) %>">
+                    Next
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
