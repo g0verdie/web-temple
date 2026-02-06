@@ -1,0 +1,39 @@
+<div class="container mt-5">
+    <h1>Admin Dashboard</h1>
+
+    <div class="row mt-4">
+        <!-- Backup Status Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">System Status</h5>
+                </div>
+                <div class="card-body">
+                    <% if (latestAttempt && latestAttempt.status !=='SUCCESS' ) { %>
+                        <div class="alert alert-danger mb-3">
+                            <strong>⚠️ Backup Failure Detected</strong><br>
+                            Last attempt: <%= new Date(latestAttempt.timestamp).toLocaleString() %><br>
+                                Error: <%= latestAttempt.message %>
+                        </div>
+                        <% } %>
+
+                            <h6>Last Successful Backup</h6>
+                            <% if (lastBackup) { %>
+                                <div class="alert alert-success">
+                                    <strong>Success</strong><br>
+                                    Time: <%= new Date(lastBackup.timestamp).toLocaleString() %><br>
+                                        Size: <%= (lastBackup.size_bytes / 1024 / 1024).toFixed(2) %> MB
+                                </div>
+                                <% } else { %>
+                                    <div class="alert alert-warning">
+                                        No successful backups found.
+                                    </div>
+                                    <% } %>
+
+                                        <hr>
+                                        <a href="/admin/pages" class="btn btn-outline-primary">Manage Pages</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

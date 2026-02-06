@@ -47,7 +47,7 @@ development_status:
   1-4-contact-us-page: done
   1-5-mobile-responsive-design-foundation: done
   1-6-database-encryption-at-rest: done
-  1-7-automated-daily-backups: ready-for-dev
+  1-7-automated-daily-backups: done
   1-8-audit-logging-infrastructure: ready-for-dev
   1-9-local-logging-and-monitoring: ready-for-dev
   1-10-operational-documentation-and-runbook: ready-for-dev

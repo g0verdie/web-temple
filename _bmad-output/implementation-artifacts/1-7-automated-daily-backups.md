@@ -1,7 +1,7 @@
 # Story 1.7: Automated Daily Backups
 
 **Story ID:** 1.7
-**Status:** ready-for-dev
+**Status:** done
 
 ## Story
 
@@ -25,17 +25,17 @@ so that **the temple's data is protected and recoverable in case of failure.**
 
 ## Tasks / Subtasks
 
--   [ ] **Task 1: S3 Setup**
-    -   [ ] Create private S3 bucket (e.g., `temple-backups-prod`).
-    -   [ ] Create IAM user with minimal write-only permissions for backup script.
--   [ ] **Task 2: Backup Script Creation**
-    -   [ ] Write `scripts/backup.sh` to dump,encrypt, and upload.
-    -   [ ] Implement retention pruning logic (or use S3 Lifecycle rules).
--   [ ] **Task 3: Automation**
-    -   [ ] Configure cron job on production server.
--   [ ] **Task 4: Admin Integration**
-    -   [ ] Create API endpoint `GET /api/admin/backups/status` to read latest log/metadata.
-    -   [ ] Update Admin Dashboard UI to show status.
+-   [x] **Task 1: S3 Setup**
+    -   [x] Create private S3 bucket (e.g., `temple-backups-prod`).
+    -   [x] Create IAM user with minimal write-only permissions for backup script.
+-   [x] **Task 2: Backup Script Creation**
+    -   [x] Write `scripts/backup.sh` to dump,encrypt, and upload.
+    -   [x] Implement retention pruning logic (or use S3 Lifecycle rules).
+-   [x] **Task 3: Automation**
+    -   [x] Configure cron job on production server.
+-   [x] **Task 4: Admin Integration**
+    -   [x] Create API endpoint `GET /api/admin/backups/status` to read latest log/metadata.
+    -   [x] Update Admin Dashboard UI to show status.
 
 ## Dev Notes
 
@@ -48,3 +48,8 @@ so that **the temple's data is protected and recoverable in case of failure.**
 
 ## Dev Agent Record
 BMad Master (Manual Creation)
+- Added `backupLogService` to efficiently read logs and prevent memory issues.
+- Updated `backup.sh` with `set -o pipefail` to catch pipeline errors.
+- Improved `setup-cron.sh` to be non-destructive.
+- Enhanced Admin Dashboard AND API to report backup failures prominently.
+- Verified with integration tests.

@@ -5,21 +5,9 @@
 
 const express = require('express');
 const pageController = require('../../controllers/pageController');
+const requireAdmin = require('../../middleware/requireAdmin');
 
 const router = express.Router();
-
-/**
- * Middleware: Check if user is authenticated and has admin/rabbi role
- * In MVP, this is a placeholder. Will be implemented with proper auth in Story 2 (Authentication)
- */
-const requireAdmin = (req, res, next) => {
-  // TODO: Implement proper authentication check
-  // For MVP, we'll allow admin access. In production, verify:
-  // - User is logged in (req.user exists)
-  // - User has 'admin' or 'rabbi' role
-  req.user = { id: 'admin-001', role: 'admin', name: 'Ilya' }; // Mock for development
-  next();
-};
 
 /**
  * GET /admin/pages/:slug

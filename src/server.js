@@ -75,11 +75,15 @@ const homeRoutes = require('./routes/home');
 const aboutRoutes = require('./routes/about');
 const contactRoutes = require('./routes/contact');
 const adminPagesRoutes = require('./routes/admin/pages');
+const adminDashboardRoutes = require('./routes/admin/dashboard');
+const apiRoutes = require('./routes/api');
 
 app.use('/', homeRoutes);
 app.use('/about', aboutRoutes);
 app.use('/contact', contactRoutes);
+app.use('/admin', adminDashboardRoutes);
 app.use('/admin/pages', adminPagesRoutes);
+app.use('/api', apiRoutes);
 
 // 404 handler
 app.use((req, res) => {
