@@ -49,7 +49,7 @@ development_status:
   1-6-database-encryption-at-rest: done
   1-7-automated-daily-backups: done
   1-8-audit-logging-infrastructure: done
-  1-9-local-logging-and-monitoring: ready-for-dev
+  1-9-local-logging-and-monitoring: review
   1-10-operational-documentation-and-runbook: ready-for-dev
   1-11-wcag-compliance-validation: ready-for-dev
   1-12-performance-benchmarking: ready-for-dev

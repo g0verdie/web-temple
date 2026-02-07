@@ -3,6 +3,10 @@ const express = require('express');
 const path = require('path');
 const compression = require('compression');
 const helmet = require('helmet');
+const morgan = require('morgan');
+const logger = require('./utils/logger');
+const metricsService = require('./services/metricsService');
+const requestIdMiddleware = require('./middleware/requestIdMiddleware');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,6 +14,14 @@ const HOST = process.env.HOST || 'localhost';
 
 // Trust proxy (required for secure cookies and rate limiting behind Nginx)
 app.enable('trust proxy');
+
+// Start system metrics logging
+if (process.env.NODE_ENV !== 'test') {
+  metricsService.start();
+}
+
+// Request ID middleware - must be first
+app.use(requestIdMiddleware);
 
 // HTTPS Redirection Middleware
 app.use((req, res, next) => {
@@ -41,6 +53,14 @@ app.use(helmet({
     includeSubDomains: true,
     preload: true
   }
+}));
+
+// Request logging with Morgan and Winston - includes response time and request ID
+// Format: REQUEST_ID METHOD URL STATUS RESPONSE_TIME
+const morganFormat = ':req[x-request-id] :method :url :status :response-time ms';
+app.use(morgan(morganFormat, { 
+  stream: logger.stream,
+  skip: (req) => process.env.NODE_ENV === 'test'
 }));
 
 // Compression middleware
@@ -87,12 +107,13 @@ app.use('/api', apiRoutes);
 
 // 404 handler
 app.use((req, res) => {
+  logger.warn(`404 - Not Found - ${req.originalUrl} - ${req.ip}`);
   res.status(404).render('404', { title: '404 - Page Not Found' });
 });
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  logger.error(`${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`, { stack: err.stack });
   res.status(500).render('error', {
     title: '500 - Server Error',
     message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message
@@ -102,8 +123,8 @@ app.use((err, req, res, next) => {
 // Start server
 if (require.main === module) {
   app.listen(PORT, HOST, () => {
-    console.log(`✅ Server running at http://${HOST}:${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`✅ Server running at http://${HOST}:${PORT}`);
+    logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
   });
 }
 
