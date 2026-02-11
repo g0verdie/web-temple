@@ -44,7 +44,7 @@ app.use(helmet({
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
-      frameSrc: ["'self'", "https://www.facebook.com", "https://www.youtube.com", "https://js.hcaptcha.com", "https://*.hcaptcha.com"],
+      frameSrc: ["'self'", "https://www.facebook.com", "https://www.youtube.com", "https://www.google.com", "https://js.hcaptcha.com", "https://*.hcaptcha.com"],
       upgradeInsecureRequests: [],
     },
   },
