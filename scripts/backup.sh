@@ -5,7 +5,7 @@ set -o pipefail
 # Configuration - Absolute paths for cron
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/temple}"
 LOG_FILE="${LOG_FILE:-/var/log/temple/backups.log}"
-BACKUP_DB="${BACKUP_DB:-web-temple}"
+BACKUP_DB="${BACKUP_DB:-${DB_NAME:-web_temple}}"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_FILE="$BACKUP_DIR/db_backup_$TIMESTAMP.sql"
 ENCRYPTED_FILE="$BACKUP_FILE.enc"

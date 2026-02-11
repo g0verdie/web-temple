@@ -10,6 +10,13 @@ BACKUP_DIR="${BACKUP_DIR:-/var/backups/temple}"
 
 echo "Starting Restore Test..."
 
+# Check for required encryption key
+if [ -z "$BACKUP_ENCRYPTION_KEY" ]; then
+    echo "❌ ERROR: BACKUP_ENCRYPTION_KEY environment variable is not set."
+    echo "Set it with: export BACKUP_ENCRYPTION_KEY='your-key-here'"
+    exit 1
+fi
+
 # 1. Start ephemeral Postgres container
 echo "Starting temporary database container..."
 docker run -d --name "$TEST_DB_CONTAINER" -e POSTGRES_PASSWORD="$TEST_DB_PASS" -e POSTGRES_DB="$TEST_DB_NAME" postgres:15-alpine
@@ -30,7 +37,7 @@ try_restore() {
         LATEST_BACKUP=$(aws s3 ls "s3://$S3_BACKUP_BUCKET/" --recursive | sort | tail -1 | awk '{print $NF}')
         if [ -n "$LATEST_BACKUP" ]; then
             echo "Downloading $LATEST_BACKUP..."
-            aws s3 cp "s3://$S3_BACKUP_BUCKET/$(basename $LATEST_BACKUP)" ./latest_restore.sql.enc
+            aws s3 cp "s3://$S3_BACKUP_BUCKET/$LATEST_BACKUP" ./latest_restore.sql.enc
         fi
     fi
 
