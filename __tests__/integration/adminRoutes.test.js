@@ -1,5 +1,4 @@
 const request = require('supertest');
-const app = require('../../src/server');
 const fs = require('fs');
 const path = require('path');
 
@@ -14,6 +13,8 @@ jest.mock('pg', () => {
     };
     return { Pool: jest.fn(() => mPool) };
 });
+
+const app = require('../../src/server');
 
 describe('Admin Routes Integration', () => {
     const logDir = path.join(process.cwd(), 'logs');
@@ -56,6 +57,7 @@ describe('Admin Routes Integration', () => {
         expect(res.text).toContain('Admin Dashboard');
         expect(res.text).toContain('Success');
         expect(res.text).toContain('Last Successful Backup');
+        expect(res.text).toContain('Email Queue');
     });
 
     it('GET /admin should show alert on latest backup failure', async () => {
@@ -85,5 +87,26 @@ describe('Admin Routes Integration', () => {
 
         expect(res.statusCode).toBe(200);
         expect(res.text).toContain('No successful backups found');
+    });
+
+    it('GET /admin should display email queue stats', async () => {
+        const res = await request(app).get('/admin');
+        expect(res.statusCode).toBe(200);
+        expect(res.text).toContain('Waiting:');
+        expect(res.text).toContain('Active:');
+        expect(res.text).toContain('Failed:');
+    });
+
+    it('POST /admin/email-queue/:id/retry should retry failed job', async () => {
+        // Create a job directly in the test queue
+        const emailQueueService = require('../../src/services/emailQueueService');
+        const job = await emailQueueService.queue.add('email', { to: 'test@example.com' });
+
+        // Retry it using the ID
+        const res = await request(app).post(`/admin/email-queue/${job.id}/retry`);
+
+        // Should redirect back to dashboard
+        expect(res.statusCode).toBe(302);
+        expect(res.header.location).toBe('/admin');
     });
 });

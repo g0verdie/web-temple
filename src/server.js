@@ -7,6 +7,7 @@ const morgan = require('morgan');
 const logger = require('./utils/logger');
 const metricsService = require('./services/metricsService');
 const requestIdMiddleware = require('./middleware/requestIdMiddleware');
+const { startEmailQueueWorker } = require('./workers/emailQueueWorker');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,6 +19,10 @@ app.enable('trust proxy');
 // Start system metrics logging
 if (process.env.NODE_ENV !== 'test') {
   metricsService.start();
+}
+
+if (process.env.NODE_ENV !== 'test' && process.env.EMAIL_WORKER_ENABLED !== 'false') {
+  startEmailQueueWorker();
 }
 
 // Request ID middleware - must be first

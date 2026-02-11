@@ -55,7 +55,7 @@ development_status:
   1-12-performance-benchmarking: done
   1-13-redis-caching-infrastructure: done
   1-14-automated-test-infrastructure: done
-  1-15-email-queue-infrastructure: ready-for-dev
+  1-15-email-queue-infrastructure: done
   epic-1-retrospective: optional
   epic-2: backlog
   2-1-user-registration: backlog

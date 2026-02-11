@@ -1,6 +1,7 @@
 const adminController = require('../../src/controllers/adminController');
 const backupLogService = require('../../src/services/backupLogService');
 const auditService = require('../../src/services/auditService');
+const emailQueueService = require('../../src/services/emailQueueService');
 
 jest.mock('../../src/services/backupLogService', () => ({
     getLastSuccessfulBackup: jest.fn(),
@@ -10,6 +11,11 @@ jest.mock('../../src/services/backupLogService', () => ({
 jest.mock('../../src/services/auditService', () => ({
     queryLogs: jest.fn(),
     AUDIT_ACTIONS: {}
+}));
+
+jest.mock('../../src/services/emailQueueService', () => ({
+    getQueueStats: jest.fn(),
+    retryFailedJob: jest.fn()
 }));
 
 describe('Admin Controller - Backup Status', () => {
@@ -37,6 +43,7 @@ describe('Admin Controller - Backup Status', () => {
             message: 'Done',
             size_bytes: 1024
         });
+        emailQueueService.getQueueStats.mockResolvedValue({ counts: {}, failed: [] });
 
         await adminController.getDashboard(req, res);
 
@@ -54,6 +61,7 @@ describe('Admin Controller - Backup Status', () => {
     test('should handle missing log file', async () => {
         backupLogService.getLastSuccessfulBackup.mockResolvedValue(null);
         backupLogService.getLastBackupAttempt.mockResolvedValue(null);
+        emailQueueService.getQueueStats.mockResolvedValue({ counts: {}, failed: [] });
 
         await adminController.getDashboard(req, res);
 
@@ -72,6 +80,7 @@ describe('Admin Controller - Backup Status', () => {
             status: 'ERROR',
             message: 'Corrupt log'
         });
+        emailQueueService.getQueueStats.mockResolvedValue({ counts: {}, failed: [] });
 
         await adminController.getDashboard(req, res);
 
@@ -86,6 +95,7 @@ describe('Admin Controller - Backup Status', () => {
     test('should handle dashboard errors', async () => {
         backupLogService.getLastSuccessfulBackup.mockRejectedValue(new Error('Read error'));
         backupLogService.getLastBackupAttempt.mockRejectedValue(new Error('Read error'));
+        emailQueueService.getQueueStats.mockResolvedValue({ counts: {}, failed: [] });
 
         await adminController.getDashboard(req, res);
 
@@ -106,5 +116,37 @@ describe('Admin Controller - Backup Status', () => {
 
         expect(auditRes.status).toHaveBeenCalledWith(500);
         expect(auditRes.render).toHaveBeenCalledWith('error', expect.any(Object));
+    });
+
+    test('should retry email job and redirect', async () => {
+        const retryReq = { params: { id: 'job-1' } };
+        const retryRes = {
+            redirect: jest.fn(),
+            status: jest.fn().mockReturnThis(),
+            render: jest.fn()
+        };
+
+        emailQueueService.retryFailedJob.mockResolvedValue(true);
+
+        await adminController.retryEmailJob(retryReq, retryRes);
+
+        expect(emailQueueService.retryFailedJob).toHaveBeenCalledWith('job-1');
+        expect(retryRes.redirect).toHaveBeenCalledWith('/admin');
+    });
+
+    test('should return 404 when email job not found', async () => {
+        const retryReq = { params: { id: 'missing' } };
+        const retryRes = {
+            redirect: jest.fn(),
+            status: jest.fn().mockReturnThis(),
+            render: jest.fn()
+        };
+
+        emailQueueService.retryFailedJob.mockResolvedValue(false);
+
+        await adminController.retryEmailJob(retryReq, retryRes);
+
+        expect(retryRes.status).toHaveBeenCalledWith(404);
+        expect(retryRes.render).toHaveBeenCalledWith('error', { error: 'Email job not found' });
     });
 });

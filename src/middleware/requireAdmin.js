@@ -21,8 +21,9 @@ const requireAdmin = (req, res, next) => {
     return next();
   }
 
-  if (!req.user) {
-    req.user = { id: 'admin-001', role: 'admin', name: 'Ilya' };
+  // In test environment, allow simulated admin if not set
+  if (process.env.NODE_ENV === 'test' && !req.user) {
+    req.user = { id: 'admin-001', role: 'admin', name: 'Test Admin' };
   }
 
   if (!isAdminRole(req.user)) {

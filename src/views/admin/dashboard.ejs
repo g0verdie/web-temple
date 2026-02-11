@@ -36,5 +36,65 @@
                 </div>
             </div>
         </div>
+
+        <!-- Email Queue Status Card -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Email Queue</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <p class="mb-1"><strong>Waiting:</strong> <%= emailQueue?.counts?.waiting ?? 0 %></p>
+                            <p class="mb-1"><strong>Active:</strong> <%= emailQueue?.counts?.active ?? 0 %></p>
+                            <p class="mb-1"><strong>Delayed:</strong> <%= emailQueue?.counts?.delayed ?? 0 %></p>
+                        </div>
+                        <div class="col-6">
+                            <p class="mb-1"><strong>Failed:</strong> <%= emailQueue?.counts?.failed ?? 0 %></p>
+                            <p class="mb-1"><strong>Completed:</strong> <%= emailQueue?.counts?.completed ?? 0 %></p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <% if (emailQueue?.failed?.length) { %>
+                        <h6>Failed Jobs</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Recipient</th>
+                                        <th>Attempts</th>
+                                        <th>Reason</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% emailQueue.failed.forEach(job => { %>
+                                        <tr>
+                                            <td><%= job.id %></td>
+                                            <td><%= job.data?.to || 'N/A' %></td>
+                                            <td><%= job.attemptsMade %></td>
+                                            <td><%= job.failedReason || 'Unknown' %></td>
+                                            <td>
+                                                <form method="POST" action="/admin/email-queue/<%= job.id %>/retry">
+                                                    <button class="btn btn-sm btn-warning" type="submit">Retry</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    <% }) %>
+                                </tbody>
+                            </table>
+                        </div>
+                    <% } else { %>
+                        <div class="alert alert-success mb-0">
+                            No failed email jobs.
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
     </div>
 </div>

@@ -1,5 +1,6 @@
 const backupLogService = require('../services/backupLogService');
 const auditService = require('../services/auditService');
+const emailQueueService = require('../services/emailQueueService');
 
 exports.getAuditLogs = async (req, res) => {
     try {
@@ -45,17 +46,35 @@ exports.getDashboard = async (req, res) => {
     try {
         const lastBackup = await backupLogService.getLastSuccessfulBackup();
         const latestAttempt = await backupLogService.getLastBackupAttempt();
+        const emailQueue = await emailQueueService.getQueueStats();
 
         res.render('layout', {
             title: 'Admin Dashboard',
             bodyView: 'admin/dashboard',
             viewData: {
                 lastBackup,
-                latestAttempt
+                latestAttempt,
+                emailQueue
             }
         });
     } catch (error) {
         console.error('Error loading dashboard:', error);
+        res.status(500).render('error', { error });
+    }
+};
+
+exports.retryEmailJob = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const success = await emailQueueService.retryFailedJob(id);
+
+        if (!success) {
+            return res.status(404).render('error', { error: 'Email job not found' });
+        }
+
+        return res.redirect('/admin');
+    } catch (error) {
+        console.error('Error retrying email job:', error);
         res.status(500).render('error', { error });
     }
 };
