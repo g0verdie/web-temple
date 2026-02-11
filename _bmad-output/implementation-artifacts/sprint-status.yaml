@@ -51,7 +51,7 @@ development_status:
   1-8-audit-logging-infrastructure: done
   1-9-local-logging-and-monitoring: done
   1-10-operational-documentation-and-runbook: in-progress
-  1-11-wcag-compliance-validation: ready-for-dev
+  1-11-wcag-compliance-validation: done
   1-12-performance-benchmarking: ready-for-dev
   1-13-redis-caching-infrastructure: ready-for-dev
   1-14-automated-test-infrastructure: ready-for-dev

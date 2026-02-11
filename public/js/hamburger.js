@@ -9,12 +9,12 @@ class HamburgerMenu {
     this.btn = document.querySelector('.hamburger-btn');
     this.menu = document.querySelector('.nav-menu');
     this.menuLinks = Array.from(this.menu?.querySelectorAll('a') || []);
-    
+
     if (!this.btn || !this.menu) {
       console.warn('Hamburger menu elements not found');
       return;
     }
-    
+
     this.isOpen = false;
     this.init();
   }
@@ -22,16 +22,16 @@ class HamburgerMenu {
   init() {
     // Bind button click
     this.btn.addEventListener('click', () => this.toggle());
-    
+
     // Handle keyboard navigation
     this.btn.addEventListener('keydown', (e) => this.handleButtonKeydown(e));
     this.menu.addEventListener('keydown', (e) => this.handleMenuKeydown(e));
-    
+
     // Close menu when clicking on a link
     this.menuLinks.forEach(link => {
       link.addEventListener('click', () => this.close());
     });
-    
+
     // Close menu on Escape anywhere
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && this.isOpen) {
@@ -39,16 +39,16 @@ class HamburgerMenu {
         this.btn.focus();
       }
     });
-    
+
     // Close menu when clicking outside
     document.addEventListener('click', (e) => {
-      if (this.isOpen && 
-          !e.target.closest('.nav-container') && 
-          !e.target.closest('.nav-menu')) {
+      if (this.isOpen &&
+        !e.target.closest('.nav-container') &&
+        !e.target.closest('.nav-menu')) {
         this.close();
       }
     });
-    
+
     // Handle window resize - close menu on desktop view
     window.addEventListener('resize', () => {
       if (window.innerWidth >= 768 && this.isOpen) {
@@ -69,7 +69,7 @@ class HamburgerMenu {
     this.isOpen = true;
     this.menu.classList.add('active');
     this.btn.setAttribute('aria-expanded', 'true');
-    
+
     // Move focus to first menu link
     if (this.menuLinks.length > 0) {
       // Use setTimeout to ensure DOM is updated
@@ -89,7 +89,7 @@ class HamburgerMenu {
       e.preventDefault();
       this.open();
     }
-    
+
     // Tab to next focusable element (menu will handle it)
     if (e.key === 'Tab' && this.isOpen) {
       const lastLink = this.menuLinks[this.menuLinks.length - 1];
@@ -108,11 +108,11 @@ class HamburgerMenu {
       this.btn.focus();
       return;
     }
-    
+
     // Tab key navigation within menu
     if (e.key === 'Tab') {
       const currentIndex = this.menuLinks.indexOf(document.activeElement);
-      
+
       // Tab on last item closes menu
       if (currentIndex === this.menuLinks.length - 1) {
         this.close();
@@ -125,29 +125,31 @@ class HamburgerMenu {
         this.btn.focus();
       }
     }
-    
+
     // Arrow down moves to next menu item
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       const currentIndex = this.menuLinks.indexOf(document.activeElement);
-      const nextIndex = Math.min(currentIndex + 1, this.menuLinks.length - 1);
+      // Loop to first item if at end
+      const nextIndex = currentIndex === this.menuLinks.length - 1 ? 0 : currentIndex + 1;
       this.menuLinks[nextIndex].focus();
     }
-    
+
     // Arrow up moves to previous menu item
     if (e.key === 'ArrowUp') {
       e.preventDefault();
       const currentIndex = this.menuLinks.indexOf(document.activeElement);
-      const prevIndex = Math.max(currentIndex - 1, 0);
+      // Loop to last item if at start
+      const prevIndex = currentIndex === 0 ? this.menuLinks.length - 1 : currentIndex - 1;
       this.menuLinks[prevIndex].focus();
     }
-    
+
     // Home goes to first menu item
     if (e.key === 'Home') {
       e.preventDefault();
       this.menuLinks[0].focus();
     }
-    
+
     // End goes to last menu item
     if (e.key === 'End') {
       e.preventDefault();

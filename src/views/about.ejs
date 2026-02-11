@@ -12,7 +12,7 @@
     <div class="container about-content__wrapper">
       <article class="about-content__main">
         <h2 id="content-heading" class="sr-only">Temple Information</h2>
-        
+
         <!-- Rich Text Content from CMS -->
         <div class="prose prose--rich-text">
           <%- page.content %>
@@ -23,7 +23,7 @@
           <div class="alert alert-warning" role="status" aria-live="polite">
             <strong>Draft:</strong> This page is not yet published and is visible only to administrators.
           </div>
-        <% } %>
+          <% } %>
       </article>
 
       <!-- Sidebar (optional) -->
@@ -33,8 +33,9 @@
           <ul class="about-sidebar__list">
             <li><a href="/" class="about-sidebar__link">Home</a></li>
             <li><a href="/contact" class="about-sidebar__link">Contact Us</a></li>
-            <li><a href="/services" class="about-sidebar__link">Services & Events</a></li>
-            <li><a href="/donations" class="about-sidebar__link">Support Us</a></li>
+            <li><span class="about-sidebar__link disabled" aria-disabled="true">Services & Events (Coming Soon)</span>
+            </li>
+            <li><span class="about-sidebar__link disabled" aria-disabled="true">Support Us (Coming Soon)</span></li>
           </ul>
         </nav>
 

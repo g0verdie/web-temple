@@ -12,19 +12,64 @@ const app = require('../../src/server');
 
 expect.extend(toHaveNoViolations);
 
-describe('Contact page accessibility', () => {
-  it('should have no axe violations on render', async () => {
+describe('Contact page accessibility (WCAG AA)', () => {
+  let dom, document, html;
+
+  beforeAll(async () => {
     const res = await request(app).get('/contact');
-    const dom = new JSDOM(res.text);
+    html = res.text;
+    dom = new JSDOM(html);
     global.window = dom.window;
     global.document = dom.window.document;
+    document = dom.window.document;
+  });
 
-    const results = await axe(document.body, {
-      rules: {
-        'color-contrast': { enabled: false }
+  it('should have no WCAG AA violations', async () => {
+    const results = await axe(html, {
+      runOnly: {
+        type: 'tag',
+        values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
       }
     });
 
     expect(results).toHaveNoViolations();
+  });
+
+  it('should have proper document structure with main landmark', () => {
+    const main = document.querySelector('main');
+    expect(main).toBeTruthy();
+  });
+
+  it('should have skip-to-main-content link', () => {
+    const skipLink = document.querySelector('a[href="#main-content"]');
+    expect(skipLink).toBeTruthy();
+  });
+
+  it('should have all form inputs with proper labels', () => {
+    const inputs = document.querySelectorAll('input:not([type="hidden"]), select, textarea');
+    inputs.forEach(input => {
+      const id = input.id;
+      if (id) {
+        const label = document.querySelector(`label[for="${id}"]`);
+        const ariaLabel = input.getAttribute('aria-label');
+        const ariaLabelledBy = input.getAttribute('aria-labelledby');
+        
+        expect(
+          label || ariaLabel || ariaLabelledBy
+        ).toBeTruthy();
+      }
+    });
+  });
+
+  it('should have all images with alt attributes', () => {
+    const images = document.querySelectorAll('img');
+    images.forEach(img => {
+      expect(img.hasAttribute('alt')).toBe(true);
+    });
+  });
+
+  it('should have language attribute on html element', () => {
+    const html = document.querySelector('html');
+    expect(html.hasAttribute('lang')).toBe(true);
   });
 });
