@@ -405,10 +405,6 @@ footer {
 
 /* Tablet (768px+) - Show desktop menu, hide hamburger */
 @media (min-width: 768px) {
-  .hamburger-btn {
-    display: none;
-  }
-  
   .nav-menu {
     display: flex !important;
     position: static;
