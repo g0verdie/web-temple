@@ -2,10 +2,30 @@
 set -e
 set -o pipefail
 
+# Load .env configuration
+if [ -f "/opt/temple/.env" ]; then
+    export $(grep -v '^#' /opt/temple/.env | xargs)
+elif [ -f "$(dirname "$0")/../.env" ]; then
+    export $(grep -v '^#' "$(dirname "$0")/../.env" | xargs)
+fi
+
+# Export PGPASSWORD for pg_dump authentication
+export PGPASSWORD="${DB_PASSWORD}"
+
 # Configuration - Absolute paths for cron
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/temple}"
-LOG_FILE="${LOG_FILE:-/var/log/temple/backups.log}"
+
+# Determine log location
+if [ -w "/var/log" ]; then
+    DEFAULT_LOG_FILE="/var/log/temple/backups.log"
+else
+    # Fallback to local logs directory for non-root execution
+    DEFAULT_LOG_FILE="./logs/backups.log"
+fi
+LOG_FILE="${LOG_FILE:-$DEFAULT_LOG_FILE}"
+
 BACKUP_DB="${BACKUP_DB:-${DB_NAME:-web_temple}}"
+BACKUP_USER="${BACKUP_USER:-${DB_USER:-temple_user}}"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_FILE="$BACKUP_DIR/db_backup_$TIMESTAMP.sql"
 ENCRYPTED_FILE="$BACKUP_FILE.enc"
@@ -64,7 +84,7 @@ log_event "START" "Starting backup process for $BACKUP_DB"
 echo "Creating and encrypting PostgreSQL dump for database: $BACKUP_DB..."
 
 FILE_SIZE=0
-if pg_dump -U postgres "$BACKUP_DB" | openssl enc -aes-256-cbc -salt -pbkdf2 -out "$ENCRYPTED_FILE" -pass env:BACKUP_ENCRYPTION_KEY; then
+if pg_dump -U "$BACKUP_USER" -h "${DB_HOST:-localhost}" "$BACKUP_DB" | openssl enc -aes-256-cbc -salt -pbkdf2 -out "$ENCRYPTED_FILE" -pass env:BACKUP_ENCRYPTION_KEY; then
     FILE_SIZE=$(stat -c%s "$ENCRYPTED_FILE" 2>/dev/null || stat -f%z "$ENCRYPTED_FILE")
     log_event "INFO" "Encrypted backup created successfully: $ENCRYPTED_FILE" "$FILE_SIZE"
     

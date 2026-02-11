@@ -1,6 +1,13 @@
 #!/bin/bash
 set -e
 
+# Load .env configuration
+if [ -f "/opt/temple/.env" ]; then
+    export $(grep -v '^#' /opt/temple/.env | xargs)
+elif [ -f "$(dirname "$0")/../.env" ]; then
+    export $(grep -v '^#' "$(dirname "$0")/../.env" | xargs)
+fi
+
 # Configuration
 TEST_DB_CONTAINER="temple_restore_test"
 TEST_DB_NAME="web_temple_test"

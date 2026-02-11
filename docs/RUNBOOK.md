@@ -467,6 +467,11 @@ erDiagram
    - Email: president@temple-domain.com
    - Phone: [UPDATE WITH ACTUAL PHONE NUMBER]
 
+> [!CRITICAL]
+> **ACTION REQUIRED BEFORE DEPLOYMENT**
+> You MUST update the phone numbers below with actual emergency contact information.
+> Failure to do so puts the organization at risk during critical outages.
+
 **⚠️ ACTION REQUIRED:** Update phone numbers above with actual emergency contacts before deploying to production.
 
 ### 8.2 External Service Contacts
