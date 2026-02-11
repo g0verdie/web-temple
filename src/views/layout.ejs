@@ -8,9 +8,8 @@
   <title>
     <%= title %>
   </title>
-  <!-- Main CSS - Async loaded with fallback for no-JS -->
-  <link rel="stylesheet" href="/css/main.css" media="print" onload="this.media='all'; this.onload=null;">
-  <noscript><link rel="stylesheet" href="/css/main.css"></noscript>
+  <!-- Main CSS -->
+  <link rel="stylesheet" href="/css/main.css">
 </head>
 
 <body>
@@ -25,11 +24,12 @@
           <span></span>
           <span></span>
         </button>
+        <% const activePath = (typeof currentPath !== 'undefined' ? currentPath : ''); %>
         <ul class="nav-menu" id="nav-menu">
-          <li><a href="/" aria-current="page">Home</a></li>
+          <li><a href="/" <%= activePath === '/' ? 'aria-current="page"' : '' %>>Home</a></li>
           <li><span class="nav-link disabled" aria-disabled="true" title="Coming Soon">Calendar</span></li>
-          <li><a href="/about">About</a></li>
-          <li><a href="/contact">Contact</a></li>
+          <li><a href="/about" <%= activePath === '/about' ? 'aria-current="page"' : '' %>>About</a></li>
+          <li><a href="/contact" <%= activePath === '/contact' ? 'aria-current="page"' : '' %>>Contact</a></li>
         </ul>
       </div>
     </nav>
