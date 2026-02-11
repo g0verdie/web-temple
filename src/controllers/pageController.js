@@ -6,6 +6,7 @@
 
 const db = require('../config/db');
 const { sanitizeHtml } = require('../utils/sanitizeHtml');
+const CacheService = require('../services/CacheService');
 
 /**
  * Retrieve a published page by slug
@@ -14,6 +15,14 @@ const { sanitizeHtml } = require('../utils/sanitizeHtml');
  */
 async function getPublishedPage(slug) {
   try {
+    // Check cache first (10 minute TTL for static content)
+    const cacheKey = `page:${slug}`;
+    const cached = await CacheService.get(cacheKey);
+    
+    if (cached) {
+      return cached;
+    }
+
     const query = `
       SELECT id, slug, title, content, published, updated_at
       FROM static_pages
@@ -25,7 +34,12 @@ async function getPublishedPage(slug) {
       return null;
     }
 
-    return result.rows[0];
+    const page = result.rows[0];
+    
+    // Cache for 10 minutes (600 seconds)
+    await CacheService.set(cacheKey, page, 600);
+
+    return page;
   } catch (error) {
     console.error(`Error retrieving page ${slug}:`, error);
     throw error;
@@ -136,6 +150,10 @@ async function updatePage(slug, pageData, userId) {
     await client.query(pruneQuery, [page.id]);
 
     await client.query('COMMIT');
+    
+    // Invalidate cache after successful update
+    await CacheService.del(`page:${slug}`);
+    
     return updateResult.rows[0];
   } catch (error) {
     await client.query('ROLLBACK');
@@ -171,6 +189,9 @@ async function publishPage(slug, published, userId) {
     if (result.rows.length === 0) {
       throw new Error(`Page not found: ${slug}`);
     }
+
+    // Invalidate cache when publishing/unpublishing
+    await CacheService.del(`page:${slug}`);
 
     return result.rows[0];
   } catch (error) {

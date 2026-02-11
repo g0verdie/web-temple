@@ -53,7 +53,7 @@ development_status:
   1-10-operational-documentation-and-runbook: in-progress
   1-11-wcag-compliance-validation: done
   1-12-performance-benchmarking: done
-  1-13-redis-caching-infrastructure: ready-for-dev
+  1-13-redis-caching-infrastructure: done
   1-14-automated-test-infrastructure: ready-for-dev
   1-15-email-queue-infrastructure: ready-for-dev
   epic-1-retrospective: optional
