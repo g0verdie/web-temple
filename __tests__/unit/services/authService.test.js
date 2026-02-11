@@ -1,7 +1,8 @@
-const { registerUser, authenticateUser, changePassword } = require('../../src/services/authService');
-const db = require('../../src/config/db');
+const { registerUser, authenticateUser, changePassword, requestPasswordReset } = require('../../../src/services/authService');
+const db = require('../../../src/config/db');
 
-jest.mock('../../src/config/db', () => {
+jest.mock('../../../src/config/db', () => {
+
     let users = [];
     let idCounter = 1;
 
@@ -93,7 +94,7 @@ jest.mock('../../src/config/db', () => {
     };
 });
 
-describe('Integration: Authentication Service', () => {
+describe('Unit: Authentication Service', () => {
     beforeEach(() => {
         if (typeof db.__reset === 'function') {
             db.__reset();
@@ -282,6 +283,36 @@ describe('Integration: Authentication Service', () => {
                     ip_address: '127.0.0.1',
                 })
             ).rejects.toThrow('New password cannot be the same as current password');
+        });
+    });
+
+    describe('Password Reset Requests', () => {
+        it('should return success message even if email does not exist', async () => {
+            const response = await requestPasswordReset({
+                email: 'missing-user@example.com',
+                ip_address: '127.0.0.1'
+            });
+
+            expect(response).toEqual({
+                message: 'If an account exists with this email, a reset link will be sent'
+            });
+        });
+
+        it('should create a reset token for existing users', async () => {
+            await registerUser({
+                email: 'test-auth-reset@example.com',
+                password: 'ValidPassword123!',
+                ip_address: '127.0.0.1'
+            });
+
+            const response = await requestPasswordReset({
+                email: 'test-auth-reset@example.com',
+                ip_address: '127.0.0.1'
+            });
+
+            expect(response).toEqual({
+                message: 'If an account exists with this email, a reset link will be sent'
+            });
         });
     });
 });

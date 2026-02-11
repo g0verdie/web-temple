@@ -5,6 +5,11 @@ const path = require('path');
 const requireAdmin = require('../middleware/requireAdmin');
 const backupLogService = require('../services/backupLogService');
 const auditService = require('../services/auditService');
+const donationController = require('../controllers/donationController');
+
+// POST /api/donations
+router.post('/donations', donationController.createDonation);
+
 
 // GET /api/admin/backups/status
 router.get('/admin/backups/status', requireAdmin, async (req, res) => {

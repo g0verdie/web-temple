@@ -54,7 +54,7 @@ development_status:
   1-11-wcag-compliance-validation: done
   1-12-performance-benchmarking: done
   1-13-redis-caching-infrastructure: done
-  1-14-automated-test-infrastructure: ready-for-dev
+  1-14-automated-test-infrastructure: done
   1-15-email-queue-infrastructure: ready-for-dev
   epic-1-retrospective: optional
   epic-2: backlog

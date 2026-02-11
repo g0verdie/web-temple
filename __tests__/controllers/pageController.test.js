@@ -5,6 +5,7 @@
 
 const pageController = require('../../src/controllers/pageController');
 const db = require('../../src/config/db');
+const redis = require('../../src/config/redis');
 
 // Mock the db module
 jest.mock('../../src/config/db', () => {
@@ -23,10 +24,15 @@ describe('Page Controller', () => {
     release: jest.fn(),
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
+    db.query.mockReset();
+    db.query.mockResolvedValue({ rows: [] });
     db.pool.connect.mockResolvedValue(mockClient);
     mockClient.query.mockResolvedValue({ rows: [] });
+    if (typeof redis.flushall === 'function') {
+      await redis.flushall();
+    }
   });
 
   describe('getPublishedPage', () => {
