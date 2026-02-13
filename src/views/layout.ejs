@@ -5,11 +5,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="<%= title %> - A warm, inclusive Jewish community in Hattiesburg, MS">
-  <title>
-    <%= title %>
-  </title>
-  <!-- Main CSS -->
-  <link rel="stylesheet" href="/css/main.css">
+  <% if (typeof csrfToken !=='undefined' ) { %>
+    <meta name="csrf-token" content="<%= csrfToken %>">
+    <% } %>
+      <title>
+        <%= title %>
+      </title>
+      <!-- Main CSS -->
+      <link rel="stylesheet" href="/css/main.css">
+      <% if (typeof stylesheets !=='undefined' && stylesheets.length) { %>
+        <% stylesheets.forEach((stylesheet)=> { %>
+          <link rel="stylesheet" href="<%= stylesheet %>">
+          <% }) %>
+            <% } %>
 </head>
 
 <body>
@@ -24,13 +32,13 @@
           <span></span>
           <span></span>
         </button>
-        <% const activePath = (typeof currentPath !== 'undefined' ? currentPath : ''); %>
-        <ul class="nav-menu" id="nav-menu">
-          <li><a href="/" <%= activePath === '/' ? 'aria-current="page"' : '' %>>Home</a></li>
-          <li><span class="nav-link disabled" aria-disabled="true" title="Coming Soon">Calendar</span></li>
-          <li><a href="/about" <%= activePath === '/about' ? 'aria-current="page"' : '' %>>About</a></li>
-          <li><a href="/contact" <%= activePath === '/contact' ? 'aria-current="page"' : '' %>>Contact</a></li>
-        </ul>
+        <% const activePath=(typeof currentPath !=='undefined' ? currentPath : '' ); %>
+          <ul class="nav-menu" id="nav-menu">
+            <li><a href="/" <%=activePath==='/' ? 'aria-current="page"' : '' %>>Home</a></li>
+            <li><span class="nav-link disabled" aria-disabled="true" title="Coming Soon">Calendar</span></li>
+            <li><a href="/about" <%=activePath==='/about' ? 'aria-current="page"' : '' %>>About</a></li>
+            <li><a href="/contact" <%=activePath==='/contact' ? 'aria-current="page"' : '' %>>Contact</a></li>
+          </ul>
       </div>
     </nav>
   </header>

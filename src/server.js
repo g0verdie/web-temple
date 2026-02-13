@@ -9,6 +9,9 @@ const metricsService = require('./services/metricsService');
 const requestIdMiddleware = require('./middleware/requestIdMiddleware');
 const { startEmailQueueWorker } = require('./workers/emailQueueWorker');
 
+const cookieParser = require('cookie-parser');
+const csurf = require('csurf');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || 'localhost';
@@ -63,7 +66,7 @@ app.use(helmet({
 // Request logging with Morgan and Winston - includes response time and request ID
 // Format: REQUEST_ID METHOD URL STATUS RESPONSE_TIME
 const morganFormat = ':req[x-request-id] :method :url :status :response-time ms';
-app.use(morgan(morganFormat, { 
+app.use(morgan(morganFormat, {
   stream: logger.stream,
   skip: (req) => process.env.NODE_ENV === 'test'
 }));
@@ -94,6 +97,33 @@ app.locals.formatEventDate = (date) => {
 // Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// CSRF Protection
+const csrfProtection = csurf({
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  }
+});
+
+// Apply CSRF protection to all routes that handle form submissions or state changes
+// For simplicity, we can apply globally, but need to handle API clients if any.
+// Since this is a browser-based app with cookie auth, strict CSRF is appropriate.
+// Skip CSRF in test environment to simplify integration testing
+const conditionalCsrf = (req, res, next) => {
+  if (process.env.NODE_ENV === 'test') return next();
+  csrfProtection(req, res, next);
+};
+
+app.use(conditionalCsrf);
+
+// Middleware to make csrfToken available to views
+app.use((req, res, next) => {
+  res.locals.csrfToken = req.csrfToken();
+  next();
+});
 
 // Expose current path for active nav highlighting
 app.use((req, res, next) => {
@@ -107,11 +137,13 @@ const aboutRoutes = require('./routes/about');
 const contactRoutes = require('./routes/contact');
 const adminPagesRoutes = require('./routes/admin/pages');
 const adminDashboardRoutes = require('./routes/admin/dashboard');
+const pagesRoutes = require('./routes/pages');
 const apiRoutes = require('./routes/api');
 
 app.use('/', homeRoutes);
 app.use('/about', aboutRoutes);
 app.use('/contact', contactRoutes);
+app.use('/', pagesRoutes);
 app.use('/admin', adminDashboardRoutes);
 app.use('/admin/pages', adminPagesRoutes);
 app.use('/api', apiRoutes);
@@ -124,6 +156,14 @@ app.use((req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
+  // Handle CSRF token errors
+  if (err.code === 'EBADCSRFTOKEN') {
+    return res.status(403).json({
+      success: false,
+      message: 'Invalid CSRF token. Please refresh the page and try again.'
+    });
+  }
+
   logger.error(`${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`, { stack: err.stack });
   res.status(500).render('error', {
     title: '500 - Server Error',

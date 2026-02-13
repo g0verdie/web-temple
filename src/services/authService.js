@@ -20,14 +20,24 @@ const { logAudit, AUDIT_ACTIONS } = require('./auditService');
  */
 const registerUser = async (userData) => {
     const { email, password, first_name, last_name, ip_address } = userData;
+    const validator = require('validator');
 
     // Validate input
     if (!email || !password) {
         throw new Error('Email and password are required');
     }
 
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{12,}$/;
-    if (!passwordRegex.test(password)) {
+    if (!validator.isEmail(email)) {
+        throw new Error('Valid email is required');
+    }
+
+    if (!validator.isStrongPassword(password, {
+        minLength: 12,
+        minLowercase: 1,
+        minUppercase: 1,
+        minNumbers: 1,
+        minSymbols: 1
+    })) {
         throw new Error('Password must be at least 12 characters and include uppercase, lowercase, number, and symbol');
     }
 
@@ -150,8 +160,14 @@ const changePassword = async (options) => {
         throw new Error('User ID, current password, and new password are required');
     }
 
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{12,}$/;
-    if (!passwordRegex.test(new_password)) {
+    const validator = require('validator');
+    if (!validator.isStrongPassword(new_password, {
+        minLength: 12,
+        minLowercase: 1,
+        minUppercase: 1,
+        minNumbers: 1,
+        minSymbols: 1
+    })) {
         throw new Error('New password must be at least 12 characters and include uppercase, lowercase, number, and symbol');
     }
 
