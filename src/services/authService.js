@@ -2,6 +2,8 @@ const db = require('../config/db');
 const { hashPassword, comparePassword } = require('../utils/authHelper');
 const { logAudit, AUDIT_ACTIONS } = require('./auditService');
 
+const LOCKOUT_DURATION_MINUTES = 15;
+
 /**
  * Authentication service
  * Handles user registration, login, and password management
@@ -95,7 +97,7 @@ const authenticateUser = async (credentials) => {
 
     // Find user by email
     const result = await db.query(
-        'SELECT id, email, password_hash, role, first_name, last_name FROM users WHERE email = $1',
+        'SELECT id, email, password_hash, role, first_name, last_name, failed_login_attempts, lockout_until FROM users WHERE email = $1',
         [email]
     );
 
@@ -111,10 +113,49 @@ const authenticateUser = async (credentials) => {
 
     const user = result.rows[0];
 
+    // Check if account is locked
+    if (user.lockout_until && new Date(user.lockout_until) > new Date()) {
+        const lockoutTime = new Date(user.lockout_until);
+        const now = new Date();
+        const minutesRemaining = Math.ceil((lockoutTime - now) / (1000 * 60));
+        const resetTime = lockoutTime.toLocaleTimeString();
+
+        logAudit({
+            user_id: user.id,
+            action: AUDIT_ACTIONS.USER_LOGIN,
+            description: `Locked account login attempt: ${email} (locked for ${minutesRemaining} more minutes)`,
+            ip_address,
+        }).catch(err => console.error('Audit log error:', err));
+
+        throw new Error(`Account is temporarily locked. Please try again in ${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''} (until ${resetTime}).`);
+    }
+
     // Compare password with stored hash using Bcrypt
     const passwordMatch = await comparePassword(password, user.password_hash);
 
     if (!passwordMatch) {
+        // Increment failed attempts
+        const newFailedAttempts = (user.failed_login_attempts || 0) + 1;
+        let updateQuery = 'UPDATE users SET failed_login_attempts = $1, updated_at = NOW()';
+        const queryParams = [newFailedAttempts];
+
+        // Lock account if 5th failure
+        if (newFailedAttempts >= 5) {
+            updateQuery += `, lockout_until = NOW() + INTERVAL '${LOCKOUT_DURATION_MINUTES} minutes'`;
+
+            logAudit({
+                user_id: user.id,
+                action: AUDIT_ACTIONS.USER_LOGIN,
+                description: `Account locked after 5 failed attempts: ${email}`,
+                ip_address,
+            }).catch(err => console.error('Audit log error:', err));
+        }
+
+        updateQuery += ' WHERE id = $' + (queryParams.length + 1);
+        queryParams.push(user.id);
+
+        await db.query(updateQuery, queryParams);
+
         // Log failed login attempt
         logAudit({
             user_id: user.id,
@@ -124,6 +165,12 @@ const authenticateUser = async (credentials) => {
         }).catch(err => console.error('Audit log error:', err));
         throw new Error('Invalid email or password');
     }
+
+    // Reset failed attempts and update last login time
+    await db.query(
+        'UPDATE users SET failed_login_attempts = 0, lockout_until = NULL, last_login_at = NOW(), updated_at = NOW() WHERE id = $1',
+        [user.id]
+    );
 
     // Log successful login
     logAudit({

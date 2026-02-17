@@ -121,7 +121,7 @@ app.use(conditionalCsrf);
 
 // Middleware to make csrfToken available to views
 app.use((req, res, next) => {
-  res.locals.csrfToken = req.csrfToken();
+  res.locals.csrfToken = typeof req.csrfToken === 'function' ? req.csrfToken() : null;
   next();
 });
 

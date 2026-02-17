@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, logout } = require('../controllers/authController');
+const { register, login, logout, requestPasswordReset } = require('../controllers/authController');
 
 const rateLimit = require('express-rate-limit');
 
@@ -30,5 +30,11 @@ router.post('/login', authLimiter, login);
  * Logout the current user
  */
 router.post('/logout', logout);
+
+/**
+ * POST /api/auth/password-reset-request
+ * Request a password reset email
+ */
+router.post('/password-reset-request', authLimiter, requestPasswordReset);
 
 module.exports = router;

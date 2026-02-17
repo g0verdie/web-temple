@@ -166,6 +166,13 @@ const login = async (req, res) => {
     } catch (error) {
         console.error('Login error:', error);
 
+        if (error.message.includes('Account is temporarily locked')) {
+            return res.status(403).json({
+                success: false,
+                message: error.message
+            });
+        }
+
         res.status(401).json({
             success: false,
             message: 'Invalid email or password'
@@ -185,8 +192,47 @@ const logout = (req, res) => {
     });
 };
 
+/**
+ * Request password reset
+ * POST /api/auth/password-reset-request
+ */
+const requestPasswordReset = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email is required'
+            });
+        }
+
+        // Use authService to process password reset request
+        const { requestPasswordReset: requestResetService } = require('../services/authService');
+        
+        const result = await requestResetService({
+            email,
+            ip_address: req.ip || req.connection.remoteAddress
+        });
+
+        // Always return success message (security: don't reveal if email exists)
+        res.json({
+            success: true,
+            message: result.message
+        });
+
+    } catch (error) {
+        console.error('Password reset request error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred. Please try again later.'
+        });
+    }
+};
+
 module.exports = {
     register,
     login,
-    logout
+    logout,
+    requestPasswordReset
 };
