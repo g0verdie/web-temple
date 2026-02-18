@@ -1,6 +1,7 @@
-const { registerUser, authenticateUser } = require('../services/authService');
+const { registerUser, authenticateUser, requestPasswordReset: requestResetService, resetPassword: resetPasswordService } = require('../services/authService');
 const { enqueueEmail } = require('../services/emailQueueService');
 const { renderTemplate } = require('../services/emailTemplateService');
+const { logAudit, AUDIT_ACTIONS } = require('../services/auditService');
 const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'test' ? 'test-jwt-secret' : null);
@@ -40,7 +41,8 @@ const register = async (req, res) => {
             {
                 user_id: user.id,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                token_version: user.token_version
             },
             JWT_SECRET,
             { expiresIn: JWT_EXPIRES_IN }
@@ -101,7 +103,6 @@ const register = async (req, res) => {
             });
         }
 
-        const { logAudit, AUDIT_ACTIONS } = require('../services/auditService');
         // Log failed registration attempt
         logAudit({
             action: AUDIT_ACTIONS.USER_REGISTERED, // Using USER_REGISTERED with error description to denote failure attempt? Or create new action type. 
@@ -137,7 +138,8 @@ const login = async (req, res) => {
             {
                 user_id: user.id,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                token_version: user.token_version
             },
             JWT_SECRET,
             { expiresIn: JWT_EXPIRES_IN }
@@ -208,8 +210,6 @@ const requestPasswordReset = async (req, res) => {
         }
 
         // Use authService to process password reset request
-        const { requestPasswordReset: requestResetService } = require('../services/authService');
-        
         const result = await requestResetService({
             email,
             ip_address: req.ip || req.connection.remoteAddress
@@ -230,9 +230,54 @@ const requestPasswordReset = async (req, res) => {
     }
 };
 
+/**
+ * Reset password
+ * POST /api/auth/reset-password
+ */
+const resetPassword = async (req, res) => {
+    try {
+        const { token, new_password } = req.body;
+
+        if (!token || !new_password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Token and new password are required'
+            });
+        }
+
+        await resetPasswordService({
+            token,
+            new_password,
+            ip_address: req.ip || req.connection.remoteAddress
+        });
+
+        res.json({
+            success: true,
+            message: 'Password reset successful'
+        });
+
+    } catch (error) {
+        console.error('Password reset error:', error);
+
+        // Return 400 for known errors to help frontend
+        if (error.message.includes('Invalid') || error.message.includes('expired') || error.message.includes('Password') || error.message.includes('password')) {
+            return res.status(400).json({
+                success: false,
+                message: error.message
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred. Please try again later.'
+        });
+    }
+};
+
 module.exports = {
     register,
     login,
     logout,
-    requestPasswordReset
+    requestPasswordReset,
+    resetPassword
 };

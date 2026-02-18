@@ -60,7 +60,7 @@ const registerUser = async (userData) => {
     const result = await db.query(
         `INSERT INTO users (email, password_hash, first_name, last_name, role, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-         RETURNING id, email, first_name, last_name, role, created_at`,
+         RETURNING id, email, first_name, last_name, role, token_version, created_at`,
         [email, password_hash, first_name || null, last_name || null, 'member']
     );
 
@@ -97,7 +97,7 @@ const authenticateUser = async (credentials) => {
 
     // Find user by email
     const result = await db.query(
-        'SELECT id, email, password_hash, role, first_name, last_name, failed_login_attempts, lockout_until FROM users WHERE email = $1',
+        'SELECT id, email, password_hash, role, first_name, last_name, token_version, failed_login_attempts, lockout_until FROM users WHERE email = $1',
         [email]
     );
 
@@ -187,6 +187,7 @@ const authenticateUser = async (credentials) => {
         role: user.role,
         first_name: user.first_name,
         last_name: user.last_name,
+        token_version: user.token_version
     };
 };
 
@@ -317,10 +318,178 @@ const requestPasswordReset = async (options) => {
         ip_address,
     }).catch(err => console.error('Audit log error:', err));
 
+    // Send reset email via queue
+    const { enqueueEmail } = require('./emailQueueService');
+    const { renderTemplate } = require('./emailTemplateService');
+
+    const resetLink = `${process.env.APP_URL || 'http://localhost:3000'}/auth/reset-password?token=${resetToken}`;
+
+    const emailContent = renderTemplate('password-reset', {
+        name: user.first_name || 'Member',
+        resetLink
+    });
+
+    enqueueEmail({
+        to: email,
+        subject: emailContent.subject,
+        html: emailContent.html,
+        text: emailContent.text,
+        priority: 1 // High priority
+    }).catch(err => console.error('Failed to queue reset email:', err));
+
     return {
-        message: 'If an account exists with this email, a reset link will be sent',
-        // In production, token would be sent via email service here
+        message: 'If an account exists with this email, a reset link will be sent'
     };
+};
+
+/**
+ * Reset user password with token
+ * @param {Object} options - Reset options
+ * @param {string} options.token - Reset token
+ * @param {string} options.new_password - New password
+ * @param {string} options.ip_address - IP address
+ * @returns {Promise<Object>} Success message
+ */
+const resetPassword = async (options) => {
+    const { token, new_password, ip_address } = options;
+
+    if (!token || !new_password) {
+        throw new Error('Token and new password are required');
+    }
+
+    // Verify token
+    const tokenResult = await db.query(
+        `SELECT pr.id, pr.user_id, pr.expires_at, pr.used, pr.token, u.password_hash, u.email
+         FROM password_resets pr
+         JOIN users u ON pr.user_id = u.id
+         WHERE pr.token = $1`,
+        [token]
+    );
+
+    if (tokenResult.rows.length === 0) {
+        logAudit({
+            action: AUDIT_ACTIONS.PASSWORD_RESET,
+            description: 'Password reset failed: invalid token',
+            ip_address,
+        }).catch(err => console.error('Audit log error:', err));
+        throw new Error('Invalid or expired password reset token');
+    }
+
+    const resetRequest = tokenResult.rows[0];
+
+    // Check if used
+    if (resetRequest.used) {
+        logAudit({
+            user_id: resetRequest.user_id,
+            action: AUDIT_ACTIONS.PASSWORD_RESET,
+            description: 'Password reset failed: token already used',
+            ip_address,
+        }).catch(err => console.error('Audit log error:', err));
+        throw new Error('Invalid or expired password reset token');
+    }
+
+    // Check expiry
+    if (new Date(resetRequest.expires_at) < new Date()) {
+        logAudit({
+            user_id: resetRequest.user_id,
+            action: AUDIT_ACTIONS.PASSWORD_RESET,
+            description: 'Password reset failed: token expired',
+            ip_address,
+        }).catch(err => console.error('Audit log error:', err));
+        throw new Error('Invalid or expired password reset token');
+    }
+
+    // Validate new password strength
+    const validator = require('validator');
+    if (!validator.isStrongPassword(new_password, {
+        minLength: 12,
+        minLowercase: 1,
+        minUppercase: 1,
+        minNumbers: 1,
+        minSymbols: 1
+    })) {
+        throw new Error('Password must be at least 12 characters and include uppercase, lowercase, number, and symbol');
+    }
+
+    // Check against current password
+    if (await comparePassword(new_password, resetRequest.password_hash)) {
+        throw new Error('New password cannot be the same as your current password');
+    }
+
+    // Check password history (last 5)
+    // Note: This requires password_history table which we created in migration 007
+    const historyResult = await db.query(
+        'SELECT password_hash FROM password_history WHERE user_id = $1 ORDER BY created_at DESC LIMIT 5',
+        [resetRequest.user_id]
+    );
+
+    for (const record of historyResult.rows) {
+        if (await comparePassword(new_password, record.password_hash)) {
+            throw new Error('New password cannot be one of your last 5 passwords');
+        }
+    }
+
+    // Hash new password
+    const new_password_hash = await hashPassword(new_password);
+
+    // Perform updates in transaction
+    const client = await db.pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Archive current password
+        await client.query(
+            'INSERT INTO password_history (user_id, password_hash) VALUES ($1, $2)',
+            [resetRequest.user_id, resetRequest.password_hash]
+        );
+
+        // 2. Update user password and increment token_version (invalidating sessions)
+        await client.query(
+            'UPDATE users SET password_hash = $1, token_version = COALESCE(token_version, 0) + 1, updated_at = NOW() WHERE id = $2',
+            [new_password_hash, resetRequest.user_id]
+        );
+
+        // 3. Mark token as used
+        await client.query(
+            'UPDATE password_resets SET used = true WHERE id = $1',
+            [resetRequest.id]
+        );
+
+        await client.query('COMMIT');
+
+        // Log success
+        logAudit({
+            user_id: resetRequest.user_id,
+            action: AUDIT_ACTIONS.PASSWORD_RESET,
+            entity_type: 'user',
+            entity_id: resetRequest.user_id,
+            description: `Password reset successful for: ${resetRequest.email}`,
+            ip_address,
+        }).catch(err => console.error('Audit log error:', err));
+
+        // Send confirmation email
+        const { enqueueEmail } = require('./emailQueueService');
+        const { renderTemplate } = require('./emailTemplateService');
+        const emailContent = renderTemplate('password-changed-notification', {
+            name: 'Member' // We could fetch name if needed
+        });
+
+        enqueueEmail({
+            to: resetRequest.email,
+            subject: emailContent.subject,
+            html: emailContent.html,
+            text: emailContent.text,
+            priority: 1
+        }).catch(err => console.error('Failed to queue confirmation email:', err));
+
+        return { success: true };
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
 };
 
 module.exports = {
@@ -328,4 +497,5 @@ module.exports = {
     authenticateUser,
     changePassword,
     requestPasswordReset,
+    resetPassword,
 };

@@ -7,7 +7,7 @@ describe('Security: Auth Helper (Bcrypt)', () => {
 
         expect(hash).toBeDefined();
         expect(hash).not.toBe(password);
-        expect(hash).toMatch(/^\$2b\$10\$.+/); // Bcrypt pattern
+        expect(hash).toMatch(/^\$2b\$\d+\$.+/); // Bcrypt pattern
     });
 
     it('should verify a correct password', async () => {

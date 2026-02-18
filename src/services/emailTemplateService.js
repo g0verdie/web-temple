@@ -30,6 +30,23 @@ const templates = {
         html: `<p>We received a request to reset your password.</p><p><a href="${data.resetUrl || '#'}">Reset your password</a></p>`,
         text: `We received a request to reset your password.\nReset your password: ${data.resetUrl || ''}`
     }),
+    'password-reset': (data = {}) => ({
+        subject: 'Reset your Temple account password',
+        html: `<p>Shalom${data.name ? ` ${data.name}` : ''}.</p>
+               <p>We received a request to reset the password for your Temple B'nai Israel account.</p>
+               <p>Please click the link below to set a new password:</p>
+               <p><a href="${data.resetLink}">Reset Password</a></p>
+               <p>This link will expire in 24 hours.</p>
+               <p>If you did not request this change, you can safely ignore this email.</p>`,
+        text: `Shalom${data.name ? ` ${data.name}` : ''}.\n\nWe received a request to reset the password for your Temple B'nai Israel account.\n\nPlease use the link below to set a new password:\n${data.resetLink}\n\nThis link will expire in 24 hours.\n\nIf you did not request this change, you can safely ignore this email.`
+    }),
+    'password-changed-notification': (data = {}) => ({
+        subject: 'Your Temple account password has been changed',
+        html: `<p>Shalom${data.name ? ` ${data.name}` : ''}.</p>
+               <p>This email is to confirm that the password for your Temple B'nai Israel account has been successfully changed.</p>
+               <p>If you did not make this change, please contact the temple administration immediately.</p>`,
+        text: `Shalom${data.name ? ` ${data.name}` : ''}.\n\nThis email is to confirm that the password for your Temple B'nai Israel account has been successfully changed.\n\nIf you did not make this change, please contact the temple administration immediately.`
+    }),
     receipt: (data = {}) => ({
         subject: 'Your Temple donation receipt',
         html: `<p>Thank you for your donation${data.amount ? ` of ${data.amount}` : ''}.</p><p>Receipt ID: ${data.receiptId || 'N/A'}</p>`,

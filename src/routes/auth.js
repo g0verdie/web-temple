@@ -23,6 +23,8 @@ router.post('/register', authLimiter, register);
  * POST /api/auth/login
  * Authenticate and login a user
  */
+// Debug middleware
+// router.post('/login', authLimiter, (req, res, next) => { console.error('Debug: Hit Login Route Middleware'); next(); }, login);
 router.post('/login', authLimiter, login);
 
 /**
@@ -36,5 +38,11 @@ router.post('/logout', logout);
  * Request a password reset email
  */
 router.post('/password-reset-request', authLimiter, requestPasswordReset);
+
+/**
+ * POST /api/auth/reset-password
+ * Reset password with token
+ */
+router.post('/reset-password', authLimiter, require('../controllers/authController').resetPassword);
 
 module.exports = router;

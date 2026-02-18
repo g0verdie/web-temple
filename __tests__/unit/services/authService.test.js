@@ -28,6 +28,12 @@ jest.mock('../../../src/config/db', () => {
             return { rows: user ? [{ id: user.id }] : [] };
         }
 
+        if (text.startsWith('SELECT id, email, password_hash, role, first_name, last_name, token_version, failed_login_attempts, lockout_until FROM users WHERE email = $1')) {
+            const email = params[0];
+            const user = users.find((u) => u.email === email);
+            return { rows: user ? [user] : [] };
+        }
+
         if (text.startsWith('SELECT id, email, password_hash, role, first_name, last_name FROM users WHERE email = $1')) {
             const email = params[0];
             const user = users.find((u) => u.email === email);
@@ -43,6 +49,9 @@ jest.mock('../../../src/config/db', () => {
                 first_name: first_name || null,
                 last_name: last_name || null,
                 role,
+                token_version: 1,
+                failed_login_attempts: 0,
+                lockout_until: null,
                 created_at: new Date()
             };
             users.push(newUser);
@@ -54,6 +63,7 @@ jest.mock('../../../src/config/db', () => {
                         first_name: newUser.first_name,
                         last_name: newUser.last_name,
                         role: newUser.role,
+                        token_version: newUser.token_version,
                         created_at: newUser.created_at
                     }
                 ]
