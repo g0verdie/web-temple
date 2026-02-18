@@ -61,7 +61,7 @@ development_status:
   2-1-user-registration: done
   2-2-user-login: done
   2-3-password-reset: ready-for-dev
-  2-4-admin-authentication-rbac: ready-for-dev
+  2-4-admin-authentication-rbac: done
   2-5-session-management-timeouts: ready-for-dev
   2-6-rabbi-onboarding-tour: ready-for-dev
   2-7-account-settings-preferences: ready-for-dev

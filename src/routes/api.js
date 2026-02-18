@@ -2,11 +2,21 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
-const requireAdmin = require('../middleware/requireAdmin');
+const { requireRole } = require('../middleware/requireRbac');
+const requireAuth = require('../middleware/requireAuth');
+const sessionTimeout = require('../middleware/sessionTimeout');
+const { Roles } = require('../config/roles-permissions');
 const backupLogService = require('../services/backupLogService');
 const auditService = require('../services/auditService');
 const donationController = require('../controllers/donationController');
 const authRoutes = require('./auth');
+
+// Middleware to check for ADMIN role (strict)
+const requireSuperAdminAccess = [
+    requireAuth,
+    sessionTimeout(),
+    requireRole(Roles.ADMIN)
+];
 
 // POST /api/donations
 router.post('/donations', donationController.createDonation);
@@ -16,7 +26,7 @@ router.use('/auth', authRoutes);
 
 
 // GET /api/admin/backups/status
-router.get('/admin/backups/status', requireAdmin, async (req, res) => {
+router.get('/admin/backups/status', requireSuperAdminAccess, async (req, res) => {
     try {
         // Use the absolute path defined in script or fallback relative to project root
         // In production, LOG_FILE is /var/log/temple/backups.log
@@ -75,7 +85,7 @@ router.get('/admin/backups/status', requireAdmin, async (req, res) => {
 });
 
 // GET /api/admin/audit-logs
-router.get('/admin/audit-logs', requireAdmin, async (req, res) => {
+router.get('/admin/audit-logs', requireSuperAdminAccess, async (req, res) => {
     try {
         const { action, userId, entityType, startDate, endDate, limit, offset } = req.query;
         const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 1000);

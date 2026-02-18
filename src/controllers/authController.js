@@ -105,8 +105,7 @@ const register = async (req, res) => {
 
         // Log failed registration attempt
         logAudit({
-            action: AUDIT_ACTIONS.USER_REGISTERED, // Using USER_REGISTERED with error description to denote failure attempt? Or create new action type. 
-            // Ideally we should have USER_REGISTRATION_FAILED.
+            action: AUDIT_ACTIONS.USER_REGISTRATION_FAILED,
             description: `Failed registration attempt: ${error.message} (${email})`,
             ip_address: req.ip || req.connection.remoteAddress,
         }).catch(err => console.error('Audit log error:', err));

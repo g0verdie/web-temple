@@ -5,15 +5,26 @@
 
 const express = require('express');
 const pageController = require('../../controllers/pageController');
-const requireAdmin = require('../../middleware/requireAdmin');
+const { requirePermission } = require('../../middleware/requireRbac');
+const requireAuth = require('../../middleware/requireAuth');
+const sessionTimeout = require('../../middleware/sessionTimeout');
+const { Permissions } = require('../../config/roles-permissions');
 
 const router = express.Router();
+
+// Middleware to check for MANAGE_CONTENT permission
+// Note: requireAuth must be first to populate req.user
+const requirePageManagementAccess = [
+  requireAuth,
+  sessionTimeout(),
+  requirePermission(Permissions.MANAGE_CONTENT)
+];
 
 /**
  * GET /admin/pages/:slug
  * Edit view for a specific page
  */
-router.get('/:slug', requireAdmin, async (req, res, next) => {
+router.get('/:slug', requirePageManagementAccess, async (req, res, next) => {
   try {
     const { slug } = req.params;
     const page = await pageController.getPageForAdmin(slug);
@@ -41,7 +52,7 @@ router.get('/:slug', requireAdmin, async (req, res, next) => {
  * POST /admin/pages/:slug
  * Update page content
  */
-router.post('/:slug', requireAdmin, async (req, res, next) => {
+router.post('/:slug', requirePageManagementAccess, async (req, res, next) => {
   try {
     const { slug } = req.params;
     const { title, content } = req.body;
@@ -72,7 +83,7 @@ router.post('/:slug', requireAdmin, async (req, res, next) => {
  * POST /admin/pages/:slug/publish
  * Publish a page
  */
-router.post('/:slug/publish', requireAdmin, async (req, res, next) => {
+router.post('/:slug/publish', requirePageManagementAccess, async (req, res, next) => {
   try {
     const { slug } = req.params;
     const { published } = req.body;
@@ -103,7 +114,7 @@ router.post('/:slug/publish', requireAdmin, async (req, res, next) => {
  * GET /admin/pages/:slug/versions
  * Get version history
  */
-router.get('/:slug/versions', requireAdmin, async (req, res, next) => {
+router.get('/:slug/versions', requirePageManagementAccess, async (req, res, next) => {
   try {
     const { slug } = req.params;
     const versions = await pageController.getVersionHistory(slug);
@@ -125,7 +136,7 @@ router.get('/:slug/versions', requireAdmin, async (req, res, next) => {
  * POST /admin/pages/:slug/restore/:versionNumber
  * Restore page to a specific version
  */
-router.post('/:slug/restore/:versionNumber', requireAdmin, async (req, res, next) => {
+router.post('/:slug/restore/:versionNumber', requirePageManagementAccess, async (req, res, next) => {
   try {
     const { slug, versionNumber } = req.params;
 

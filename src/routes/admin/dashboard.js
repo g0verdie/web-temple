@@ -1,15 +1,26 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../../controllers/adminController');
-const requireAdmin = require('../../middleware/requireAdmin');
+const { requireAnyRole } = require('../../middleware/requireRbac');
+const requireAuth = require('../../middleware/requireAuth');
+const sessionTimeout = require('../../middleware/sessionTimeout');
+const { Roles } = require('../../config/roles-permissions');
+
+// Middleware to check for ADMIN or RABBI roles
+// Note: requireAuth must be first to populate req.user
+const requireAdminAccess = [
+    requireAuth,
+    sessionTimeout(),
+    requireAnyRole([Roles.ADMIN, Roles.RABBI])
+];
 
 // Dashboard Route
-router.get('/', requireAdmin, adminController.getDashboard);
+router.get('/', requireAdminAccess, adminController.getDashboard);
 
 // Email Queue Retry Route
-router.post('/email-queue/:id/retry', requireAdmin, adminController.retryEmailJob);
+router.post('/email-queue/:id/retry', requireAdminAccess, adminController.retryEmailJob);
 
 // Audit Logs Route
-router.get('/audit-logs', requireAdmin, adminController.getAuditLogs);
+router.get('/audit-logs', requireAdminAccess, adminController.getAuditLogs);
 
 module.exports = router;
