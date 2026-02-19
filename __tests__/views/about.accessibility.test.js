@@ -4,10 +4,15 @@ const { TextEncoder, TextDecoder } = require('util');
 
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
-
+global.setImmediate = global.setImmediate || process.nextTick;
 const request = require('supertest');
 const { JSDOM } = require('jsdom');
 const { axe, toHaveNoViolations } = require('jest-axe');
+
+jest.mock('../../src/controllers/pageController', () => ({
+  getPublishedPage: jest.fn().mockResolvedValue(null)
+}));
+
 const app = require('../../src/server');
 
 expect.extend(toHaveNoViolations);

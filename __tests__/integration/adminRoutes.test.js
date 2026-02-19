@@ -14,6 +14,13 @@ jest.mock('pg', () => {
     return { Pool: jest.fn(() => mPool) };
 });
 
+jest.mock('../../src/config/redis', () => ({
+    get: jest.fn().mockResolvedValue(String(Date.now())),
+    setex: jest.fn().mockResolvedValue('OK'),
+    del: jest.fn().mockResolvedValue(1),
+    keys: jest.fn().mockResolvedValue([])
+}));
+
 const app = require('../../src/server');
 
 describe('Admin Routes Integration', () => {
