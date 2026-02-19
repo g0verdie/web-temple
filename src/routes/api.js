@@ -8,6 +8,7 @@ const sessionTimeout = require('../middleware/sessionTimeout');
 const { Roles } = require('../config/roles-permissions');
 const backupLogService = require('../services/backupLogService');
 const auditService = require('../services/auditService');
+const sessionService = require('../services/sessionService');
 const donationController = require('../controllers/donationController');
 const authRoutes = require('./auth');
 
@@ -18,12 +19,32 @@ const requireSuperAdminAccess = [
     requireRole(Roles.ADMIN)
 ];
 
+// Session timeout middleware for all authenticated users
+const requireAuthSession = [
+    requireAuth,
+    sessionTimeout()
+];
+
 // POST /api/donations
 router.post('/donations', donationController.createDonation);
 
 // Auth routes
 router.use('/auth', authRoutes);
 
+// GET /api/session/status - Frontend can poll this to detect pre-timeout warning (Story 2-5)
+// Returns remaining session time and warning zone indicator
+router.get('/session/status', requireAuthSession, async (req, res) => {
+    try {
+        const status = await sessionService.getSessionStatus(req.user);
+        res.json(status);
+    } catch (err) {
+        const statusCode = err.code || 500;
+        res.status(statusCode).json({
+            error: err.message,
+            details: err.details
+        });
+    }
+});
 
 // GET /api/admin/backups/status
 router.get('/admin/backups/status', requireSuperAdminAccess, async (req, res) => {

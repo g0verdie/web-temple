@@ -11,6 +11,8 @@ const { startEmailQueueWorker } = require('./workers/emailQueueWorker');
 
 const cookieParser = require('cookie-parser');
 const csurf = require('csurf');
+const jwt = require('jsonwebtoken');
+const sessionTimeout = require('./middleware/sessionTimeout');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -124,6 +126,33 @@ app.use((req, res, next) => {
   res.locals.csrfToken = typeof req.csrfToken === 'function' ? req.csrfToken() : null;
   next();
 });
+
+// Global Session Tracking for Public Pages
+// Verifies token without hitting the DB (for performance) and populates req.user
+// so that sessionTimeout can track activity on every page load.
+const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'test' ? 'test-jwt-secret' : null);
+app.use((req, res, next) => {
+  const token = req.cookies && req.cookies.auth_token;
+  if (token && !req.user) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      req.user = {
+        id: decoded.user_id,
+        role: decoded.role,
+        email: decoded.email
+      };
+    } catch (e) {
+      // Ignore invalid tokens on public pages; requireAuth handles protected routes
+    }
+  }
+
+  // Expose user to views globally
+  res.locals.user = req.user || null;
+  next();
+});
+
+// Apply session timeout tracking globally
+app.use(sessionTimeout());
 
 // Expose current path for active nav highlighting
 app.use((req, res, next) => {

@@ -3,6 +3,13 @@ const request = require('supertest');
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-jwt-secret';
 
+jest.mock('../../src/config/redis', () => ({
+    get: jest.fn().mockResolvedValue(null),
+    setex: jest.fn().mockResolvedValue('OK'),
+    del: jest.fn().mockResolvedValue(1),
+    keys: jest.fn().mockResolvedValue([])
+}));
+
 // Mock pg at the module level like other integration tests
 jest.mock('pg', () => {
     const mPool = {

@@ -33,3 +33,10 @@ Thumbs.db
 dist/
 build/
 test_output.txt
+
+
+# BMAD
+.agent/workflows/
+.claude/
+.cursor/
+.gemini/
