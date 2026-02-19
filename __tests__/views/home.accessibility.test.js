@@ -4,7 +4,7 @@ const { TextEncoder, TextDecoder } = require('util');
 
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
-
+global.setImmediate = global.setImmediate || process.nextTick;
 const request = require('supertest');
 const { JSDOM } = require('jsdom');
 const { axe, toHaveNoViolations } = require('jest-axe');

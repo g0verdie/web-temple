@@ -7,8 +7,17 @@ if (process.env.NODE_ENV === 'test') {
     const EventEmitter = require('events');
     const cache = {};
     redis = new EventEmitter();
-    redis.get = jest.fn((key) => Promise.resolve(cache[key] || null));
+    redis.get = jest.fn((key) => {
+        if (key.startsWith('session:')) return Promise.resolve(String(Date.now()));
+        return Promise.resolve(cache[key] || null);
+    });
+
     redis.set = jest.fn((key, value) => {
+        cache[key] = value;
+        return Promise.resolve('OK');
+    });
+
+    redis.setex = jest.fn((key, ttl, value) => {
         cache[key] = value;
         return Promise.resolve('OK');
     });

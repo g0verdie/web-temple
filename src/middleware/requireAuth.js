@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
+const redis = require('../config/redis');
 
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'test' ? 'test-jwt-secret' : null);
 
@@ -35,6 +36,14 @@ const requireAuth = async (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
+
+        // Check token blacklist
+        if (decoded.jti) {
+            const isBlacklisted = await redis.get(`invalidated:token:${decoded.jti}`);
+            if (isBlacklisted) {
+                throw new Error('Token has been invalidated');
+            }
+        }
 
         // Check token_version for session invalidation
         // We need to fetch the current version from DB

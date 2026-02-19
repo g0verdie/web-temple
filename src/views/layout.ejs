@@ -55,6 +55,9 @@
   </footer>
 
   <script src="/js/hamburger.js"></script>
+  <% if (typeof user !== 'undefined' && user) { %>
+    <script src="/js/sessionWarning.js"></script>
+  <% } %>
 </body>
 
 </html>
