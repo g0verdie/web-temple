@@ -64,7 +64,7 @@
                 // Show warning if less than 1 minute remaining
                 if (data.remainingMs <= WARNING_THRESHOLD && data.remainingMs > 0) {
                     const seconds = Math.floor(data.remainingMs / 1000);
-                    createWarningBanner(`Your session will expire in ${seconds} seconds due to inactivity. Unsaved progress will be lost. Move your mouse or click anywhere to keep your session active!`);
+                    createWarningBanner(`Your session will expire in ${seconds} seconds due to inactivity. Unsaved progress will be lost. Refresh the page or navigate to keep your session active!`);
                 } else if (warningElement) {
                     // Session was refreshed (mouse move triggered fetch or just normal page activity)
                     warningElement.remove();

@@ -15,11 +15,11 @@ const redis = require('../../src/config/redis');
 describe('Session Timeout Middleware', () => {
     const makeRes = () => {
         const res = {};
-        res.status = jest.fn((code) => { console.log('STATUS CAUGHT:', code); return res; });
-        res.json = jest.fn((body) => { console.log('JSON CAUGHT:', body); return res; });
+        res.status = jest.fn().mockReturnValue(res);
+        res.json = jest.fn().mockReturnValue(res);
         res.clearCookie = jest.fn().mockReturnValue(res);
-        res.send = jest.fn((body) => { console.log('SEND CAUGHT:', body); return res; });
-        res.redirect = jest.fn((url) => { console.log('REDIRECT CAUGHT:', url); return res; });
+        res.send = jest.fn().mockReturnValue(res);
+        res.redirect = jest.fn().mockReturnValue(res);
         return res;
     };
 
@@ -223,11 +223,11 @@ describe('Session Timeout Middleware', () => {
 describe('Session Timeout Middleware - Role-Based Timeouts (Story 2-5)', () => {
     const makeRes = () => {
         const res = {};
-        res.status = jest.fn((code) => { console.log('STATUS CAUGHT:', code); return res; });
-        res.json = jest.fn((body) => { console.log('JSON CAUGHT:', body); return res; });
+        res.status = jest.fn().mockReturnValue(res);
+        res.json = jest.fn().mockReturnValue(res);
         res.clearCookie = jest.fn().mockReturnValue(res);
-        res.send = jest.fn((body) => { console.log('SEND CAUGHT:', body); return res; });
-        res.redirect = jest.fn((url) => { console.log('REDIRECT CAUGHT:', url); return res; });
+        res.send = jest.fn().mockReturnValue(res);
+        res.redirect = jest.fn().mockReturnValue(res);
         return res;
     };
 

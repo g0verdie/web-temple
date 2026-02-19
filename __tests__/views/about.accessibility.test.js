@@ -47,7 +47,6 @@ describe('About page accessibility (WCAG AA)', () => {
 
   it('should have skip-to-main-content link', () => {
     const skipLink = document.querySelector('a[href="#main-content"]');
-    if (!skipLink) console.log("HTML that failed:", html);
     expect(skipLink).toBeTruthy();
   });
 
