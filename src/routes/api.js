@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
 const { requireRole } = require('../middleware/requireRbac');
 const requireAuth = require('../middleware/requireAuth');
 const sessionTimeout = require('../middleware/sessionTimeout');
@@ -11,6 +12,15 @@ const auditService = require('../services/auditService');
 const sessionService = require('../services/sessionService');
 const donationController = require('../controllers/donationController');
 const authRoutes = require('./auth');
+
+// Rate limiter for session status polling (60 requests/min per IP)
+const sessionStatusLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 60,
+    message: { success: false, message: 'Too many requests, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // Middleware to check for ADMIN role (strict)
 const requireSuperAdminAccess = [
@@ -33,7 +43,7 @@ router.use('/auth', authRoutes);
 
 // GET /api/session/status - Frontend can poll this to detect pre-timeout warning (Story 2-5)
 // Returns remaining session time and warning zone indicator
-router.get('/session/status', requireAuthSession, async (req, res) => {
+router.get('/session/status', sessionStatusLimiter, requireAuthSession, async (req, res) => {
     try {
         const status = await sessionService.getSessionStatus(req.user);
         res.json(status);

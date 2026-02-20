@@ -72,7 +72,9 @@ const requireAuth = async (req, res, next) => {
         req.user = {
             id: decoded.user_id,
             email: user.email,
-            role: user.role
+            role: user.role,
+            jti: decoded.jti,
+            exp: decoded.exp
         };
 
         next();

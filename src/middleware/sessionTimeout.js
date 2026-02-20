@@ -16,7 +16,6 @@
 const redis = require('../config/redis');
 const { Roles } = require('../config/roles-permissions');
 const sessionService = require('../services/sessionService');
-const jwt = require('jsonwebtoken');
 
 const ADMIN_TIMEOUT_MINUTES = 30;
 const MEMBER_TIMEOUT_MINUTES = 30 * 24 * 60; // 30 days in minutes
@@ -90,15 +89,11 @@ const sessionTimeout = (options = {}) => {
 
             if (inactiveMs > timeoutMs) {
                 // Session expired - invalidate token and clean up session
-                const token = req.cookies && req.cookies.auth_token;
-                if (token) {
+                if (req.user && req.user.jti && req.user.exp) {
                     try {
-                        const decoded = jwt.decode(token);
-                        if (decoded && decoded.jti && decoded.exp) {
-                            await sessionService.invalidateSession(null, { jti: decoded.jti, exp: decoded.exp });
-                        }
+                        await sessionService.invalidateSession(null, { jti: req.user.jti, exp: req.user.exp });
                     } catch (e) {
-                        console.warn('Failed to decode token on session timeout:', e);
+                        console.warn('Failed to invalidate token on session timeout:', e);
                     }
                 }
                 res.clearCookie('auth_token');
