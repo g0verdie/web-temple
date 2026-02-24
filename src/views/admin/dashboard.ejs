@@ -112,6 +112,9 @@
                 </div>
             </div>
             <!-- Include driver.js for the onboarding tour -->
+            <!-- TODO: Verify SRI hashes against https://www.jsdelivr.com/package/npm/driver.js
+                 Run: curl -s https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js | openssl dgst -sha384 -binary | openssl base64 -A
+                 and: curl -s https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css | openssl dgst -sha384 -binary | openssl base64 -A -->
             <script 
                 src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"
                 integrity="sha384-8Sh+HHQ9kZ3Pyd6MlvY9AJ0nlqR6E7d9UBLCIiOqIPIVBXVQtCEEqxAL2hU7Y7BQ"
@@ -119,11 +122,11 @@
             <link 
                 rel="stylesheet" 
                 href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"
-                integrity="sha384-R9ygV1Otz8fhDvwTcJJ2RRWDL6tXNmJkQH/5Cth0L3t7h7P5v7E5C7C7C7C7C7C7"
                 crossorigin="anonymous"/>
-            <script>
-                window.USER_ONBOARDING_COMPLETE = <%= user.onboarding_complete || false %>;
-            </script>
+            <!-- Pass onboarding state via data attribute to avoid inline-script CSP violation -->
+            <div id="tour-config"
+                 data-onboarding-complete="<%= user.onboarding_complete ? 'true' : 'false' %>"
+                 style="display:none" aria-hidden="true"></div>
             <script src="/js/adminTour.js"></script>
         </div>
         <% } %>

@@ -47,8 +47,8 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       // Removed 'unsafe-inline' - check views for compatibility if broken
-      scriptSrc: ["'self'", "https://js.hcaptcha.com", "https://*.hcaptcha.com"],
-      styleSrc: ["'self'", "https://js.hcaptcha.com", "https://*.hcaptcha.com"],
+      scriptSrc: ["'self'", "https://js.hcaptcha.com", "https://*.hcaptcha.com", "https://cdn.jsdelivr.net"],
+      styleSrc: ["'self'", "https://js.hcaptcha.com", "https://*.hcaptcha.com", "https://cdn.jsdelivr.net"],
       imgSrc: ["'self'", "data:", "https:", "https://*.hcaptcha.com"],
       connectSrc: ["'self'", "https://*.hcaptcha.com"],
       fontSrc: ["'self'"],

@@ -1,5 +1,5 @@
 const request = require('supertest');
-const { login, logout } = require('../../src/controllers/authController');
+const { login, logout, register } = require('../../src/controllers/authController');
 const authService = require('../../src/services/authService');
 const sessionService = require('../../src/services/sessionService');
 const jwt = require('jsonwebtoken');
@@ -242,6 +242,34 @@ describe('authController.login', () => {
                     onboarding_complete: false
                 })
             }));
+        });
+
+        it('should include onboarding_complete flag in register JWT payload (Story 2.6)', async () => {
+            // Consistency: register JWT must include onboarding_complete just like login JWT
+            const req = mockRequest({ email: 'newrabbi@example.com', password: 'password', first_name: 'New', last_name: 'Rabbi' });
+            const res = mockResponse();
+
+            const mockUser = { 
+                id: 2, 
+                email: 'newrabbi@example.com', 
+                role: 'member',
+                token_version: 1,
+                onboarding_complete: false 
+            };
+            authService.registerUser.mockResolvedValue(mockUser);
+            jwt.sign.mockReturnValue('mock-token');
+
+            await register(req, res);
+
+            expect(jwt.sign).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    user_id: 2,
+                    email: 'newrabbi@example.com',
+                    onboarding_complete: false
+                }),
+                expect.any(String),
+                expect.any(Object)
+            );
         });
     });
 });
