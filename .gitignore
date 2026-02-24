@@ -40,3 +40,6 @@ test_output.txt
 .claude/
 .cursor/
 .gemini/
+.agent/
+_bmad/
+.agents/
