@@ -1,8 +1,10 @@
 const { registerUser, authenticateUser, requestPasswordReset: requestResetService, resetPassword: resetPasswordService } = require('../services/authService');
+const { createSession, invalidateSession } = require('../services/sessionService');
 const { enqueueEmail } = require('../services/emailQueueService');
 const { renderTemplate } = require('../services/emailTemplateService');
 const { logAudit, AUDIT_ACTIONS } = require('../services/auditService');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'test' ? 'test-jwt-secret' : null);
 const JWT_EXPIRES_IN = '30d'; // 30 days for members
@@ -36,17 +38,24 @@ const register = async (req, res) => {
             ip_address: req.ip || req.connection.remoteAddress
         });
 
+        // Generate UUID-like token ID for blacklisting
+        const jti = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
+
         // Generate JWT token
         const token = jwt.sign(
             {
                 user_id: user.id,
                 email: user.email,
                 role: user.role,
-                token_version: user.token_version
+                token_version: user.token_version,
+                jti: jti
             },
             JWT_SECRET,
             { expiresIn: JWT_EXPIRES_IN }
         );
+
+        // Create Redis session
+        await createSession(user);
 
         // Set secure HTTP-only cookie
         res.cookie('auth_token', token, {
@@ -132,17 +141,24 @@ const login = async (req, res) => {
             ip_address: req.ip || req.connection.remoteAddress
         });
 
+        // Generate UUID-like token ID
+        const jti = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
+
         // Generate JWT token
         const token = jwt.sign(
             {
                 user_id: user.id,
                 email: user.email,
                 role: user.role,
-                token_version: user.token_version
+                token_version: user.token_version,
+                jti: jti
             },
             JWT_SECRET,
             { expiresIn: JWT_EXPIRES_IN }
         );
+
+        // Create Redis session
+        await createSession(user);
 
         // Set secure HTTP-only cookie
         res.cookie('auth_token', token, {
@@ -185,7 +201,40 @@ const login = async (req, res) => {
  * Logout a user
  * POST /api/auth/logout
  */
-const logout = (req, res) => {
+const logout = async (req, res) => {
+    // Try to get user from request (if requireAuth used) or decode token
+    let user = req.user;
+    let jti = null;
+    let exp = null;
+    if (!user && req.cookies && req.cookies.auth_token) {
+        try {
+            // Decode without verification just to identify the session to kill
+            const decoded = jwt.decode(req.cookies.auth_token);
+            if (decoded) {
+                user = { id: decoded.user_id, role: decoded.role };
+                jti = decoded.jti;
+                exp = decoded.exp;
+            }
+        } catch (e) {
+            console.warn('Failed to decode token during logout:', e);
+        }
+    } else if (req.cookies && req.cookies.auth_token) {
+        // If user was populated by middleware, we still need jti and exp
+        try {
+            const decoded = jwt.decode(req.cookies.auth_token);
+            if (decoded) {
+                jti = decoded.jti;
+                exp = decoded.exp;
+            }
+        } catch (e) {
+            console.warn('Failed to decode token during logout:', e);
+        }
+    }
+
+    if (user) {
+        await invalidateSession(user, { jti, exp });
+    }
+
     res.clearCookie('auth_token');
     res.json({
         success: true,
