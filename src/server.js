@@ -139,7 +139,8 @@ app.use((req, res, next) => {
       req.user = {
         id: decoded.user_id,
         role: decoded.role,
-        email: decoded.email
+        email: decoded.email,
+        onboarding_complete: decoded.onboarding_complete || false
       };
     } catch (e) {
       // Ignore invalid tokens on public pages; requireAuth handles protected routes

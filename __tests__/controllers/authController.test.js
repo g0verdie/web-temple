@@ -188,5 +188,60 @@ describe('authController.login', () => {
                 message: 'Logout successful'
             }));
         });
+
+        it('should include onboarding_complete flag in JWT token payload (Story 2.6)', async () => {
+            // Test AC #1: JWT must include onboarding_complete flag for views
+            const req = mockRequest({ email: 'rabbi@example.com', password: 'password' });
+            const res = mockResponse();
+
+            const mockUser = { 
+                id: 1, 
+                email: 'rabbi@example.com', 
+                role: 'rabbi', 
+                token_version: 1,
+                onboarding_complete: false 
+            };
+            authService.authenticateUser.mockResolvedValue(mockUser);
+            jwt.sign.mockReturnValue('mock-token');
+
+            await login(req, res);
+
+            // Verify jwt.sign was called with onboarding_complete in the payload
+            expect(jwt.sign).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    user_id: 1,
+                    email: 'rabbi@example.com',
+                    role: 'rabbi',
+                    onboarding_complete: false
+                }),
+                expect.any(String),
+                expect.any(Object)
+            );
+        });
+
+        it('should return onboarding_complete in login response (Story 2.6)', async () => {
+            // Test AC #1: Response should include onboarding_complete flag
+            const req = mockRequest({ email: 'rabbi@example.com', password: 'password' });
+            const res = mockResponse();
+
+            const mockUser = { 
+                id: 1, 
+                email: 'rabbi@example.com', 
+                role: 'rabbi',
+                token_version: 1,
+                onboarding_complete: false 
+            };
+            authService.authenticateUser.mockResolvedValue(mockUser);
+            jwt.sign.mockReturnValue('mock-token');
+
+            await login(req, res);
+
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+                success: true,
+                user: expect.objectContaining({
+                    onboarding_complete: false
+                })
+            }));
+        });
     });
 });

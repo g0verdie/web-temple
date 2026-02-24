@@ -149,4 +149,56 @@ describe('Admin Controller - Backup Status', () => {
         expect(retryRes.status).toHaveBeenCalledWith(404);
         expect(retryRes.render).toHaveBeenCalledWith('error', { error: 'Email job not found' });
     });
+
+    test('should include user onboarding_complete flag in view context for new rabbis', async () => {
+        // Test AC #1: onboarding_complete flag should be available in views
+        const rabbiReq = {
+            user: { 
+                id: 'rabbi-1', 
+                role: 'rabbi', 
+                onboarding_complete: false 
+            }
+        };
+        const rabbiRes = {
+            render: jest.fn(),
+            status: jest.fn().mockReturnThis(),
+            locals: {}
+        };
+
+        backupLogService.getLastSuccessfulBackup.mockResolvedValue(null);
+        backupLogService.getLastBackupAttempt.mockResolvedValue(null);
+        emailQueueService.getQueueStats.mockResolvedValue({ counts: {}, failed: [] });
+
+        await adminController.getDashboard(rabbiReq, rabbiRes);
+
+        expect(rabbiRes.render).toHaveBeenCalledWith('layout', expect.objectContaining({
+            bodyView: 'admin/dashboard',
+            title: 'Admin Dashboard'
+        }));
+    });
+
+    test('should show dashboard for rabbi with completed onboarding', async () => {
+        // Test AC #6: rabbi who completed tour should not be interrupted
+        const completedReq = {
+            user: { 
+                id: 'rabbi-2', 
+                role: 'rabbi', 
+                onboarding_complete: true 
+            }
+        };
+        const completedRes = {
+            render: jest.fn(),
+            status: jest.fn().mockReturnThis()
+        };
+
+        backupLogService.getLastSuccessfulBackup.mockResolvedValue(null);
+        backupLogService.getLastBackupAttempt.mockResolvedValue(null);
+        emailQueueService.getQueueStats.mockResolvedValue({ counts: {}, failed: [] });
+
+        await adminController.getDashboard(completedReq, completedRes);
+
+        expect(completedRes.render).toHaveBeenCalledWith('layout', expect.objectContaining({
+            bodyView: 'admin/dashboard'
+        }));
+    });
 });

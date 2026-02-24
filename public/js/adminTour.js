@@ -1,6 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
     if (!window.driver) {
-        console.warn('driver.js not loaded');
+        console.warn('driver.js library not loaded - onboarding tour unavailable');
+        // Gracefully degrade: notify users but don't break the page
+        const tourCard = document.querySelector('.card:has(#replay-tour-btn)');
+        if (tourCard) {
+            tourCard.style.opacity = '0.6';
+        }
         return;
     }
 
@@ -92,11 +97,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Add keyboard accessibility: Escape key closes tour
+    const tourKeydownHandler = (e) => {
+        if (e.key === 'Escape' || e.code === 'Escape') {
+            e.preventDefault();
+            driverObj.destroy();
+            markOnboardingComplete();
+        }
+    };
+
     // Start tour automatically if not complete
     if (!window.USER_ONBOARDING_COMPLETE) {
         // Small delay to ensure UI is ready
         setTimeout(() => {
             driverObj.drive();
+            document.addEventListener('keydown', tourKeydownHandler);
         }, 500);
     }
 
@@ -105,6 +120,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (replayBtn) {
         replayBtn.addEventListener('click', () => {
             driverObj.drive();
+            document.addEventListener('keydown', tourKeydownHandler);
         });
     }
+
+    // Listen for tour destruction to clean up keyboard handler
+    window.addEventListener('beforeunload', () => {
+        document.removeEventListener('keydown', tourKeydownHandler);
+    });
 });

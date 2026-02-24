@@ -4,7 +4,7 @@
 ## Project Configuration
 
 - **Project**: web-temple
-- **User**: Ilya
+- **User**: g0verdie
 - **Communication Language**: English
 - **Document Output Language**: English
 - **User Skill Level**: intermediate
