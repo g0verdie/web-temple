@@ -10,6 +10,7 @@ const backupLogService = require('../services/backupLogService');
 const auditService = require('../services/auditService');
 const sessionService = require('../services/sessionService');
 const donationController = require('../controllers/donationController');
+const userController = require('../controllers/userController');
 const authRoutes = require('./auth');
 
 // Middleware to check for ADMIN role (strict)
@@ -27,6 +28,9 @@ const requireAuthSession = [
 
 // POST /api/donations
 router.post('/donations', donationController.createDonation);
+
+// PUT /api/users/onboarding/complete
+router.put('/users/onboarding/complete', requireAuthSession, userController.completeOnboarding);
 
 // Auth routes
 router.use('/auth', authRoutes);

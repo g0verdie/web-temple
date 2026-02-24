@@ -63,7 +63,7 @@ development_status:
   2-3-password-reset: ready-for-dev
   2-4-admin-authentication-rbac: done
   2-5-session-management-timeouts: done
-  2-6-rabbi-onboarding-tour: ready-for-dev
+  2-6-rabbi-onboarding-tour: done
   2-7-account-settings-preferences: ready-for-dev
   epic-2-retrospective: optional
   epic-3: backlog

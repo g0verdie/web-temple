@@ -90,7 +90,8 @@ const register = async (req, res) => {
                 email: user.email,
                 first_name: user.first_name,
                 last_name: user.last_name,
-                role: user.role
+                role: user.role,
+                onboarding_complete: user.onboarding_complete || false
             }
         });
 
@@ -176,7 +177,8 @@ const login = async (req, res) => {
                 email: user.email,
                 first_name: user.first_name,
                 last_name: user.last_name,
-                role: user.role
+                role: user.role,
+                onboarding_complete: user.onboarding_complete
             }
         });
 

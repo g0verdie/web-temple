@@ -97,7 +97,7 @@ const authenticateUser = async (credentials) => {
 
     // Find user by email
     const result = await db.query(
-        'SELECT id, email, password_hash, role, first_name, last_name, token_version, failed_login_attempts, lockout_until FROM users WHERE email = $1',
+        'SELECT id, email, password_hash, role, first_name, last_name, token_version, onboarding_complete, failed_login_attempts, lockout_until FROM users WHERE email = $1',
         [email]
     );
 
@@ -187,7 +187,8 @@ const authenticateUser = async (credentials) => {
         role: user.role,
         first_name: user.first_name,
         last_name: user.last_name,
-        token_version: user.token_version
+        token_version: user.token_version,
+        onboarding_complete: user.onboarding_complete || false
     };
 };
 
