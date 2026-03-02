@@ -109,7 +109,7 @@ describe('Story 2.6: Rabbi Onboarding Tour - Full Integration', () => {
             );
 
             const decoded = jwt.verify(token, JWT_SECRET);
-            
+
             // This should be available to views
             expect(decoded).toHaveProperty('onboarding_complete', false);
         });
@@ -119,13 +119,13 @@ describe('Story 2.6: Rabbi Onboarding Tour - Full Integration', () => {
         it('should have tour steps for announcement posting', () => {
             // Assuming adminTour.js exports tourSteps for testing
             const expectedSteps = ['announcements', 'calendar', 'messages'];
-            
+
             expectedSteps.forEach(feature => {
                 // Verify el is a valid tour target
                 expect(['#tour-announcements', '#tour-calendar', '#tour-messages']).toContain(
                     feature === 'announcements' ? '#tour-announcements' :
-                    feature === 'calendar' ? '#tour-calendar' :
-                    '#tour-messages'
+                        feature === 'calendar' ? '#tour-calendar' :
+                            '#tour-messages'
                 );
             });
         });
@@ -155,7 +155,7 @@ describe('Story 2.6: Rabbi Onboarding Tour - Full Integration', () => {
         it('should prevent users from updating another user\'s onboarding status', async () => {
             // Endpoint should only update req.user.id, not arbitrary users
             const otherUserId = 'other-rabbi-id';
-            
+
             // When another user's ID is in URL, should reject or update own only
             expect(otherUserId).not.toBe(rabbi.id);
         });
@@ -165,10 +165,10 @@ describe('Story 2.6: Rabbi Onboarding Tour - Full Integration', () => {
         it('should maintain onboarding_complete = true on subsequent login', async () => {
             // First login: onboarding_complete = false
             let rabbiFirstLogin = { ...rabbi, onboarding_complete: false };
-            
+
             // After completing tour: update flag
             const updatedRabbi = { ...rabbi, onboarding_complete: true };
-            
+
             // Second login: flag should still be true
             const token = jwt.sign(
                 {
@@ -186,7 +186,7 @@ describe('Story 2.6: Rabbi Onboarding Tour - Full Integration', () => {
 
         it('should not trigger tour on subsequent visits for completed users', async () => {
             const completedRabbi = { ...rabbi, onboarding_complete: true };
-            
+
             const token = jwt.sign(
                 {
                     user_id: completedRabbi.id,
@@ -198,7 +198,7 @@ describe('Story 2.6: Rabbi Onboarding Tour - Full Integration', () => {
             );
 
             const decoded = jwt.verify(token, JWT_SECRET);
-            
+
             // The JavaScript should check this flag and NOT auto-trigger tour
             const shouldTriggerTour = !decoded.onboarding_complete;
             expect(shouldTriggerTour).toBe(false);
@@ -206,29 +206,46 @@ describe('Story 2.6: Rabbi Onboarding Tour - Full Integration', () => {
     });
 
     describe('AC #7: Replay tour from Help menu', () => {
-        it('should have replay button on admin dashboard', async () => {
-            // Test that element exists in view
-            expect(['#replay-tour-btn']).toContain('#replay-tour-btn');
-        });
+        it('should contain a replay tour button when Rabbi logs in', async () => {
+            const loginToken = jwt.sign({
+                user_id: rabbi.id, email: rabbi.email, role: rabbi.role, onboarding_complete: true, token_version: 1
+            }, JWT_SECRET);
 
-        it('should allow replaying tour by calling driverObj.drive()', async () => {
-            // The replay button should re-initialize the tour
-            // Verify this in adminTour.js logic
-            expect(true).toBe(true); // Driver.js handles this
+            db.query.mockResolvedValueOnce({ rows: [{ token_version: 1, role: rabbi.role, email: rabbi.email }] });
+
+            const res = await request(app)
+                .get('/admin')
+                .set('Cookie', `auth_token=${loginToken}`);
+
+            expect(res.status).toBe(200);
+            expect(res.text).toContain('id="replay-tour-btn"');
         });
     });
 
     describe('AC #8: Keyboard accessibility', () => {
         it('should close tour with Escape key', async () => {
-            // adminTour.js should have: document.addEventListener('keydown', (e) => { if (e.key === 'Escape') ... })
-            // This is tested in the JavaScript but should be verified in integration
-            expect(true).toBe(true); // Client-side JS test
+            // Documenting test coverage limitation:
+            // Since keyboard events are purely client-side logic handled by driver.js, 
+            // typical Supertest integration tests cannot trigger or assert on them.
+            // Full validation of this feature requires an End-to-End framework like Playwright.
+            expect(true).toBe(true); // Left as a marker indicating intentional limitation
         });
 
         it('should be keyboard accessible per NFR-A1 WCAG compliance', async () => {
-            // Tour overlay should be dismissible via keyboard
-            // All buttons should be keyboard accessible
-            expect(['Escape', 'Enter', 'Tab']).toContain('Escape');
+            // UI elements are natively focusable: "button", "a href" etc. Check for appropriate roles on the rendered HTML
+            const loginToken = jwt.sign({
+                user_id: rabbi.id, email: rabbi.email, role: rabbi.role, onboarding_complete: true, token_version: 1
+            }, JWT_SECRET);
+
+            db.query.mockResolvedValueOnce({ rows: [{ token_version: 1, role: rabbi.role, email: rabbi.email }] });
+
+            const res = await request(app)
+                .get('/admin')
+                .set('Cookie', `auth_token=${loginToken}`);
+
+            expect(res.status).toBe(200);
+            // Verify our placeholder buttons use anchor tags which are keyboard-focusable
+            expect(res.text).toContain('<a href="javascript:void(0)" id="tour-announcements"');
         });
     });
 
@@ -296,7 +313,7 @@ describe('Story 2.6: Rabbi Onboarding Tour - Full Integration', () => {
 
             const token = jwt.sign(incompleteUser, JWT_SECRET);
             const decoded = jwt.verify(token, JWT_SECRET);
-            
+
             // Should default to false if missing
             const onboardingStatus = decoded.onboarding_complete || false;
             expect(onboardingStatus).toBe(false);
@@ -312,7 +329,7 @@ describe('Story 2.6: Rabbi Onboarding Tour - Full Integration', () => {
 
             const token = jwt.sign(member, JWT_SECRET);
             const decoded = jwt.verify(token, JWT_SECRET);
-            
+
             // Member should also have the flag, but tour only shows for rabbi role
             expect(decoded).toHaveProperty('onboarding_complete');
         });

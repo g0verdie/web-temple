@@ -46,13 +46,23 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-6">
-                            <p class="mb-1"><strong>Waiting:</strong> <%= emailQueue?.counts?.waiting ?? 0 %></p>
-                            <p class="mb-1"><strong>Active:</strong> <%= emailQueue?.counts?.active ?? 0 %></p>
-                            <p class="mb-1"><strong>Delayed:</strong> <%= emailQueue?.counts?.delayed ?? 0 %></p>
+                            <p class="mb-1"><strong>Waiting:</strong>
+                                <%= emailQueue?.counts?.waiting ?? 0 %>
+                            </p>
+                            <p class="mb-1"><strong>Active:</strong>
+                                <%= emailQueue?.counts?.active ?? 0 %>
+                            </p>
+                            <p class="mb-1"><strong>Delayed:</strong>
+                                <%= emailQueue?.counts?.delayed ?? 0 %>
+                            </p>
                         </div>
                         <div class="col-6">
-                            <p class="mb-1"><strong>Failed:</strong> <%= emailQueue?.counts?.failed ?? 0 %></p>
-                            <p class="mb-1"><strong>Completed:</strong> <%= emailQueue?.counts?.completed ?? 0 %></p>
+                            <p class="mb-1"><strong>Failed:</strong>
+                                <%= emailQueue?.counts?.failed ?? 0 %>
+                            </p>
+                            <p class="mb-1"><strong>Completed:</strong>
+                                <%= emailQueue?.counts?.completed ?? 0 %>
+                            </p>
                         </div>
                     </div>
 
@@ -72,60 +82,68 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <% emailQueue.failed.forEach(job => { %>
+                                    <% emailQueue.failed.forEach(job=> { %>
                                         <tr>
-                                            <td><%= job.id %></td>
-                                            <td><%= job.data?.to || 'N/A' %></td>
-                                            <td><%= job.attemptsMade %></td>
-                                            <td><%= job.failedReason || 'Unknown' %></td>
+                                            <td>
+                                                <%= job.id %>
+                                            </td>
+                                            <td>
+                                                <%= job.data?.to || 'N/A' %>
+                                            </td>
+                                            <td>
+                                                <%= job.attemptsMade %>
+                                            </td>
+                                            <td>
+                                                <%= job.failedReason || 'Unknown' %>
+                                            </td>
                                             <td>
                                                 <form method="POST" action="/admin/email-queue/<%= job.id %>/retry">
                                                     <button class="btn btn-sm btn-warning" type="submit">Retry</button>
                                                 </form>
                                             </td>
                                         </tr>
-                                    <% }) %>
+                                        <% }) %>
                                 </tbody>
                             </table>
                         </div>
-                    <% } else { %>
-                        <div class="alert alert-success mb-0">
-                            No failed email jobs.
-                        </div>
-                    <% } %>
+                        <% } else { %>
+                            <div class="alert alert-success mb-0">
+                                No failed email jobs.
+                            </div>
+                            <% } %>
                 </div>
             </div>
         </div>
 
         <!-- Rabbi Tools Card Component (Only visible to Rabbi role) -->
-        <% if (user && user.role === 'rabbi') { %>
-        <div class="col-md-12 mb-4">
-            <div class="card">
-                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Rabbi Tools</h5>
-                    <button id="replay-tour-btn" class="btn btn-sm btn-light">Replay Tour</button>
+        <% if (user && user.role==='rabbi' ) { %>
+            <div class="col-md-12 mb-4">
+                <div class="card">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Rabbi Tools</h5>
+                        <button id="replay-tour-btn" class="btn btn-sm btn-light">Replay Tour</button>
+                    </div>
+                    <div class="card-body">
+                        <a href="javascript:void(0)" id="tour-announcements" class="btn btn-primary me-2 mb-2"
+                            onclick="alert('Announcements feature coming soon!')">Post Announcement</a>
+                        <a href="javascript:void(0)" id="tour-calendar" class="btn btn-primary me-2 mb-2"
+                            onclick="alert('Calendar management coming soon!')">Manage Calendar</a>
+                        <a href="javascript:void(0)" id="tour-messages" class="btn btn-primary me-2 mb-2"
+                            onclick="alert('Message inbox coming soon!')">Message Inbox</a>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <a href="#" id="tour-announcements" class="btn btn-primary me-2 mb-2">Post Announcement</a>
-                    <a href="#" id="tour-calendar" class="btn btn-primary me-2 mb-2">Manage Calendar</a>
-                    <a href="#" id="tour-messages" class="btn btn-primary me-2 mb-2">Message Inbox</a>
-                </div>
+                <!-- Include driver.js for the onboarding tour -->
+                <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"
+                    integrity="sha384-8Sh+HHQ9kZ3Pyd6MlvY9AJ0nlqR6E7d9UBLCIiOqIPIVBXVQtCEEqxAL2hU7Y7BQ"
+                    crossorigin="anonymous"></script>
+                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"
+                    integrity="sha384-R9ygV1Otz8fhDvwTcJJ2RRWDL6tXNmJkQH/5Cth0L3t7h7P5v7E5C7C7C7C7C7C7"
+                    crossorigin="anonymous" />
+                <script>
+                    window.USER_ONBOARDING_COMPLETE = <%= user.onboarding_complete || false %>;
+                </script>
+                <script src="/js/adminTour.js"></script>
             </div>
-            <!-- Include driver.js for the onboarding tour -->
-            <script 
-                src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"
-                integrity="sha384-8Sh+HHQ9kZ3Pyd6MlvY9AJ0nlqR6E7d9UBLCIiOqIPIVBXVQtCEEqxAL2hU7Y7BQ"
-                crossorigin="anonymous"></script>
-            <link 
-                rel="stylesheet" 
-                href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"
-                integrity="sha384-R9ygV1Otz8fhDvwTcJJ2RRWDL6tXNmJkQH/5Cth0L3t7h7P5v7E5C7C7C7C7C7C7"
-                crossorigin="anonymous"/>
-            <script>
-                window.USER_ONBOARDING_COMPLETE = <%= user.onboarding_complete || false %>;
-            </script>
-            <script src="/js/adminTour.js"></script>
-        </div>
-        <% } %>
+            <% } %>
     </div>
 </div>
