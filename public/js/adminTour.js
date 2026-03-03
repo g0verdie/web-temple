@@ -62,17 +62,25 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     ];
 
+    const resolveSteps = () => tourSteps.filter((step) => document.querySelector(step.element));
+
     const markOnboardingComplete = async () => {
         try {
             const csrfMeta = document.querySelector('meta[name="csrf-token"]');
             const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
 
+            if (!csrfToken) {
+                console.warn('CSRF token missing; onboarding completion request may fail.');
+            }
+
+            const headers = { 'Content-Type': 'application/json' };
+            if (csrfToken) {
+                headers['CSRF-Token'] = csrfToken;
+            }
+
             const response = await fetch('/api/users/onboarding/complete', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'CSRF-Token': csrfToken
-                }
+                headers
             });
 
             if (response.ok) {
@@ -86,17 +94,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Add keyboard accessibility: Escape key closes tour
-    const tourKeydownHandler = (e) => {
-        if (e.key === 'Escape' || e.code === 'Escape') {
-            e.preventDefault();
-            driverObj.destroy();
-            // Note: marking onboarding complete on escape is handled by onDestroyStarted
-        }
-    };
-
     // Keep track of whether handler is attached
     let handlerAttached = false;
+    let driverObj = null;
 
     const attachKeydown = () => {
         if (!handlerAttached) {
@@ -112,11 +112,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const driverObj = driver({
-        showProgress: true,
-        steps: tourSteps,
-        onDestroyStarted: () => {
-            if (!driverObj.hasNextStep() || confirm("Are you sure you want to exit the tour?")) {
+    // Add keyboard accessibility: Escape key closes tour
+    const tourKeydownHandler = (e) => {
+        if ((e.key === 'Escape' || e.code === 'Escape') && driverObj) {
+            e.preventDefault();
+            driverObj.destroy();
+            // Note: marking onboarding complete on escape is handled by onDestroyStarted
+        }
+    };
+
+    const startTour = () => {
+        if (driverObj && driverObj.isActive && driverObj.isActive()) {
+            return;
+        }
+
+        const steps = resolveSteps();
+        if (steps.length === 0) {
+            console.warn('Onboarding tour steps not found in the DOM; skipping tour.');
+            return;
+        }
+
+        driverObj = driver({
+            showProgress: true,
+            steps,
+            onDestroyStarted: () => {
                 driverObj.destroy();
                 detachKeydown();
                 // Mark complete if not already marked
@@ -124,15 +143,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     markOnboardingComplete();
                 }
             }
-        }
-    });
+        });
+
+        driverObj.drive();
+        attachKeydown();
+    };
 
     // Start tour automatically if not complete
     if (!window.USER_ONBOARDING_COMPLETE) {
         // Small delay to ensure UI is ready
         setTimeout(() => {
-            driverObj.drive();
-            attachKeydown();
+            startTour();
         }, 500);
     }
 
@@ -140,8 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const replayBtn = document.getElementById('replay-tour-btn');
     if (replayBtn) {
         replayBtn.addEventListener('click', () => {
-            driverObj.drive();
-            attachKeydown();
+            startTour();
         });
     }
 

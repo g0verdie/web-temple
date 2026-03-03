@@ -67,6 +67,13 @@ So that I can quickly learn how to use the admin features.
 - ✅ Replaced dummy href="#" buttons with javascript:void(0) pointing to useful feedback
 - ✅ Addressed integration suite placeholder tests by injecting auth token directly to bypassing NFR-auth middleware and adding integration request assertions
 
+**Code Review (Mar 2, 2026):**
+- ✅ Added `onboarding_complete` to registration JWT payload for consistency with login
+- ✅ Returned `onboarding_complete` from `registerUser` insert for reliable defaults
+- ✅ Hardened onboarding tour start (DOM step resolution, safe key handling, skip flow)
+- ✅ Added CSRF-missing warning and conditional header injection
+- ✅ Updated driver.js SRI hashes to verified values
+
 **Review Details:** See `2-6-code-review-fixes.md` for detailed findings and fixes
 
 ## File List
@@ -92,6 +99,8 @@ So that I can quickly learn how to use the admin features.
 - Integrated `driver.js` conditionally on dashboard to guide new Rabbi through tools.
 - Included 'Replay Tour' functionality.
 - Added comprehensive unit testing for all new logic.
+- Added onboarding flag to registration JWT + registerUser return payload.
+- Hardened onboarding tour startup and updated driver.js SRI hashes.
 
 ## Status
 **Current:** Done

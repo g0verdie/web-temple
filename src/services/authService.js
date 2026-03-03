@@ -60,7 +60,7 @@ const registerUser = async (userData) => {
     const result = await db.query(
         `INSERT INTO users (email, password_hash, first_name, last_name, role, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-         RETURNING id, email, first_name, last_name, role, token_version, created_at`,
+         RETURNING id, email, first_name, last_name, role, onboarding_complete, token_version, created_at`,
         [email, password_hash, first_name || null, last_name || null, 'member']
     );
 

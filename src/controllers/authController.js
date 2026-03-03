@@ -47,6 +47,7 @@ const register = async (req, res) => {
                 user_id: user.id,
                 email: user.email,
                 role: user.role,
+                onboarding_complete: user.onboarding_complete || false,
                 token_version: user.token_version,
                 jti: jti
             },
