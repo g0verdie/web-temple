@@ -252,11 +252,30 @@ const changePassword = async (options) => {
     // Hash new password
     const new_password_hash = await hashPassword(new_password);
 
-    // Update password in database
-    await db.query(
-        'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
-        [new_password_hash, user_id]
-    );
+    // Perform updates in transaction
+    const client = await db.pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Archive current password
+        await client.query(
+            'INSERT INTO password_history (user_id, password_hash) VALUES ($1, $2)',
+            [user_id, user.password_hash]
+        );
+
+        // 2. Update user password and increment token_version (invalidating sessions)
+        await client.query(
+            'UPDATE users SET password_hash = $1, token_version = COALESCE(token_version, 0) + 1, updated_at = NOW() WHERE id = $2',
+            [new_password_hash, user_id]
+        );
+
+        await client.query('COMMIT');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
 
     // Log password change
     logAudit({

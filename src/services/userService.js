@@ -131,18 +131,32 @@ const requestEmailChange = async (userId, newEmail) => {
         throw new Error('Email already in use');
     }
 
-    await db.query(
-        'UPDATE email_change_requests SET used = true WHERE user_id = $1 AND used = false',
-        [userId]
-    );
+    const client = await db.pool.connect();
+    let token, expiresAt;
 
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    try {
+        await client.query('BEGIN');
 
-    await db.query(
-        'INSERT INTO email_change_requests (user_id, new_email, token, expires_at) VALUES ($1, $2, $3, $4)',
-        [userId, newEmail, token, expiresAt]
-    );
+        await client.query(
+            'UPDATE email_change_requests SET used = true WHERE user_id = $1 AND used = false',
+            [userId]
+        );
+
+        token = crypto.randomBytes(32).toString('hex');
+        expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+        await client.query(
+            'INSERT INTO email_change_requests (user_id, new_email, token, expires_at) VALUES ($1, $2, $3, $4)',
+            [userId, newEmail, token, expiresAt]
+        );
+
+        await client.query('COMMIT');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
 
     const baseUrl = process.env.APP_URL || 'http://localhost:3000';
     const confirmLink = `${baseUrl}/account/confirm-email?token=${token}`;
@@ -198,6 +212,16 @@ const confirmEmailChange = async (token) => {
 
         if (existingEmail.rows.length > 0) {
             throw new Error('Email already in use');
+        }
+
+        // Defensive check: look for other active email change requests for this new email
+        const duplicateRequests = await client.query(
+            'SELECT id FROM email_change_requests WHERE new_email = $1 AND used = false AND expires_at > NOW() AND id != $2',
+            [request.new_email, request.id]
+        );
+
+        if (duplicateRequests.rows.length > 0) {
+            throw new Error('Email already in use by another pending request');
         }
 
         await client.query(

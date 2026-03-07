@@ -100,7 +100,16 @@ jest.mock('../../../src/config/db', () => {
 
     return {
         query,
-        pool: { query },
+        pool: {
+            query,
+            connect: jest.fn().mockResolvedValue({
+                query: async (text, params) => {
+                    const res = await query(text, params);
+                    return res;
+                },
+                release: jest.fn()
+            })
+        },
         __reset: reset
     };
 });

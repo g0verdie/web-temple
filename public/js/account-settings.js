@@ -57,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (newEmail && currentEmail && newEmail.toLowerCase() !== currentEmail.toLowerCase()) {
                     await requestJson('/api/account/email-change', 'POST', { new_email: newEmail });
+                    emailInput.dataset.currentEmail = newEmail;
                     showMessage(profileMessage, 'Confirmation email sent to your new address.', 'success');
                 } else {
                     showMessage(profileMessage, 'Profile updated successfully.', 'success');

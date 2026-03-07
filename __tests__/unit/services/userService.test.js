@@ -128,8 +128,16 @@ describe('userService.requestEmailChange', () => {
         db.query
             .mockResolvedValueOnce({ rows: [{ id: 'user-1', email: 'current@example.com' }] })
             .mockResolvedValueOnce({ rows: [] })
-            .mockResolvedValueOnce({ rows: [] })
-            .mockResolvedValueOnce({ rows: [{ id: 'req-1' }] });
+
+        const client = {
+            query: jest.fn()
+                .mockResolvedValueOnce({ rows: [] }) // BEGIN
+                .mockResolvedValueOnce({ rows: [] }) // UPDATE
+                .mockResolvedValueOnce({ rows: [{ id: 'req-1' }] }) // INSERT
+                .mockResolvedValueOnce({ rows: [] }), // COMMIT
+            release: jest.fn()
+        };
+        db.pool = { connect: jest.fn().mockResolvedValue(client) };
 
         renderTemplate.mockReturnValue({ subject: 'Confirm Email', html: '<p>Confirm</p>', text: 'Confirm' });
         enqueueEmail.mockReturnValue(Promise.resolve({ id: 'job-1' }));
@@ -137,6 +145,8 @@ describe('userService.requestEmailChange', () => {
         await userService.requestEmailChange('user-1', 'new@example.com');
 
         expect(enqueueEmail).toHaveBeenCalled();
+        expect(client.query).toHaveBeenCalled();
+        expect(client.release).toHaveBeenCalled();
     });
 
     it('throws when new email matches current', async () => {
@@ -158,6 +168,7 @@ describe('userService.confirmEmailChange', () => {
                 .mockResolvedValueOnce({ rows: [] }) // BEGIN
                 .mockResolvedValueOnce({ rows: [{ id: 'req-1', user_id: 'user-1', new_email: 'new@example.com', expires_at: new Date(Date.now() + 60000), used: false }] })
                 .mockResolvedValueOnce({ rows: [] }) // Check existing email
+                .mockResolvedValueOnce({ rows: [] }) // Check for duplicate requests
                 .mockResolvedValueOnce({ rows: [] }) // Update user email
                 .mockResolvedValueOnce({ rows: [] }) // Mark request as used
                 .mockResolvedValueOnce({ rows: [] }), // COMMIT

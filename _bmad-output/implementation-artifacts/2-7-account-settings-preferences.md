@@ -133,6 +133,15 @@ All tasks completed successfully. Story 2.7 is fully implemented and tested.
 4. **Transaction mocks** - Fixed confirmEmailChange test to properly mock all queries in the database transaction including BEGIN.
 5. **Layout template** - Fixed home.test.js to include user and currentPath in res.locals, preventing "user is not defined" errors in layout.ejs when testing routes in isolation.
 
+### Code Review Fixes (Adversarial Code Review):
+1. **authService.changePassword** - `token_version` was not incremented when changing a password, leaving old sessions active. Added `token_version` increment and `password_history` archival in a transaction to fix the data integrity and security risk.
+2. **userService.requestEmailChange** - Added a transaction to `requestEmailChange` to ensure `UPDATE email_change_requests` and `INSERT INTO email_change_requests` are either both successfully executed or both rolled back.
+3. **userService.confirmEmailChange** - Added defensive validation to check for any pending email change requests targeting the exact same new email.
+4. **account-settings.js UI** - The data-current-email attribute was not correctly updating after a successful email change. This left the user capable of spamming requests repeatedly. We now correctly update it on success.
+5. **database migrations** - The default values for `notification_preferences` in the 009 schema did not perfectly align with the codebase defaults.
+
+All tests ran and pass: 464 passing.
+
 ## File List
 
 ### Migrations
