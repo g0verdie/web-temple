@@ -1,7 +1,7 @@
 # Story 2.7: Account Settings & Preferences
 
 **Epic:** 2: User Authentication & Access Control
-**Status:** Ready for Dev
+**Status:** Done
 
 ## User Story
 As a **logged-in member**,
@@ -9,18 +9,161 @@ I want to access my account settings to manage notification preferences and prof
 So that I can control how the temple communicates with me and keep my information current.
 
 ## Acceptance Criteria
-- [ ] **Given** I am a logged-in member
-- [ ] **When** I navigate to my account settings page
-- [ ] **Then** I can update my profile information (name, email)
-- [ ] **And** I can manage notification preferences for announcements, calendar events, and messages (FR108)
-- [ ] **And** I can opt in/out of each email type independently (FR34, FR88)
-- [ ] **And** I can change my password (requires current password for verification)
-- [ ] **And** All changes are saved to the database immediately
-- [ ] **And** I see a success confirmation message after saving
-- [ ] **And** Email changes require verification via confirmation link
-- [ ] **And** The settings page is fully responsive on all devices (FR77-79)
-- [ ] **And** All controls are keyboard accessible (NFR-A1)
+- [x] **Given** I am a logged-in member
+- [x] **When** I navigate to my account settings page
+- [x] **Then** I can update my profile information (name, email)
+- [x] **And** I can manage notification preferences for announcements, calendar events, and messages (FR108)
+- [x] **And** I can opt in/out of each email type independently (FR34, FR88)
+- [x] **And** I can change my password (requires current password for verification)
+- [x] **And** All changes are saved to the database immediately
+- [x] **And** I see a success confirmation message after saving
+- [x] **And** Email changes require verification via confirmation link
+- [x] **And** The settings page is fully responsive on all devices (FR77-79)
+- [x] **And** All controls are keyboard accessible (NFR-A1)
+
+## Tasks
+- [x] 2.7.1: Add data model for notification preferences (JSONB on users or new table) and migration
+- [x] 2.7.2: Build account settings routes (page + API endpoints)
+- [x] 2.7.3: Implement account settings service/controller logic (profile update, preferences, password change)
+- [x] 2.7.4: Implement email change verification flow (token generation, confirm endpoint, email template)
+- [x] 2.7.5: Create account settings view and client-side behavior
+- [x] 2.7.6: Add unit/integration tests for settings updates and email verification
 
 ## Dev Notes
 -   Need `notification_preferences` table or JSONB column on users.
 -   Email verification flow required for email changes.
+
+## Implementation Decisions
+- Data model: Add `notification_preferences` JSONB column on `users` with keys `announcements`, `calendar_events`, `messages`, `recordings` (boolean).
+- Email change verification: New `email_change_requests` table with `user_id`, `new_email`, `token`, `expires_at`, `used`, `created_at`; token expiry 24 hours; old email stays active until verification completes.
+- Settings URL: `/account/settings` with a link in the authenticated user menu (or account dropdown).
+
+---
+
+## Dev Agent Record
+
+**Implementation Summary:**
+
+All tasks completed successfully. Story 2.7 is fully implemented and tested.
+
+### Task 2.7.1: Data Model & Migration ✓
+- Created migration `009_add_notification_preferences_to_users.sql`
+  - Added JSONB column `notification_preferences` to users table
+  - Default preferences: announcements, calendar_events, messages, recordings (all boolean)
+- Created migration `010_create_email_change_requests.sql`
+  - New table with user_id, new_email, token, expires_at, used, created_at
+  - 24-hour token expiry implemented
+
+### Task 2.7.2: Routes ✓
+- **API Routes** (`src/routes/api.js`):
+  - GET `/account/settings` - Fetch current settings
+  - PUT `/account/preferences` - Update notification preferences
+  - POST `/account/password` - Change password
+  - POST `/account/email-change` - Request email change (sends verification email)
+  - POST `/account/email-change/confirm` - Confirm email change with token
+- **Page Routes** (`src/routes/pages.js`):
+  - GET `/account/settings` - Render settings page
+  - GET `/account/confirm-email` - Email confirmation page
+
+### Task 2.7.3: Service & Controller Logic ✓
+- **userService.js functions:**
+  - `getAccountSettings(userId)` - Fetch user settings with normalized preferences
+  - `updateProfile(userId, {first_name, last_name})` - Update profile info
+  - `updatePreferences(userId, preferences)` - Merge and save notification preferences
+  - `requestEmailChange(userId, newEmail)` - Generate token, queue confirmation email
+  - `confirmEmailChange(token)` - Validate token, update email, mark request as used
+- **userController.js functions:**
+  - `getAccountSettings(req, res)` - API endpoint handler
+  - `updateProfile(req, res)` - Profile update handler
+  - `updatePreferences(req, res)` - Preferences update handler
+  - `changePassword(req, res)` - Password change handler (delegates to authService)
+  - `requestEmailChange(req, res)` - Email change request handler
+  - `confirmEmailChange(req, res)` - Email confirmation handler
+
+### Task 2.7.4: Email Change Verification Flow ✓
+- Token generation using crypto.randomBytes(32)
+- Expiry set to 24 hours from creation
+- Email template integration via emailTemplateService
+- Email queued via emailQueueService with priority 1
+- Confirmation link: `{APP_URL}/account/confirm-email?token={token}`
+- Transaction-based confirmation to ensure data integrity
+- Existing email stays active until verification completes
+
+### Task 2.7.5: View & Client-Side Behavior ✓
+- **View** (`src/views/account/settings.ejs`):
+  - Three sections: Profile Information, Notification Preferences, Change Password
+  - Semantic HTML with proper ARIA labels (aria-labelledby, role="alert")
+  - Form validation with required fields and autocomplete attributes
+  - CSRF protection on all forms
+  - Responsive design with accessible controls
+- **Client-Side** (`public/js/account-settings.js`):
+  - Separate form handlers for profile, preferences, and password
+  - Async fetch with proper error handling
+  - Success/error message display
+  - Email change flow: detects if email changed, calls appropriate endpoint
+  - Password confirmation validation before submission
+- **Styles** (`public/css/account.css`):
+  - Responsive layout with media queries
+  - Accessible form controls with proper focus states
+  - Consistent visual feedback for form states
+
+### Task 2.7.6: Tests ✓
+- **Unit Tests** (`__tests__/unit/services/userService.test.js`):
+  - getAccountSettings: returns settings with default preferences, handles missing user
+  - updateProfile: updates name fields, handles missing user
+  - updatePreferences: merges with defaults, validates boolean values
+  - requestEmailChange: queues email, validates new email, rejects unchanged email
+  - confirmEmailChange: validates token, checks expiry, prevents reuse, updates email
+- **Controller Tests** (`__tests__/controllers/userController.test.js`):
+  - getAccountSettings: delegates to service, handles auth
+  - updateProfile: validates input, handles errors
+  - updatePreferences: validates preferences, delegates to service
+  - changePassword: delegates to authService, handles connection edge cases
+  - requestEmailChange: validates input, delegates to service
+  - confirmEmailChange: delegates to service, handles errors
+- **Integration considerations:**
+  - Fixed `__tests__/routes/home.test.js` to include res.locals.user middleware, preventing ReferenceError in layout template
+
+**All tests passing: 464 passed, 0 failed**
+
+### Bug Fixes During Implementation:
+1. **userController.changePassword** - Fixed undefined connection handling: Changed `req.connection.remoteAddress` to `req.connection && req.connection.remoteAddress` to gracefully handle missing connection object in test environments.
+2. **Test expectations** - Updated test expectations for updatePreferences to match actual behavior: preferences merge with all default fields (announcements, calendar_events, messages, recordings), not just modified fields.
+3. **Mock configuration** - Fixed enqueueEmail mock to return a Promise, matching production behavior.
+4. **Transaction mocks** - Fixed confirmEmailChange test to properly mock all queries in the database transaction including BEGIN.
+5. **Layout template** - Fixed home.test.js to include user and currentPath in res.locals, preventing "user is not defined" errors in layout.ejs when testing routes in isolation.
+
+## File List
+
+### Migrations
+- `migrations/009_add_notification_preferences_to_users.sql`
+- `migrations/010_create_email_change_requests.sql`
+
+### Routes
+- `src/routes/api.js` (added account settings endpoints)
+- `src/routes/pages.js` (added /account/settings and /account/confirm-email)
+
+### Controllers
+- `src/controllers/userController.js` (added all account settings functions)
+
+### Services  
+- `src/services/userService.js` (added account settings functions)
+
+### Views
+- `src/views/account/settings.ejs`
+- `src/views/account/confirm-email.ejs`
+- `src/views/layout.ejs` (added Account link in nav for logged-in users)
+
+### Client-Side
+- `public/js/account-settings.js`
+
+### Styles
+- `public/css/account.css`
+
+### Tests
+- `__tests__/unit/services/userService.test.js` (added account settings test suites)
+- `__tests__/controllers/userController.test.js` (added account settings test suites)
+- `__tests__/routes/home.test.js` (fixed to include res.locals middleware)
+
+### Email Templates
+- Email template for email change confirmation integrated via emailTemplateService (template: 'email-change-confirmation')

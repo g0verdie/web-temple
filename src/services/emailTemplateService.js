@@ -19,6 +19,13 @@ const appendUnsubscribe = ({ html, text }, token) => {
     };
 };
 
+const UNSUBSCRIBE_EXEMPT = new Set([
+    'password-reset',
+    'password-changed-notification',
+    'reset',
+    'email-change-confirmation'
+]);
+
 const templates = {
     welcome: (data = {}) => ({
         subject: 'Welcome to Temple B\'nai Israel',
@@ -47,6 +54,19 @@ const templates = {
                <p>If you did not make this change, please contact the temple administration immediately.</p>`,
         text: `Shalom${data.name ? ` ${data.name}` : ''}.\n\nThis email is to confirm that the password for your Temple B'nai Israel account has been successfully changed.\n\nIf you did not make this change, please contact the temple administration immediately.`
     }),
+    'email-change-confirmation': (data = {}) => ({
+        subject: 'Confirm your new email address',
+        html: `<p>We received a request to update the email address for your Temple B'nai Israel account.</p>
+               <p>Please confirm your new email address by clicking the link below:</p>
+               <p><a href="${data.confirmLink}">Confirm Email</a></p>
+               <p>If you did not request this change, you can ignore this email.</p>`,
+        text: `We received a request to update the email address for your Temple B'nai Israel account.
+
+Please confirm your new email address:
+${data.confirmLink}
+
+If you did not request this change, you can ignore this email.`
+    }),
     receipt: (data = {}) => ({
         subject: 'Your Temple donation receipt',
         html: `<p>Thank you for your donation${data.amount ? ` of ${data.amount}` : ''}.</p><p>Receipt ID: ${data.receiptId || 'N/A'}</p>`,
@@ -61,6 +81,15 @@ const renderTemplate = (templateKey, data = {}) => {
     }
 
     const base = builder(data);
+
+    if (UNSUBSCRIBE_EXEMPT.has(templateKey)) {
+        return {
+            subject: base.subject,
+            html: base.html,
+            text: base.text
+        };
+    }
+
     const withUnsubscribe = appendUnsubscribe(base, data.unsubscribeToken);
 
     return {

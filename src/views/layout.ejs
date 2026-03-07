@@ -38,6 +38,9 @@
             <li><span class="nav-link disabled" aria-disabled="true" title="Coming Soon">Calendar</span></li>
             <li><a href="/about" <%=activePath==='/about' ? 'aria-current="page"' : '' %>>About</a></li>
             <li><a href="/contact" <%=activePath==='/contact' ? 'aria-current="page"' : '' %>>Contact</a></li>
+            <% if (user) { %>
+            <li><a href="/account/settings" <%=activePath==='/account/settings' ? 'aria-current="page"' : '' %>>Account</a></li>
+            <% } %>
           </ul>
       </div>
     </nav>

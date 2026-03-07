@@ -60,11 +60,11 @@ development_status:
   epic-2: in-progress
   2-1-user-registration: done
   2-2-user-login: done
-  2-3-password-reset: review
+  2-3-password-reset: done
   2-4-admin-authentication-rbac: done
   2-5-session-management-timeouts: done
   2-6-rabbi-onboarding-tour: done
-  2-7-account-settings-preferences: ready-for-dev
+  2-7-account-settings-preferences: done
   epic-2-retrospective: optional
   epic-3: backlog
   3-1-facebook-live-stream-embed: backlog

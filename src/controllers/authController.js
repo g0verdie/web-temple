@@ -21,8 +21,9 @@ const register = async (req, res) => {
     let email = null;
 
     try {
-        ({ email } = req.body || {});
-        const { password, first_name, last_name } = req.body;
+        const body = req.body || {};
+        ({ email } = body);
+        const { password, first_name, last_name } = body;
 
         // Validate required fields
         if (!email || !password) {

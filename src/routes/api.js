@@ -24,6 +24,14 @@ const requireAuthSession = [
     sessionTimeout()
 ];
 
+// Account settings routes
+router.get('/account/settings', requireAuthSession, userController.getAccountSettings);
+router.put('/account/profile', requireAuthSession, userController.updateProfile);
+router.put('/account/preferences', requireAuthSession, userController.updatePreferences);
+router.post('/account/password', requireAuthSession, userController.changePassword);
+router.post('/account/email-change', requireAuthSession, userController.requestEmailChange);
+router.post('/account/email-change/confirm', userController.confirmEmailChange);
+
 // POST /api/donations
 router.post('/donations', donationController.createDonation);
 

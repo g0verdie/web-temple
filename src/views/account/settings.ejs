@@ -1,0 +1,76 @@
+<div class="container account-settings">
+    <h1>Account Settings</h1>
+    <p class="subtitle">Manage your profile, notifications, and password.</p>
+
+    <div id="settingsAlert" class="alert d-none" role="alert"></div>
+
+    <section class="settings-section" aria-labelledby="profile-heading">
+        <h2 id="profile-heading">Profile Information</h2>
+        <form id="profileForm" class="settings-form" novalidate>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <div class="form-row">
+                <label for="first_name">First Name</label>
+                <input type="text" id="first_name" name="first_name" value="<%= settings.first_name || '' %>" autocomplete="given-name">
+            </div>
+            <div class="form-row">
+                <label for="last_name">Last Name</label>
+                <input type="text" id="last_name" name="last_name" value="<%= settings.last_name || '' %>" autocomplete="family-name">
+            </div>
+            <div class="form-row">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" value="<%= settings.email %>" data-current-email="<%= settings.email %>" autocomplete="email" required>
+                <p class="hint">Changing your email sends a confirmation link to the new address.</p>
+            </div>
+            <button type="submit" class="btn-primary">Save Profile</button>
+            <div class="form-message" id="profileMessage" role="alert"></div>
+        </form>
+    </section>
+
+    <section class="settings-section" aria-labelledby="notifications-heading">
+        <h2 id="notifications-heading">Notification Preferences</h2>
+        <form id="preferencesForm" class="settings-form" novalidate>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <label class="checkbox-row">
+                <input type="checkbox" name="announcements" <%= settings.notification_preferences.announcements ? 'checked' : '' %>>
+                Announcements
+            </label>
+            <label class="checkbox-row">
+                <input type="checkbox" name="calendar_events" <%= settings.notification_preferences.calendar_events ? 'checked' : '' %>>
+                Calendar Events
+            </label>
+            <label class="checkbox-row">
+                <input type="checkbox" name="messages" <%= settings.notification_preferences.messages ? 'checked' : '' %>>
+                Messages
+            </label>
+            <label class="checkbox-row">
+                <input type="checkbox" name="recordings" <%= settings.notification_preferences.recordings ? 'checked' : '' %>>
+                Recordings
+            </label>
+            <button type="submit" class="btn-primary">Save Preferences</button>
+            <div class="form-message" id="preferencesMessage" role="alert"></div>
+        </form>
+    </section>
+
+    <section class="settings-section" aria-labelledby="password-heading">
+        <h2 id="password-heading">Change Password</h2>
+        <form id="passwordForm" class="settings-form" novalidate>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <div class="form-row">
+                <label for="current_password">Current Password</label>
+                <input type="password" id="current_password" name="current_password" autocomplete="current-password" required>
+            </div>
+            <div class="form-row">
+                <label for="new_password">New Password</label>
+                <input type="password" id="new_password" name="new_password" autocomplete="new-password" minlength="12" required>
+            </div>
+            <div class="form-row">
+                <label for="confirm_password">Confirm New Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" required>
+            </div>
+            <button type="submit" class="btn-primary">Update Password</button>
+            <div class="form-message" id="passwordMessage" role="alert"></div>
+        </form>
+    </section>
+</div>
+
+<script src="/js/account-settings.js" defer></script>

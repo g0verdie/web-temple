@@ -300,6 +300,12 @@ const requestPasswordReset = async (options) => {
 
     const user = result.rows[0];
 
+    // Invalidate any previously issued, unused reset tokens for this user
+    await db.query(
+        'UPDATE password_resets SET used = true WHERE user_id = $1 AND used = false',
+        [user.id]
+    );
+
     // Generate reset token
     const resetToken = require('crypto').randomBytes(32).toString('hex');
     const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours

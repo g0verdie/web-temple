@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const requireAuth = require('../middleware/requireAuth');
+const userService = require('../services/userService');
 
 /**
  * GET /register
@@ -50,6 +52,41 @@ router.get('/auth/reset-password', (req, res) => {
         bodyView: 'auth/reset-password',
         viewData: {},
         stylesheets: ['/css/auth.css']
+    });
+});
+
+/**
+ * GET /account/settings
+ * Display account settings page
+ */
+router.get('/account/settings', requireAuth, async (req, res) => {
+    try {
+        const settings = await userService.getAccountSettings(req.user.id);
+        res.render('layout', {
+            title: 'Account Settings - Temple B\'nai Israel',
+            bodyView: 'account/settings',
+            viewData: { settings },
+            stylesheets: ['/css/account.css']
+        });
+    } catch (error) {
+        console.error('Error loading account settings page:', error);
+        res.status(500).render('error', {
+            title: '500 - Server Error',
+            message: 'Unable to load account settings.'
+        });
+    }
+});
+
+/**
+ * GET /account/confirm-email
+ * Display email change confirmation page
+ */
+router.get('/account/confirm-email', (req, res) => {
+    res.render('layout', {
+        title: 'Confirm Email - Temple B\'nai Israel',
+        bodyView: 'account/confirm-email',
+        viewData: { token: req.query.token || '' },
+        stylesheets: ['/css/account.css']
     });
 });
 

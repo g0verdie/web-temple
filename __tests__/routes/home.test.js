@@ -25,6 +25,13 @@ app.locals.formatEventDate = (date) => {
   return date.toLocaleDateString('en-US', options);
 };
 
+// Add middleware to expose user to views (matching server.js)
+app.use((req, res, next) => {
+  res.locals.user = req.user || null;
+  res.locals.currentPath = req.path;
+  next();
+});
+
 const homeRoutes = require('../../src/routes/home');
 app.use('/', homeRoutes);
 

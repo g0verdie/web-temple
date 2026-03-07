@@ -1,23 +1,26 @@
 # Story 2.3: Password Reset
 
 **Epic:** 2: User Authentication & Access Control
-**Status:** review
+**Status:** done
 
 ## Dev Agent Record
 ### Debug Log
 - 2026-03-03: Validation-only run. `npm test` passed. `npm run lint` failed with 2 errors (roles-permissions.js, authController.js) and 8 warnings.
 - 2026-03-07: Fixed lint errors. `npm test` passed. `npm run lint` now reports 8 existing warnings (no errors).
 - 2026-03-07: Cleared lint warnings. `npm test` and `npm run lint` both pass.
+- 2026-03-07: Code review fixes applied. `npm test` and `npm run lint` pass.
 
 ### Completion Notes
 - Validation halted due to lint errors; story not moved to review.
 - Validation still blocked by lint warnings in existing files; story remains in progress.
 - Lint clean; tests pass. Story ready for review.
+- Code review fixes applied; security and CSRF issues addressed. Story moved to done.
 
 ## Change Log
 - 2026-03-03: Validation-only run; tests pass, lint errors remain. Status unchanged.
 - 2026-03-07: Fixed lint errors; tests pass; lint warnings remain. Status unchanged.
 - 2026-03-07: Cleared lint warnings; tests and lint pass. Status moved to review.
+- 2026-03-07: Addressed code review findings (token invalidation, security email unsubscribe exemption, CSRF fallback, registration guard, test update). Status moved to done.
 
 ## Senior Developer Review (AI)
 _Reviewer: Amelia on 2026-02-18_
@@ -78,6 +81,7 @@ So that I can regain access to my account securely.
 ### [NEW] [request-password-reset.ejs](file:///Users/g0verdie/workspace/web-temple/src/views/auth/request-password-reset.ejs)
 ### [NEW] [reset-password.ejs](file:///Users/g0verdie/workspace/web-temple/src/views/auth/reset-password.ejs)
 ### [NEW] [passwordReset.test.js](file:///Users/g0verdie/workspace/web-temple/__tests__/integration/auth/passwordReset.test.js)
+### [MODIFY] [emailTemplateService.test.js](file:///Users/g0verdie/workspace/web-temple/__tests__/services/emailTemplateService.test.js)
 ### [MODIFY] [migrate.js](file:///Users/g0verdie/workspace/web-temple/scripts/migrate.js)
 ### [MODIFY] [roles-permissions.js](file:///Users/g0verdie/workspace/web-temple/src/config/roles-permissions.js)
 ### [MODIFY] [api.js](file:///Users/g0verdie/workspace/web-temple/src/routes/api.js)

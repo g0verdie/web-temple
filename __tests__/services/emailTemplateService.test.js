@@ -10,7 +10,7 @@ describe('emailTemplateService', () => {
         expect(rendered.html).toContain('Ilya');
     });
 
-    test('renders reset template with tokenized unsubscribe link', () => {
+    test('renders reset template without unsubscribe link', () => {
         const rendered = emailTemplateService.renderTemplate('reset', {
             resetUrl: 'https://example.com/reset',
             unsubscribeToken: 'token-123'
@@ -18,7 +18,8 @@ describe('emailTemplateService', () => {
 
         expect(rendered.html).toContain('reset');
         expect(rendered.text).toContain('reset');
-        expect(rendered.html).toContain('token=token-123');
+        expect(rendered.html).not.toContain('unsubscribe');
+        expect(rendered.text).not.toContain('Unsubscribe');
     });
 
     test('throws for unknown template', () => {
