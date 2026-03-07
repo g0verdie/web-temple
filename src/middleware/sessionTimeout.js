@@ -48,6 +48,7 @@ const getSessionKeyPrefix = (role) => {
  * @returns {Function} Express middleware function
  */
 const sessionTimeout = (options = {}) => {
+    void options;
     return async (req, res, next) => {
         const user = req.user;
 

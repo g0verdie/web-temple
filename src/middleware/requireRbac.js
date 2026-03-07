@@ -6,8 +6,8 @@
  * Logs all unauthorized access attempts to audit log.
  */
 
-const { getRolePermissions, hasPermission } = require('../config/roles-permissions');
-const { logAudit, AUDIT_ACTIONS } = require('../services/auditService');
+const { hasPermission } = require('../config/roles-permissions');
+const { logAudit } = require('../services/auditService');
 
 /**
  * Create middleware that checks if user has a specific role

@@ -1,7 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const fs = require('fs');
-const path = require('path');
 const { requireRole } = require('../middleware/requireRbac');
 const requireAuth = require('../middleware/requireAuth');
 const sessionTimeout = require('../middleware/sessionTimeout');
@@ -61,18 +59,7 @@ router.get('/admin/backups/status', requireSuperAdminAccess, async (req, res) =>
         const lastSuccess = await backupLogService.getLastSuccessfulBackup();
 
         if (latestAttempt) {
-            let status = 'unknown';
-            if (latestAttempt.status === 'SUCCESS') status = 'success';
-            else if (latestAttempt.status === 'ERROR') status = 'error';
-            else status = latestAttempt.status.toLowerCase();
-
             // If latest failed, we still might want to know when the last success was
-            const response = {
-                lastBackup: latestAttempt, // keeping key compatible, but maybe should clarify
-                lastSuccess: lastSuccess,
-                status: status
-            };
-
             // Adjust response to match previous contract or improve it
             // Previous contract: { lastBackup: { ... }, status: 'success' }
             // If error, it just returned 'no-success-backups'.

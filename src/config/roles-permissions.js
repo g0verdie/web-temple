@@ -83,7 +83,7 @@ const rolePermissionMap = {
  * @returns {string[]} Array of permission strings, empty array if role not found
  */
 const getRolePermissions = (role) => {
-    if (!role || !rolePermissionMap.hasOwnProperty(role)) {
+    if (!role || !Object.prototype.hasOwnProperty.call(rolePermissionMap, role)) {
         return [];
     }
     return [...rolePermissionMap[role]]; // Return copy to prevent external mutation

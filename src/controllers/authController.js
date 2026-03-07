@@ -18,8 +18,11 @@ if (!JWT_SECRET) {
  * POST /api/auth/register
  */
 const register = async (req, res) => {
+    let email = null;
+
     try {
-        const { email, password, first_name, last_name } = req.body;
+        ({ email } = req.body || {});
+        const { password, first_name, last_name } = req.body;
 
         // Validate required fields
         if (!email || !password) {

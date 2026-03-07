@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const readline = require('readline');
 
 const DEFAULT_LOG_PATH = '/var/log/temple/backups.log';
 const DEV_LOG_PATH = path.join(process.cwd(), 'logs/backups.log');
