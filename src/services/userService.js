@@ -123,7 +123,7 @@ const requestEmailChange = async (userId, newEmail) => {
     }
 
     const existingEmail = await db.query(
-        'SELECT id FROM users WHERE email = $1',
+        'SELECT id FROM users WHERE LOWER(email) = LOWER($1)',
         [newEmail]
     );
 
@@ -206,7 +206,7 @@ const confirmEmailChange = async (token) => {
         }
 
         const existingEmail = await client.query(
-            'SELECT id FROM users WHERE email = $1',
+            'SELECT id FROM users WHERE LOWER(email) = LOWER($1)',
             [request.new_email]
         );
 
@@ -216,7 +216,7 @@ const confirmEmailChange = async (token) => {
 
         // Defensive check: look for other active email change requests for this new email
         const duplicateRequests = await client.query(
-            'SELECT id FROM email_change_requests WHERE new_email = $1 AND used = false AND expires_at > NOW() AND id != $2',
+            'SELECT id FROM email_change_requests WHERE LOWER(new_email) = LOWER($1) AND used = false AND expires_at > NOW() AND id != $2',
             [request.new_email, request.id]
         );
 

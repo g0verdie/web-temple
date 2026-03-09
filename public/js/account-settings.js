@@ -47,23 +47,43 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentEmail = emailInput.dataset.currentEmail;
             const profileMessage = document.getElementById('profileMessage');
 
+            let profileUpdated = false;
+
             try {
                 if (firstName || lastName) {
                     await requestJson('/api/account/profile', 'PUT', {
                         first_name: firstName || null,
                         last_name: lastName || null
                     });
-                }
-
-                if (newEmail && currentEmail && newEmail.toLowerCase() !== currentEmail.toLowerCase()) {
-                    await requestJson('/api/account/email-change', 'POST', { new_email: newEmail });
-                    emailInput.dataset.currentEmail = newEmail;
-                    showMessage(profileMessage, 'Confirmation email sent to your new address.', 'success');
-                } else {
-                    showMessage(profileMessage, 'Profile updated successfully.', 'success');
+                    profileUpdated = true;
                 }
             } catch (error) {
                 showMessage(profileMessage, error.message || 'Unable to update profile.', 'error');
+                return;
+            }
+
+            const pendingEmail = emailInput.dataset.pendingEmail;
+            const emailChanged = newEmail && currentEmail && newEmail.toLowerCase() !== currentEmail.toLowerCase();
+            const resendPending = newEmail && pendingEmail && newEmail.toLowerCase() === pendingEmail.toLowerCase();
+
+            if (emailChanged || resendPending) {
+                try {
+                    await requestJson('/api/account/email-change', 'POST', { new_email: newEmail });
+                    emailInput.dataset.pendingEmail = newEmail;
+                    showMessage(profileMessage, 'Confirmation email sent to your new address.', 'success');
+                } catch (error) {
+                    const fallbackMessage = profileUpdated
+                        ? 'Profile updated. Email change could not be requested.'
+                        : 'Unable to update profile.';
+                    showMessage(profileMessage, error.message || fallbackMessage, 'error');
+                }
+                return;
+            }
+
+            if (profileUpdated) {
+                showMessage(profileMessage, 'Profile updated successfully.', 'success');
+            } else {
+                showMessage(profileMessage, 'No changes to save.', 'error');
             }
         });
     }

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const requireAuth = require('../middleware/requireAuth');
+const sessionTimeout = require('../middleware/sessionTimeout');
 const userService = require('../services/userService');
 
 /**
@@ -59,7 +60,7 @@ router.get('/auth/reset-password', (req, res) => {
  * GET /account/settings
  * Display account settings page
  */
-router.get('/account/settings', requireAuth, async (req, res) => {
+router.get('/account/settings', requireAuth, sessionTimeout(), async (req, res) => {
     try {
         const settings = await userService.getAccountSettings(req.user.id);
         res.render('layout', {
