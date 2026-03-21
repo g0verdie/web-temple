@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const validator = require('validator');
 const { enqueueEmail } = require('./emailQueueService');
 const { renderTemplate } = require('./emailTemplateService');
+const { logAudit, AUDIT_ACTIONS } = require('./auditService');
 
 const DEFAULT_NOTIFICATION_PREFERENCES = {
     announcements: true,
@@ -66,6 +67,14 @@ const updateProfile = async (userId, { first_name, last_name }) => {
         throw new Error('User not found');
     }
 
+    logAudit({
+        user_id: userId,
+        action: AUDIT_ACTIONS.PROFILE_UPDATED,
+        entity_type: 'user',
+        entity_id: userId,
+        description: 'Profile information updated',
+    }).catch(err => console.error('Audit log error:', err));
+
     return true;
 };
 
@@ -99,6 +108,14 @@ const updatePreferences = async (userId, preferences) => {
         'UPDATE users SET notification_preferences = $1, updated_at = NOW() WHERE id = $2 RETURNING id',
         [merged, userId]
     );
+
+    logAudit({
+        user_id: userId,
+        action: AUDIT_ACTIONS.PREFERENCES_UPDATED,
+        entity_type: 'user',
+        entity_id: userId,
+        description: 'Notification preferences updated',
+    }).catch(err => console.error('Audit log error:', err));
 
     return merged;
 };
@@ -173,6 +190,14 @@ const requestEmailChange = async (userId, newEmail) => {
         priority: 1
     }).catch((err) => console.error('Failed to queue email change confirmation:', err));
 
+    logAudit({
+        user_id: userId,
+        action: AUDIT_ACTIONS.EMAIL_CHANGE_REQUESTED,
+        entity_type: 'user',
+        entity_id: userId,
+        description: `Email change requested to: ${newEmail}`,
+    }).catch(err => console.error('Audit log error:', err));
+
     return true;
 };
 
@@ -182,6 +207,8 @@ const confirmEmailChange = async (token) => {
     }
 
     const client = await db.pool.connect();
+    let confirmedUserId = null;
+    let confirmedEmail = null;
 
     try {
         await client.query('BEGIN');
@@ -234,14 +261,26 @@ const confirmEmailChange = async (token) => {
             [request.id]
         );
 
+        confirmedUserId = request.user_id;
+        confirmedEmail = request.new_email;
+
         await client.query('COMMIT');
-        return true;
     } catch (error) {
         await client.query('ROLLBACK');
         throw error;
     } finally {
         client.release();
     }
+
+    logAudit({
+        user_id: confirmedUserId,
+        action: AUDIT_ACTIONS.EMAIL_CHANGE_CONFIRMED,
+        entity_type: 'user',
+        entity_id: confirmedUserId,
+        description: `Email changed to: ${confirmedEmail}`,
+    }).catch(err => console.error('Audit log error:', err));
+
+    return true;
 };
 
 module.exports = {

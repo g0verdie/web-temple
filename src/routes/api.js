@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const { requireRole } = require('../middleware/requireRbac');
 const requireAuth = require('../middleware/requireAuth');
 const sessionTimeout = require('../middleware/sessionTimeout');
@@ -24,12 +25,21 @@ const requireAuthSession = [
     sessionTimeout()
 ];
 
+// Rate limiter for email change requests (5 per hour per IP)
+const emailChangeLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 5,
+    message: { success: false, message: 'Too many email change requests, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 // Account settings routes
 router.get('/account/settings', requireAuthSession, userController.getAccountSettings);
 router.put('/account/profile', requireAuthSession, userController.updateProfile);
 router.put('/account/preferences', requireAuthSession, userController.updatePreferences);
 router.post('/account/password', requireAuthSession, userController.changePassword);
-router.post('/account/email-change', requireAuthSession, userController.requestEmailChange);
+router.post('/account/email-change', requireAuthSession, emailChangeLimiter, userController.requestEmailChange);
 router.post('/account/email-change/confirm', userController.confirmEmailChange);
 
 // POST /api/donations

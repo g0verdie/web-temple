@@ -70,6 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     await requestJson('/api/account/email-change', 'POST', { new_email: newEmail });
                     emailInput.dataset.pendingEmail = newEmail;
+                    emailInput.dataset.currentEmail = newEmail;
                     showMessage(profileMessage, 'Confirmation email sent to your new address.', 'success');
                 } catch (error) {
                     const fallbackMessage = profileUpdated
@@ -131,7 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     new_password: newPassword
                 });
                 passwordForm.reset();
-                showMessage(passwordMessage, 'Password updated.', 'success');
+                showMessage(passwordMessage, 'Password updated. Redirecting to login…', 'success');
+                setTimeout(() => { window.location.href = '/login'; }, 2000);
             } catch (error) {
                 showMessage(passwordMessage, error.message || 'Unable to update password.', 'error');
             }

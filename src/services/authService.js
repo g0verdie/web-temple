@@ -249,6 +249,19 @@ const changePassword = async (options) => {
         throw new Error('Current password is incorrect');
     }
 
+    // Check password history (last 5 passwords) to prevent reuse
+    const historyResult = await db.query(
+        'SELECT password_hash FROM password_history WHERE user_id = $1 ORDER BY created_at DESC LIMIT 5',
+        [user_id]
+    );
+    for (const row of historyResult.rows) {
+        // eslint-disable-next-line no-await-in-loop
+        const reused = await comparePassword(new_password, row.password_hash);
+        if (reused) {
+            throw new Error('Password was recently used. Please choose a different password');
+        }
+    }
+
     // Hash new password
     const new_password_hash = await hashPassword(new_password);
 

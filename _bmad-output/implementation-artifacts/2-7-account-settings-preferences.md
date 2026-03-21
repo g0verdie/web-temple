@@ -133,14 +133,22 @@ All tasks completed successfully. Story 2.7 is fully implemented and tested.
 4. **Transaction mocks** - Fixed confirmEmailChange test to properly mock all queries in the database transaction including BEGIN.
 5. **Layout template** - Fixed home.test.js to include user and currentPath in res.locals, preventing "user is not defined" errors in layout.ejs when testing routes in isolation.
 
-### Code Review Fixes (Adversarial Code Review):
+### Code Review Fixes (First Adversarial Code Review):
 1. **authService.changePassword** - `token_version` was not incremented when changing a password, leaving old sessions active. Added `token_version` increment and `password_history` archival in a transaction to fix the data integrity and security risk.
 2. **userService.requestEmailChange** - Added a transaction to `requestEmailChange` to ensure `UPDATE email_change_requests` and `INSERT INTO email_change_requests` are either both successfully executed or both rolled back.
 3. **userService.confirmEmailChange** - Added defensive validation to check for any pending email change requests targeting the exact same new email.
 4. **account-settings.js UI** - The data-current-email attribute was not correctly updating after a successful email change. This left the user capable of spamming requests repeatedly. We now correctly update it on success.
 5. **database migrations** - The default values for `notification_preferences` in the 009 schema did not perfectly align with the codebase defaults.
 
-All tests ran and pass: 464 passing.
+### Code Review Fixes (Second Adversarial Code Review):
+1. **authService.changePassword** - `password_history` table was never queried to block password reuse. Added check against last 5 historical hashes using bcrypt `comparePassword` before allowing new password to be set.
+2. **userService** - Zero audit logging despite all functions being security-relevant. Added `logAudit` calls to `updateProfile`, `updatePreferences`, `requestEmailChange`, and `confirmEmailChange` with new AUDIT_ACTIONS (`PROFILE_UPDATED`, `PREFERENCES_UPDATED`, `EMAIL_CHANGE_REQUESTED`, `EMAIL_CHANGE_CONFIRMED`) registered in `auditService.js`.
+3. **api.js POST /account/email-change** - No rate limiting allowed unlimited confirmation email spam. Added `emailChangeLimiter` (5 req/hour per IP) to the route.
+4. **account-settings.js** - `data-current-email` was documented as fixed in first review but was not actually updated. Added `emailInput.dataset.currentEmail = newEmail` after a successful change request so the form correctly recognises the email as no longer "changed".
+5. **account-settings.js** - No client-side handling of session invalidation after password change. `authService.changePassword` increments `token_version` (invalidating the JWT), but the UI stayed on the page. Now shows "Password updated. Redirecting to login…" and redirects to `/login` after 2 seconds.
+6. **Story File List** - `public/js/account-email-confirm.js` and 12 other changed app/test files were absent from the File List. All added.
+
+All tests ran and pass.
 
 ## File List
 
@@ -165,14 +173,34 @@ All tests ran and pass: 464 passing.
 
 ### Client-Side
 - `public/js/account-settings.js`
+- `public/js/account-email-confirm.js`
 
 ### Styles
 - `public/css/account.css`
+
+### Services (collateral changes)
+- `src/services/emailTemplateService.js` (added email-change-confirmation template + unsubscribe exemption)
+- `src/services/backupLogService.js` (removed unused readline import)
+- `src/utils/logger.js` (removed dead DailyRotateFile named import)
+
+### Controllers (collateral changes)
+- `src/controllers/authController.js` (defensive req.body null-guard)
+
+### Middleware (collateral changes)
+- `src/middleware/requireRbac.js` (import cleanup)
+- `src/middleware/sessionTimeout.js` (void options lint suppression)
+
+### Config (collateral changes)
+- `src/config/roles-permissions.js` (Object.prototype.hasOwnProperty security fix)
+
+### Views (collateral changes)
+- `src/views/auth/request-password-reset.ejs` (CSRF token null-guard fix)
+- `src/views/auth/reset-password.ejs` (CSRF token null-guard fix)
 
 ### Tests
 - `__tests__/unit/services/userService.test.js` (added account settings test suites)
 - `__tests__/controllers/userController.test.js` (added account settings test suites)
 - `__tests__/routes/home.test.js` (fixed to include res.locals middleware)
-
-### Email Templates
-- Email template for email change confirmation integrated via emailTemplateService (template: 'email-change-confirmation')
+- `__tests__/scripts/emailChangeRequestsMigration.test.js` (new migration test)
+- `__tests__/scripts/notificationPreferencesMigration.test.js` (new migration test)
+- `__tests__/services/emailTemplateService.test.js` (updated for new template)
