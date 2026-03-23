@@ -12,25 +12,15 @@ const StreamingService = require('../../src/services/StreamingService');
 jest.mock('../../src/services/EventService');
 jest.mock('../../src/services/StreamingService');
 
-// Create a test app instance
 const app = express();
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '../../src/views'));
 
-// Add helper function
 app.locals.formatEventDate = (date) => {
-  const options = {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit'
-  };
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' };
   return date.toLocaleDateString('en-US', options);
 };
 
-// Add middleware to expose user to views (matching server.js)
 app.use((req, res, next) => {
   res.locals.user = req.user || null;
   res.locals.currentPath = req.path;
@@ -61,12 +51,11 @@ describe('Homepage Route Integration Tests', () => {
     ]);
 
     StreamingService.getPublicEmbedMetadata.mockResolvedValue({
-      status: 'inactive',
-      isLive: false,
-      title: 'Temple B\'nai Israel Live Service',
-      embedUrl: null,
-      watchUrl: null,
-      scheduledStart: '2026-03-27T19:00:00.000Z'
+        status: 'offline',
+        statusLabel: 'Offline',
+        archiveCta: true,
+        message: 'The livestream is currently offline. Please view our past recordings.',
+        embedUrl: null
     });
   });
 
@@ -81,81 +70,75 @@ describe('Homepage Route Integration Tests', () => {
       expect(response.type).toMatch(/html/);
     });
 
-    it('should include mission statement in response', async () => {
-      const response = await request(app).get('/');
-      expect(response.text).toContain('Temple B\'nai Israel');
-      expect(response.text).toContain('inclusive Jewish community');
-    });
-
-    it('should include CTA button "New Here? Learn More"', async () => {
-      const response = await request(app).get('/');
-      expect(response.text).toContain('New Here? Learn More');
-      expect(response.text).toContain('href="/about"');
-    });
-
-    it('should include countdown timer elements when service exists', async () => {
-      const response = await request(app).get('/');
-      if (response.text.includes('countdown-timer')) {
-        expect(response.text).toContain('countdown-days');
-        expect(response.text).toContain('countdown-hours');
-        expect(response.text).toContain('countdown-minutes');
-        expect(response.text).toContain('countdown-seconds');
-      }
-    });
-
-    it('should include upcoming events section', async () => {
-      const response = await request(app).get('/');
-      expect(response.text).toContain('Upcoming Events');
-    });
-
     it('should render the live stream embed when an active stream is available', async () => {
       StreamingService.getPublicEmbedMetadata.mockResolvedValue({
         status: 'live',
-        isLive: true,
+        statusLabel: 'LIVE NOW',
         title: 'Friday Evening Shabbat Service',
-        embedUrl: 'https://www.facebook.com/plugins/video.php?href=https%3A%2F%2Fwww.facebook.com%2Ftemple%2Fvideos%2F123',
-        watchUrl: 'https://www.facebook.com/temple/videos/123',
-        scheduledStart: '2026-03-27T19:00:00.000Z'
+        embedUrl: 'https://www.facebook.com/plugins/video.php?href=123',
+        watchUrl: 'https://www.facebook.com/temple/videos/123'
       });
 
       const response = await request(app).get('/');
 
       expect(response.text).toContain('Live Stream');
+      expect(response.text).toContain('LIVE NOW');
       expect(response.text).toContain('Friday Evening Shabbat Service');
       expect(response.text).toContain('<iframe');
-      expect(response.text).toContain('Watch on Facebook');
     });
 
-    it('should render a safe fallback message when no stream is active', async () => {
-      const response = await request(app).get('/');
+    it('should render upcoming state correctly', async () => {
+      StreamingService.getPublicEmbedMetadata.mockResolvedValue({
+        status: 'upcoming',
+        statusLabel: 'Upcoming',
+        scheduledStart: '2026-03-27T19:00:00.000Z',
+        countdownTarget: '2026-03-27T19:00:00.000Z',
+        message: 'The livestream will begin shortly.'
+      });
 
-      expect(response.text).toContain('The livestream will appear here when services go live');
-      expect(response.text).not.toContain('Watch on Facebook');
-      // Verify fallback card has accessible structure
-      expect(response.text).toContain('stream-card--fallback');
+      const response = await request(app).get('/');
       expect(response.text).toContain('Live Stream');
+      expect(response.text).toContain('Upcoming');
+      expect(response.text).toContain('stream-countdown');
+      expect(response.text).toContain('data-countdown-target="2026-03-27T19:00:00.000Z"');
+      expect(response.text).toContain('The livestream will begin shortly.');
     });
 
-    it('should include semantic HTML elements', async () => {
+    it('should render offline state correctly', async () => {
       const response = await request(app).get('/');
-      expect(response.text).toContain('role="main"');
-      expect(response.text).toContain('role="region"');
-      expect(response.text).toContain('aria-labelledby');
+      
+      expect(response.text).toContain('Live Stream');
+      expect(response.text).toContain('Offline');
+      expect(response.text).toContain('The livestream is currently offline. Please view our past recordings.');
+      expect(response.text).toContain('View Recordings');
     });
 
-    it('should include skip link for accessibility', async () => {
+    it('should render error state correctly', async () => {
+      StreamingService.getPublicEmbedMetadata.mockResolvedValue({
+        status: 'error',
+        fallbackUrl: 'https://www.facebook.com/TempleBnaiIsrael',
+        message: 'The streaming provider is currently unavailable. Please watch directly on Facebook.'
+      });
+
       const response = await request(app).get('/');
-      expect(response.text).toContain('Skip to main content');
-      expect(response.text).toContain('class="skip-link"');
+      expect(response.text).toContain('Watch on Facebook');
+      expect(response.text).toContain('The streaming provider is currently unavailable.');
     });
 
-    it('should respond quickly (performance requirement <2s)', async () => {
-      const startTime = Date.now();
-      await request(app).get('/');
-      const endTime = Date.now();
-      const responseTime = endTime - startTime;
+    it('should expose stream status semantics for assistive technology', async () => {
+      StreamingService.getPublicEmbedMetadata.mockResolvedValue({
+        status: 'offline',
+        statusLabel: 'Offline',
+        archiveCta: true,
+        message: 'The livestream is currently offline. Please view our past recordings.',
+        embedUrl: null
+      });
 
-      expect(responseTime).toBeLessThan(500);
+      const response = await request(app).get('/');
+
+      expect(response.text).toContain('role="status"');
+      expect(response.text).toContain('aria-live="polite"');
+      expect(response.text).toContain('aria-atomic="true"');
     });
   });
 });

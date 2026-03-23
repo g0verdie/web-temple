@@ -1,6 +1,6 @@
 # Story 3.2: Stream Status Display & Error Handling
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -22,26 +22,39 @@ so that I know whether a service is live, upcoming, or offline.
 
 ## Tasks / Subtasks
 
-- [ ] Extend the streaming service contract to expose status-oriented public state.
-  - [ ] Add normalized states for `live`, `upcoming`, `offline`, and `error`.
-  - [ ] Include only the data needed by the homepage: status label, scheduled start, countdown target, fallback Facebook URL, archive CTA flag, and user-facing message copy.
-  - [ ] Keep provider-specific logic inside the streaming service instead of controller/view templates.
-- [ ] Add homepage status rendering on top of the Story 3.1 embed foundation.
-  - [ ] Update the homepage controller to pass a status-first stream view model.
-  - [ ] Render distinct UI for live, upcoming, offline, and provider-failure cases.
-  - [ ] Keep the homepage usable when streaming data is missing or stale.
-- [ ] Implement 30-second status refresh without breaking CSP.
-  - [ ] Prefer a lightweight public status endpoint or equivalent server-owned polling path rather than client-side direct Facebook calls.
-  - [ ] Put polling logic in an external script under public assets, not in inline EJS script blocks.
-  - [ ] Ensure the refresh path updates status text, countdown state, and fallback messaging without full page reload.
-- [ ] Add graceful error and fallback behavior.
-  - [ ] Show a clear user-facing error when the provider becomes unavailable.
-  - [ ] Link to the Facebook page as the immediate alternative.
-  - [ ] Surface an archive-focused fallback state without implementing full archive browsing in this story.
-- [ ] Cover status behavior with tests.
-  - [ ] Add unit tests for status mapping and message selection logic in the streaming service.
-  - [ ] Add route/render tests for live, upcoming, offline, and error states.
-  - [ ] Add assertions for accessible status text, polling markup/hooks, and no regression to existing homepage content.
+- [x] Extend the streaming service contract to expose status-oriented public state.
+  - [x] Add normalized states for `live`, `upcoming`, `offline`, and `error`.
+  - [x] Include only the data needed by the homepage: status label, scheduled start, countdown target, fallback Facebook URL, archive CTA flag, and user-facing message copy.
+  - [x] Keep provider-specific logic inside the streaming service instead of controller/view templates.
+- [x] Add homepage status rendering on top of the Story 3.1 embed foundation.
+  - [x] Update the homepage controller to pass a status-first stream view model.
+  - [x] Render distinct UI for live, upcoming, offline, and provider-failure cases.
+  - [x] Keep the homepage usable when streaming data is missing or stale.
+- [x] Implement 30-second status refresh without breaking CSP.
+  - [x] Prefer a lightweight public status endpoint or equivalent server-owned polling path rather than client-side direct Facebook calls.
+  - [x] Put polling logic in an external script under public assets, not in inline EJS script blocks.
+  - [x] Ensure the refresh path updates status text, countdown state, and fallback messaging without full page reload.
+- [x] Add graceful error and fallback behavior.
+  - [x] Show a clear user-facing error when the provider becomes unavailable.
+  - [x] Link to the Facebook page as the immediate alternative.
+  - [x] Surface an archive-focused fallback state without implementing full archive browsing in this story.
+- [x] Cover status behavior with tests.
+  - [x] Add unit tests for status mapping and message selection logic in the streaming service.
+  - [x] Add route/render tests for live, upcoming, offline, and error states.
+  - [x] Add assertions for accessible status text, polling markup/hooks, and no regression to existing homepage content.
+
+### Review Follow-ups (AI)
+
+- [x] [AI-Review][High] Upcoming-state countdown now updates on first render by selecting SSR countdown markup and shared `data-countdown-target` attributes. [public/js/stream-status.js]
+- [x] [AI-Review][High] Stream status and countdown regions now include `role="status"`, `aria-live="polite"`, and `aria-atomic="true"` semantics for assistive tech announcements. [src/views/home.ejs]
+- [x] [AI-Review][High] Provider URL allowlist now requires exact facebook host/subdomain matching and rejects lookalike domains. [src/services/StreamingService.js]
+- [x] [AI-Review][Medium] Client-side stream rendering now sanitizes text fields and validates external URLs before interpolation into rendered markup. [public/js/stream-status.js]
+- [x] [AI-Review][Medium] Polling now performs an immediate refresh on load before the 30-second interval. [public/js/stream-status.js]
+- [x] [AI-Review][Medium] Added regression coverage for host-validation edge cases, accessibility semantics, first-render countdown behavior, and immediate polling behavior. [__tests__/services/StreamingService.test.js]
+- [x] [AI-Review][High] Live polling now preserves the active iframe when the embed URL is unchanged, updating status text and links without resetting playback. [public/js/stream-status.js]
+- [x] [AI-Review][High] Active streams with invalid embed URLs now degrade to the error state instead of the offline/archive state. [src/services/StreamingService.js]
+- [x] [AI-Review][Medium] Client polling now allows one failed refresh window before degrading stale UI to an explicit error fallback. [public/js/stream-status.js]
+- [x] [AI-Review][Medium] Stream badge variants now use distinct status-specific styling for live, upcoming, offline, and error states. [public/css/main.css]
 
 ## Dev Notes
 
@@ -153,7 +166,58 @@ GPT-5.4
 - Ultimate context engine analysis completed - comprehensive developer guide created.
 - Status-state modeling, fallback behavior, and CSP-safe polling path are explicitly scoped.
 - Later archive/admin streaming stories remain intentionally out of scope.
+- `StreamingService` refactored to return normalized UI states (`live`, `upcoming`, `offline`, `error`).
+- New API endpoint `GET /api/stream/status` exposed for polling without hitting Facebook API directly.
+- Frontend status updates handled via `public/js/stream-status.js` every 30s. Sub-second countdown timer also moved to this external script, enabling removal of inline scripts and adherence to CSP.
+- Tests expanded for `StreamingService`, `homeController`, and Express API routes. All 470 tests passing.
+- Live stream polling now preserves the active player when the embed URL is unchanged, preventing 30-second playback resets.
+- Invalid active-provider embed URLs now map to the explicit error state with Facebook fallback guidance.
+- Client refresh failures now use a one-retry window before showing a safe refresh error state.
+- Status badge variants now have dedicated CSS styling, and regression coverage was expanded for iframe preservation and retry-window degradation.
 
 ### File List
 
 - _bmad-output/implementation-artifacts/3-2-stream-status-display-error-handling.md
+- src/services/StreamingService.js
+- __tests__/services/StreamingService.test.js
+- src/controllers/homeController.js
+- src/views/home.ejs
+- __tests__/routes/home.test.js
+- src/routes/api.js
+- __tests__/routes/api.stream.test.js
+- public/js/stream-status.js
+- public/css/main.css
+- __tests__/controllers/homeController.test.js
+- __tests__/public/stream-status.test.js
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+
+## Senior Developer Review (AI)
+
+### Reviewer
+
+- Reviewer: g0verdie
+- Date: 2026-03-23
+
+### Outcome
+
+- Decision: Approved
+- Summary: All High and Medium findings from review were fixed, including live-player preservation during polling, provider-failure mapping, retry-window degradation, and status badge clarity. Regression tests were added for the new behaviors.
+
+### Findings
+
+1. Resolved - First-render upcoming countdown selector mismatch fixed.
+2. Resolved - Accessibility live announcement semantics added.
+3. Resolved - Host validation hardened against lookalike domains.
+4. Resolved - Client rendering sanitization and URL validation added.
+5. Resolved - Immediate polling on load implemented.
+6. Resolved - Regression tests added for all above areas.
+7. Resolved - Active live polling no longer recreates the iframe when the embed URL is unchanged.
+8. Resolved - Active streams with invalid provider embeds now degrade to error instead of offline.
+9. Resolved - Client polling now uses a one-retry window before replacing stale UI with a refresh error state.
+10. Resolved - Status badges now render with distinct visual styling for live, upcoming, offline, and error states.
+
+### Change Log
+
+- 2026-03-23: Senior Developer adversarial review completed. Status set to `in-progress`; 6 follow-up items added under `Review Follow-ups (AI)`.
+- 2026-03-23: Applied automatic fixes for all High and Medium review findings, added regression tests, and validated with full `npm test` pass (53 suites / 475 tests).
+- 2026-03-23: Applied automatic fixes for polling DOM patching, invalid-live error mapping, one-retry refresh degradation, and status badge styling; validated with targeted Jest regression coverage.

@@ -28,56 +28,102 @@ describe('StreamingService', () => {
         process.env = originalEnv;
     });
 
-    it('returns an inactive public stream model when no active stream is configured', async () => {
+    it('returns offline state when no active stream or future scheduled start is configured', async () => {
         const StreamingService = require('../../src/services/StreamingService');
 
         const stream = await StreamingService.getPublicEmbedMetadata();
 
-        expect(stream.status).toBe('inactive');
-        expect(stream.isLive).toBe(false);
+        expect(stream.status).toBe('offline');
+        expect(stream.statusLabel).toBe('Offline');
+        expect(stream.archiveCta).toBe(true);
+        expect(stream.message).toBe('The livestream is currently offline. Please view our past recordings.');
         expect(stream.embedUrl).toBeNull();
     });
 
-    it('returns normalized live embed metadata for an active Facebook stream', async () => {
+    it('returns live state for an active Facebook stream', async () => {
         process.env.FACEBOOK_LIVE_IS_ACTIVE = 'true';
         process.env.FACEBOOK_LIVE_EMBED_URL = 'https://www.facebook.com/plugins/video.php?href=https%3A%2F%2Fwww.facebook.com%2Ftemple%2Fvideos%2F123';
         process.env.FACEBOOK_LIVE_WATCH_URL = 'https://www.facebook.com/temple/videos/123';
         process.env.FACEBOOK_LIVE_TITLE = 'Friday Evening Shabbat Service';
-        process.env.FACEBOOK_LIVE_SCHEDULED_START = '2026-03-27T19:00:00.000Z';
 
         const StreamingService = require('../../src/services/StreamingService');
 
         const stream = await StreamingService.getPublicEmbedMetadata();
 
         expect(stream.status).toBe('live');
-        expect(stream.isLive).toBe(true);
-        expect(stream.provider).toBe('facebook');
+        expect(stream.statusLabel).toBe('LIVE NOW');
         expect(stream.embedUrl).toContain('facebook.com');
         expect(stream.watchUrl).toContain('facebook.com');
         expect(stream.title).toBe('Friday Evening Shabbat Service');
     });
 
-    it('returns unavailable when an active stream is configured with an invalid embed URL', async () => {
+    it('returns error state when an active stream has an invalid provider URL', async () => {
         process.env.FACEBOOK_LIVE_IS_ACTIVE = 'true';
-        process.env.FACEBOOK_LIVE_EMBED_URL = 'https://example.com/not-facebook';
+        process.env.FACEBOOK_LIVE_EMBED_URL = 'https://evilfacebook.com/plugins/video.php?href=123';
 
         const StreamingService = require('../../src/services/StreamingService');
 
         const stream = await StreamingService.getPublicEmbedMetadata();
 
-        expect(stream.status).toBe('unavailable');
-        expect(stream.isLive).toBe(false);
+        expect(stream.status).toBe('error');
+        expect(stream.statusLabel).toBe('Stream Error');
+        expect(stream.fallbackUrl).toBe('https://www.facebook.com/TempleBnaiIsrael');
     });
 
-    it('returns unavailable when embed URL uses http instead of https', async () => {
+    it('accepts subdomains of facebook.com as valid providers', async () => {
         process.env.FACEBOOK_LIVE_IS_ACTIVE = 'true';
-        process.env.FACEBOOK_LIVE_EMBED_URL = 'http://www.facebook.com/plugins/video.php?href=https%3A%2F%2Fwww.facebook.com%2Ftemple%2Fvideos%2F123';
+        process.env.FACEBOOK_LIVE_EMBED_URL = 'https://www.facebook.com/plugins/video.php?href=123';
+        process.env.FACEBOOK_LIVE_WATCH_URL = 'https://m.facebook.com/temple/videos/123';
 
         const StreamingService = require('../../src/services/StreamingService');
 
         const stream = await StreamingService.getPublicEmbedMetadata();
 
-        expect(stream.status).toBe('unavailable');
-        expect(stream.isLive).toBe(false);
+        expect(stream.status).toBe('live');
+        expect(stream.embedUrl).toContain('facebook.com');
+        expect(stream.watchUrl).toContain('facebook.com');
+    });
+
+    it('returns upcoming state when scheduled start is in the future and stream is not active', async () => {
+        const futureDate = new Date(Date.now() + 86400000).toISOString();
+        process.env.FACEBOOK_LIVE_SCHEDULED_START = futureDate;
+        
+        const StreamingService = require('../../src/services/StreamingService');
+
+        const stream = await StreamingService.getPublicEmbedMetadata();
+
+        expect(stream.status).toBe('upcoming');
+        expect(stream.statusLabel).toBe('Upcoming');
+        expect(stream.scheduledStart).toBe(futureDate);
+        expect(stream.countdownTarget).toBe(futureDate);
+        expect(stream.message).toBe('The livestream will begin shortly.');
+    });
+
+    it('returns error state when provider is flagged unavailable', async () => {
+        process.env.STREAM_PROVIDER_UNAVAILABLE = 'true';
+        process.env.FACEBOOK_LIVE_WATCH_URL = 'https://www.facebook.com/temple/videos/123';
+
+        const StreamingService = require('../../src/services/StreamingService');
+
+        const stream = await StreamingService.getPublicEmbedMetadata();
+
+        expect(stream.status).toBe('error');
+        expect(stream.statusLabel).toBe('Stream Error');
+        expect(stream.fallbackUrl).toBe('https://www.facebook.com/temple/videos/123');
+        expect(stream.message).toBe('The streaming provider is currently unavailable. Please watch directly on Facebook.');
+    });
+
+    it('returns error state with default fallback URL when watchUrl is invalid', async () => {
+        process.env.STREAM_PROVIDER_UNAVAILABLE = 'true';
+        process.env.FACEBOOK_LIVE_WATCH_URL = 'invalid-url';
+
+        const StreamingService = require('../../src/services/StreamingService');
+
+        const stream = await StreamingService.getPublicEmbedMetadata();
+
+        expect(stream.status).toBe('error');
+        expect(stream.statusLabel).toBe('Stream Error');
+        expect(stream.fallbackUrl).toBe('https://www.facebook.com/TempleBnaiIsrael'); // Assume default fallback URL
+        expect(stream.message).toBe('The streaming provider is currently unavailable. Please watch directly on Facebook.');
     });
 });

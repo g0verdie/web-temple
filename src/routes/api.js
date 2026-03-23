@@ -11,6 +11,18 @@ const sessionService = require('../services/sessionService');
 const donationController = require('../controllers/donationController');
 const userController = require('../controllers/userController');
 const authRoutes = require('./auth');
+const StreamingService = require('../services/StreamingService');
+
+// GET /api/stream/status - Public endpoint for homepage polling
+router.get('/stream/status', async (req, res) => {
+    try {
+        const stream = await StreamingService.getPublicEmbedMetadata();
+        res.json(stream);
+    } catch (err) {
+        console.error('API Error (stream status):', err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
 
 // Middleware to check for ADMIN role (strict)
 const requireSuperAdminAccess = [

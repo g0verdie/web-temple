@@ -43,8 +43,7 @@ describe('homeController', () => {
       EventService.getNextService.mockResolvedValue(mockService);
       EventService.getUpcomingEvents.mockResolvedValue(mockEvents);
       StreamingService.getPublicEmbedMetadata.mockResolvedValue({
-        status: 'inactive',
-        isLive: false,
+        status: 'offline',
         embedUrl: null
       });
 
@@ -66,8 +65,7 @@ describe('homeController', () => {
     it('should handle service failures gracefully', async () => {
       EventService.getNextService.mockRejectedValue(new Error('Service failure'));
       StreamingService.getPublicEmbedMetadata.mockResolvedValue({
-        status: 'inactive',
-        isLive: false,
+        status: 'offline',
         embedUrl: null
       });
 
@@ -81,8 +79,7 @@ describe('homeController', () => {
       EventService.getNextService.mockResolvedValue(mockService);
       EventService.getUpcomingEvents.mockResolvedValue(mockEvents);
       StreamingService.getPublicEmbedMetadata.mockResolvedValue({
-        status: 'inactive',
-        isLive: false,
+        status: 'offline',
         embedUrl: null
       });
 
@@ -110,7 +107,6 @@ describe('homeController', () => {
       const renderCall = res.render.mock.calls[0][1];
       expect(renderCall.viewData.stream).toEqual(expect.objectContaining({
         status: 'live',
-        isLive: true,
         embedUrl: expect.stringContaining('facebook.com'),
         title: 'Friday Evening Shabbat Service'
       }));
@@ -126,8 +122,8 @@ describe('homeController', () => {
       expect(res.render).toHaveBeenCalledWith('layout', expect.objectContaining({
         viewData: expect.objectContaining({
           stream: expect.objectContaining({
-            status: 'unavailable',
-            isLive: false
+            status: 'error',
+            fallbackUrl: expect.any(String)
           })
         })
       }));

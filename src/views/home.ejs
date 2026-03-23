@@ -10,15 +10,15 @@
 </section>
 
 <!-- Live Stream -->
-<section class="stream-section" role="region" aria-labelledby="stream-heading">
+<section class="stream-section" role="region" aria-labelledby="stream-heading" id="live-stream-container">
   <div class="stream-header">
     <h3 id="stream-heading" class="section-title">Live Stream</h3>
-    <% if (stream && stream.isLive) { %>
-      <span class="stream-badge" aria-label="Live now">Live Now</span>
+    <% if (stream && stream.statusLabel) { %>
+      <span class="stream-badge stream-badge--<%= stream.status %>" role="status" aria-live="polite" aria-atomic="true" aria-label="<%= stream.statusLabel %>"><%= stream.statusLabel %></span>
     <% } %>
   </div>
 
-  <% if (stream && stream.isLive && stream.embedUrl) { %>
+  <% if (stream && stream.status === 'live' && stream.embedUrl) { %>
     <div class="stream-card">
       <div class="stream-player-frame">
         <iframe
@@ -32,7 +32,9 @@
       </div>
       <div class="stream-details">
         <p class="stream-title"><%= stream.title %></p>
-        <p class="stream-helper"><%= stream.helperText %></p>
+        <% if (stream.message) { %>
+          <p class="stream-helper"><%= stream.message %></p>
+        <% } %>
         <% if (stream.watchUrl) { %>
           <a href="<%= stream.watchUrl %>" class="stream-link">Watch on Facebook</a>
         <% } %>
@@ -40,13 +42,24 @@
     </div>
   <% } else { %>
     <div class="stream-card stream-card--fallback">
-      <p class="stream-title"><%= stream.title %></p>
-      <p class="stream-helper"><%= stream.helperText %></p>
-      <% if (stream.formattedScheduledStart) { %>
-        <p class="stream-schedule">Next scheduled stream: <%= stream.formattedScheduledStart %></p>
+      <% if (stream && stream.title) { %>
+        <p class="stream-title"><%= stream.title %></p>
       <% } %>
-      <% if (stream.status === 'unavailable' && stream.watchUrl) { %>
-        <a href="<%= stream.watchUrl %>" class="stream-link">Open on Facebook</a>
+      <p class="stream-helper"><%= stream.message %></p>
+      
+      <% if (stream && stream.status === 'upcoming' && stream.formattedScheduledStart) { %>
+        <p class="stream-schedule">Next scheduled stream: <%= stream.formattedScheduledStart %></p>
+        <div class="stream-countdown" data-countdown-target="<%= stream.countdownTarget %>" role="status" aria-live="polite" aria-atomic="true">
+          <!-- Countdown managed by external script -->
+        </div>
+      <% } %>
+
+      <% if (stream && stream.status === 'error' && stream.fallbackUrl) { %>
+        <a href="<%= stream.fallbackUrl %>" class="stream-link cta-button">Watch on Facebook</a>
+      <% } %>
+
+      <% if (stream && stream.status === 'offline' && stream.archiveCta) { %>
+        <a href="/archive" class="stream-link cta-button">View Recordings</a>
       <% } %>
     </div>
   <% } %>
@@ -114,39 +127,5 @@
   <% } %>
 </section>
 
-<!-- Client-side countdown timer script -->
-<script>
-  (function() {
-    'use strict';
-
-    const countdownTimer = document.querySelector('.countdown-timer');
-    if (!countdownTimer) return;
-
-    const serviceDate = new Date(countdownTimer.dataset.serviceDate);
-
-    function updateCountdown() {
-      const now = new Date();
-      const diff = serviceDate - now;
-
-      if (diff <= 0) {
-        document.getElementById('countdown-days').textContent = '0';
-        document.getElementById('countdown-hours').textContent = '0';
-        document.getElementById('countdown-minutes').textContent = '0';
-        document.getElementById('countdown-seconds').textContent = '0';
-        return;
-      }
-
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-
-      document.getElementById('countdown-days').textContent = days;
-      document.getElementById('countdown-hours').textContent = hours;
-      document.getElementById('countdown-minutes').textContent = minutes;
-      document.getElementById('countdown-seconds').textContent = seconds;
-    }
-
-    setInterval(updateCountdown, 1000);
-  })();
-</script>
+<!-- Client-side logic for countdown timer and stream parsing -->
+<script src="/js/stream-status.js"></script>

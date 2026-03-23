@@ -1,11 +1,6 @@
 const EventService = require('../services/EventService');
 const StreamingService = require('../services/StreamingService');
 
-/**
- * Calculate time remaining until next service
- * @param {Date} serviceDate - The date of the next service
- * @returns {Object} Object with days, hours, minutes, seconds
- */
 function getTimeUntilService(serviceDate) {
   const now = new Date();
   const diff = serviceDate - now;
@@ -22,11 +17,6 @@ function getTimeUntilService(serviceDate) {
   return { days, hours, minutes, seconds };
 }
 
-/**
- * Format date for display
- * @param {Date} date - Date to format
- * @returns {string} Formatted date string
- */
 function formatEventDate(date) {
   const options = {
     weekday: 'long',
@@ -39,79 +29,35 @@ function formatEventDate(date) {
   return date.toLocaleDateString('en-US', options);
 }
 
-function buildUnavailableStreamViewModel() {
-  return {
-    status: 'unavailable',
-    isLive: false,
-    title: "Temple B'nai Israel Live Service",
-    embedUrl: null,
-    watchUrl: null,
-    scheduledStart: null,
-    formattedScheduledStart: null,
-    iframeTitle: 'Temple B\'nai Israel livestream',
-    helperText: 'The livestream is temporarily unavailable. Please check back shortly.',
-    fallbackActionLabel: null
-  };
-}
-
 function buildStreamViewModel(streamMetadata) {
-  const scheduledStart = streamMetadata && streamMetadata.scheduledStart
-    ? new Date(streamMetadata.scheduledStart)
-    : null;
-
-  const isValidScheduledStart = scheduledStart && !Number.isNaN(scheduledStart.getTime());
-  const formattedScheduledStart = isValidScheduledStart ? formatEventDate(scheduledStart) : null;
-  const title = (streamMetadata && streamMetadata.title) || "Temple B'nai Israel Live Service";
-
-  if (!streamMetadata || streamMetadata.status === 'unavailable') {
-    return {
-      ...buildUnavailableStreamViewModel(),
-      title,
-      watchUrl: streamMetadata && streamMetadata.watchUrl ? streamMetadata.watchUrl : null,
-      scheduledStart: isValidScheduledStart ? scheduledStart : null,
-      formattedScheduledStart
-    };
+  const viewModel = { ...streamMetadata };
+  
+  if (viewModel.scheduledStart) {
+    const scheduledStart = new Date(viewModel.scheduledStart);
+    if (!Number.isNaN(scheduledStart.getTime())) {
+      viewModel.formattedScheduledStart = formatEventDate(scheduledStart);
+    }
   }
 
-  if (streamMetadata.status === 'live' && streamMetadata.embedUrl) {
-    return {
-      status: 'live',
-      isLive: true,
-      title,
-      embedUrl: streamMetadata.embedUrl,
-      watchUrl: streamMetadata.watchUrl || null,
-      scheduledStart: isValidScheduledStart ? scheduledStart : null,
-      formattedScheduledStart,
-      iframeTitle: `${title} livestream player`,
-      helperText: 'If playback does not start automatically, press play in the player or use the Facebook link.',
-      fallbackActionLabel: streamMetadata.watchUrl ? 'Watch on Facebook' : null
-    };
+  if (viewModel.status === 'live' && viewModel.title) {
+    viewModel.iframeTitle = `${viewModel.title} livestream player`;
   }
-
-  return {
-    status: 'inactive',
-    isLive: false,
-    title,
-    embedUrl: null,
-    watchUrl: streamMetadata.watchUrl || null,
-    scheduledStart: isValidScheduledStart ? scheduledStart : null,
-    formattedScheduledStart,
-    iframeTitle: `${title} livestream player`,
-    helperText: 'The livestream will appear here when services go live.',
-    fallbackActionLabel: null
-  };
+  
+  return viewModel;
 }
 
-/**
- * Homepage controller
- * Renders the homepage with mission, countdown, and upcoming events
- */
 exports.getHomepage = async (req, res) => {
   try {
+    const defaultErrorState = {
+      status: 'error',
+      fallbackUrl: 'https://www.facebook.com/TempleBnaiIsrael',
+      message: 'The streaming provider is currently unavailable. Please watch directly on Facebook.'
+    };
+
     const [nextService, events, rawStream] = await Promise.all([
       EventService.getNextService(),
       EventService.getUpcomingEvents(3),
-      StreamingService.getPublicEmbedMetadata().catch(() => buildUnavailableStreamViewModel())
+      StreamingService.getPublicEmbedMetadata().catch(() => defaultErrorState)
     ]);
 
     let countdown = null;
@@ -124,7 +70,7 @@ exports.getHomepage = async (req, res) => {
       formattedDate: formatEventDate(new Date(event.date))
     }));
 
-    const stream = buildStreamViewModel(rawStream);
+    const stream = buildStreamViewModel(rawStream || defaultErrorState);
 
     res.render('layout', {
       title: 'Temple B\'nai Israel - Welcome Home',
@@ -151,7 +97,5 @@ exports.getHomepage = async (req, res) => {
   }
 };
 
-// Export helper functions for testing
 exports.getTimeUntilService = getTimeUntilService;
 exports.formatEventDate = formatEventDate;
-
