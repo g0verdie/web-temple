@@ -5,8 +5,10 @@
 
 const homeController = require('../../src/controllers/homeController');
 const EventService = require('../../src/services/EventService');
+const StreamingService = require('../../src/services/StreamingService');
 
 jest.mock('../../src/services/EventService');
+jest.mock('../../src/services/StreamingService');
 
 describe('homeController', () => {
   let req, res;
@@ -40,6 +42,11 @@ describe('homeController', () => {
     it('should render layout view with correct data structure', async () => {
       EventService.getNextService.mockResolvedValue(mockService);
       EventService.getUpcomingEvents.mockResolvedValue(mockEvents);
+      StreamingService.getPublicEmbedMetadata.mockResolvedValue({
+        status: 'inactive',
+        isLive: false,
+        embedUrl: null
+      });
 
       await homeController.getHomepage(req, res);
 
@@ -50,13 +57,19 @@ describe('homeController', () => {
           mission: expect.any(Object),
           events: expect.any(Array),
           nextService: mockService,
-          countdown: expect.any(Object)
+          countdown: expect.any(Object),
+          stream: expect.any(Object)
         })
       }));
     });
 
     it('should handle service failures gracefully', async () => {
       EventService.getNextService.mockRejectedValue(new Error('Service failure'));
+      StreamingService.getPublicEmbedMetadata.mockResolvedValue({
+        status: 'inactive',
+        isLive: false,
+        embedUrl: null
+      });
 
       await homeController.getHomepage(req, res);
 
@@ -67,12 +80,57 @@ describe('homeController', () => {
     it('should format event dates for display', async () => {
       EventService.getNextService.mockResolvedValue(mockService);
       EventService.getUpcomingEvents.mockResolvedValue(mockEvents);
+      StreamingService.getPublicEmbedMetadata.mockResolvedValue({
+        status: 'inactive',
+        isLive: false,
+        embedUrl: null
+      });
 
       await homeController.getHomepage(req, res);
 
       const renderCall = res.render.mock.calls[0][1];
       expect(renderCall.viewData.events[0]).toHaveProperty('formattedDate');
       expect(typeof renderCall.viewData.events[0].formattedDate).toBe('string');
+    });
+
+    it('should map live stream metadata into the homepage view model', async () => {
+      EventService.getNextService.mockResolvedValue(mockService);
+      EventService.getUpcomingEvents.mockResolvedValue(mockEvents);
+      StreamingService.getPublicEmbedMetadata.mockResolvedValue({
+        status: 'live',
+        isLive: true,
+        embedUrl: 'https://www.facebook.com/plugins/video.php?href=https%3A%2F%2Fwww.facebook.com%2Ftemple%2Fvideos%2F123',
+        watchUrl: 'https://www.facebook.com/temple/videos/123',
+        title: 'Friday Evening Shabbat Service',
+        scheduledStart: '2026-03-27T19:00:00.000Z'
+      });
+
+      await homeController.getHomepage(req, res);
+
+      const renderCall = res.render.mock.calls[0][1];
+      expect(renderCall.viewData.stream).toEqual(expect.objectContaining({
+        status: 'live',
+        isLive: true,
+        embedUrl: expect.stringContaining('facebook.com'),
+        title: 'Friday Evening Shabbat Service'
+      }));
+    });
+
+    it('should degrade gracefully when the streaming provider cannot be loaded', async () => {
+      EventService.getNextService.mockResolvedValue(mockService);
+      EventService.getUpcomingEvents.mockResolvedValue(mockEvents);
+      StreamingService.getPublicEmbedMetadata.mockRejectedValue(new Error('Provider unavailable'));
+
+      await homeController.getHomepage(req, res);
+
+      expect(res.render).toHaveBeenCalledWith('layout', expect.objectContaining({
+        viewData: expect.objectContaining({
+          stream: expect.objectContaining({
+            status: 'unavailable',
+            isLive: false
+          })
+        })
+      }));
     });
   });
 

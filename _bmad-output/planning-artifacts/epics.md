@@ -214,9 +214,31 @@ NFR-A7: Mobile accessibility (44px targets, no hover-only)
 - Responsive: Mobile-first 375px; CTA dominance above fold
 - Design system: Tailwind CSS with temple brand tokens (navy + gold, serif headings, sans body)
 
-## Epic List
+## Epic Overview
 
-### Epic 1: Project Foundation & Infrastructure Setup
+## Canonical Epic Sequence (Sprint-Aligned)
+
+This section is the single source of truth for epic numbering used by active execution and sprint tracking.
+
+Authoritative tracker: `/Users/g0verdie/workspace/web-temple/_bmad-output/implementation-artifacts/sprint-status.yaml`
+
+Use this sequence when creating stories, reporting sprint status, and running implementation workflows:
+
+1. Epic 1 - Foundation + Public Website Baseline
+2. Epic 2 - User Authentication & Access Control
+3. Epic 3 - Facebook Live Streaming & Video Archive
+4. Epic 4 - Live Chat During Services
+5. Epic 5 - Announcements & Member Communications
+6. Epic 6 - Calendar Management & Event Notifications
+7. Epic 7 - Visitor & Member Messaging
+8. Epic 8 - Donations & Financial Transparency
+9. Epic 9 - Admin Dashboard & Operations
+
+Alignment rule:
+- If this document contains any alternate epic numbering later in the file, treat that numbering as legacy planning context only.
+- `sprint-status.yaml` numbering is canonical for ongoing development and retrospective/planning workflows.
+
+### Legacy Sequence C - Epic 1: Project Foundation & Infrastructure Setup
 
 Development environment ready, hosting operational, core services deployed for all future epics to build upon.
 
@@ -224,7 +246,7 @@ Development environment ready, hosting operational, core services deployed for a
 **NFRs covered:** NFR-S1, NFR-S2, NFR-R4, NFR-M1, NFR-M3, NFR-M5  
 **Additional requirements:** Node.js/Express setup, PostgreSQL + Redis, self-hosted Linux server, SSL/TLS (Let's Encrypt), AES-256 encryption at rest and in transit, daily cloud backups (S3), audit logging infrastructure, local monitoring, operational documentation (runbook, troubleshooting, backup/restore procedures)
 
-### Epic 2: User Authentication & Access Control
+### Legacy Sequence C - Epic 2: User Authentication & Access Control
 
 Visitors can register, members can log in, admins access admin interface, role-based permissions enforced throughout the system.
 
@@ -232,7 +254,7 @@ Visitors can register, members can log in, admins access admin interface, role-b
 **NFRs covered:** NFR-S3, NFR-S4, NFR-S8  
 **Additional requirements:** In-house JWT + Bcrypt authentication, RBAC with database-stored permissions matrix, role delegation support, session management (30-day member, 30-minute admin timeout), password reset flow, secure cookies (HTTPOnly, Secure flags), audit logging for all auth events
 
-### Epic 3: Public Homepage & Static Content
+### Legacy Sequence C - Epic 3: Public Homepage & Static Content
 
 Visitors see temple mission, service times, events; access About/Contact pages with full accessibility and mobile responsiveness.
 
@@ -240,7 +262,7 @@ Visitors see temple mission, service times, events; access About/Contact pages w
 **NFRs covered:** NFR-P1, NFR-P6, NFR-A1, NFR-A2, NFR-A3, NFR-A5, NFR-A6, NFR-A7  
 **Additional requirements:** Mobile-first responsive design (375px-1200px breakpoints), WCAG AA accessibility (4.5:1 contrast, keyboard nav, screen reader support), static page CMS with rich text editor, version control (10 versions), publish/unpublish workflow, Tailwind CSS design system with temple brand tokens
 
-### Epic 4: Rabbi Announcement Management
+### Legacy Sequence C - Epic 4: Rabbi Announcement Management
 
 Rabbi posts announcements with safety nets, members see them on homepage, email notifications sent automatically.
 
@@ -248,7 +270,7 @@ Rabbi posts announcements with safety nets, members see them on homepage, email 
 **NFRs covered:** NFR-P5, NFR-I2, NFR-I3  
 **Additional requirements:** Draft auto-save (every 30 seconds), side-by-side preview before publish, confirmation dialogs for destructive actions, featured announcement pinning (30-day max), email queue with exponential backoff retry, Rabbi onboarding tour (announcement posting, calendar, inbox), mobile-friendly admin interface
 
-### Epic 5: Public & Members-Only Calendar
+### Legacy Sequence C - Epic 5: Public & Members-Only Calendar
 
 Visitors see public events, members see private events, email reminders sent 24 hours before with iCal attachments.
 
@@ -256,7 +278,7 @@ Visitors see public events, members see private events, email reminders sent 24 
 **NFRs covered:** NFR-P5  
 **Additional requirements:** Dual calendar system (public/members-only), calendar filtering UI, iCal attachment generation, 24-hour email reminders with event details and Zoom links, next 3 months + past 1 month display, event CRUD operations
 
-### Epic 6: Visitor & Member Messaging System
+### Legacy Sequence C - Epic 6: Visitor & Member Messaging System
 
 Visitors send messages via CAPTCHA-protected contact form, members message Rabbi, Rabbi replies from unified inbox with spam filtering.
 
@@ -264,7 +286,7 @@ Visitors send messages via CAPTCHA-protected contact form, members message Rabbi
 **NFRs covered:** NFR-S7  
 **Additional requirements:** CAPTCHA protection (hCaptcha with audio fallback), spam filtering heuristics (all caps, external links, repeated messages), unified inbox (visitor + member messages), email notifications for replies, message audit logging with timestamps, admin review queue for flagged spam
 
-### Epic 7: Facebook Live Streaming Integration
+### Legacy Sequence C - Epic 7: Facebook Live Streaming Integration
 
 Authorized users broadcast Facebook Live, visitors watch embedded stream with status displays, bandwidth monitoring, and graceful error handling.
 
@@ -272,7 +294,7 @@ Authorized users broadcast Facebook Live, visitors watch embedded stream with st
 **NFRs covered:** NFR-R2, NFR-Sc3, NFR-I4  
 **Additional requirements:** Facebook API integration for stream control, embedded player (no login required), stream status monitoring (live/upcoming/offline), graceful error messaging with fallback to previous recording, bandwidth monitoring with auto-downgrade (1080p → 720p → 480p → audio-only), recording publication workflow from admin dashboard, visible within 5 minutes
 
-### Epic 8: Service Recording Archive
+### Legacy Sequence C - Epic 8: Service Recording Archive
 
 Members search/filter past recordings with captions, recordings auto-publish with metadata, 52-week display with older recordings on request.
 
@@ -280,7 +302,7 @@ Members search/filter past recordings with captions, recordings auto-publish wit
 **NFRs covered:** NFR-P3, NFR-P4, NFR-Sc4, NFR-A4  
 **Additional requirements:** Metadata-only storage (no local video files), searchable by date/Torah portion/service type, thumbnail generation, caption support (WebVTT or burned-in), email notifications for new recordings, pagination (<1 second), 52-week rolling display, older recordings archived but available on request
 
-### Epic 9: Live Chat During Services
+### Legacy Sequence C - Epic 9: Live Chat During Services
 
 Visitors post messages during live services with moderation, real-time delivery via WebSocket with polling fallback, rate limiting, and disconnect handling.
 
@@ -288,7 +310,7 @@ Visitors post messages during live services with moderation, real-time delivery 
 **NFRs covered:** NFR-P2, NFR-Sc1, NFR-Sc2  
 **Additional requirements:** Socket.io with polling fallback (3-second interval), moderation queue (approve/reject before public display), rate limiting (1 message per 10 seconds), pause chat feature for sacred moments, 20 concurrent users (target 30-50, max 1000 with queue), disconnect handling (reconnect with one click, preserve unsent message), poster name required (member or anonymous)
 
-### Epic 10: Donation System & PayPal Integration
+### Future Capability 10: Donation System & PayPal Integration
 
 Visitors donate (one-time/recurring) via PayPal, receive instant PDF tax receipts, errors handled gracefully with retry and backup payment options.
 
@@ -296,7 +318,7 @@ Visitors donate (one-time/recurring) via PayPal, receive instant PDF tax receipt
 **NFRs covered:** NFR-S5, NFR-I1, NFR-I6  
 **Additional requirements:** PayPal Checkout integration (PCI compliance delegated), one-time and recurring donation support, anonymous giving option (donor_visible_to_treasurer flag), PDF tax receipt generation (donation date, amount, donor name if not anonymous, IRS confirmation, temple EIN), thank-you email within 1 hour, error handling with user-friendly messages and retry capability, failure logging with admin alerts after 3+ failures, backup payment options (Venmo/Zelle instructions)
 
-### Epic 11: Admin Dashboard & Operations
+### Future Capability 11: Admin Dashboard & Operations
 
 Admin views key metrics, analytics, moderation queue, audit logs, donation dashboard; receives email alerts for critical issues.
 
@@ -304,7 +326,7 @@ Admin views key metrics, analytics, moderation queue, audit logs, donation dashb
 **NFRs covered:** NFR-P6, NFR-M2, NFR-M4, NFR-M6  
 **Additional requirements:** 6 key metrics on dashboard load (new members this month, total donations this month, active chat users, pending messages, system uptime last 24h, last backup timestamp), donation dashboard (month-to-date and year-to-date totals, donor count, recurring donors), analytics (page views, recording views, chat users, donation trends), moderation queue interface, audit logs (announcements, calendar changes, donations, admin logins, role changes), system-wide notification management, email alerts for critical issues (site down, PayPal error, spam detected), mobile-accessible dashboard
 
-### Epic 12: Member Account Settings & Preferences
+### Future Capability 12: Member Account Settings & Preferences
 
 Members manage notification preferences (announcements, calendars, messages), update profile, control email subscriptions with granular opt-in/opt-out.
 
@@ -438,63 +460,68 @@ Members manage notification preferences (announcements, calendars, messages), up
 
 <!-- Repeat for each epic in epics_list (N = 1, 2, 3...) -->
 
-### Epic 1: Public Website & Content Discovery
+## Deprecated Alternate Epic Sequence (Archived)
+
+The sequence below is retained for historical context but is not the active execution sequence.
+Do not use these heading numbers for new story creation or sprint tracking.
+
+### Legacy Sequence A - Epic 1: Public Website & Content Discovery
 Enable public visitors to discover the temple, view mission/values, and access basic information without requiring an account.
 
 **FRs covered:** FR1, FR2, FR3, FR6, FR7, FR38, FR77-FR83  
 **User outcome:** Anonymous visitors can learn about the temple, view upcoming services/events, and navigate the site on any device  
 **Standalone:** Complete public-facing content foundation with responsive design
 
-### Epic 2: Member Authentication & Account Management
+### Legacy Sequence A - Epic 2: Member Authentication & Account Management
 Enable visitors to register as members and manage their accounts, establishing the authentication foundation for members-only features.
 
 **FRs covered:** FR21-FR24, FR28, FR104, FR107, FR108  
 **User outcome:** Users can create accounts, log in securely, manage preferences, and access members-only content  
 **Standalone:** Complete auth system with RBAC, session management, and onboarding
 
-### Epic 3: Facebook Live Streaming & Video Archive
+### Legacy Sequence A - Epic 3: Facebook Live Streaming & Video Archive
 Enable visitors to watch live services via Facebook Live embed and members to browse/search archived recordings.
 
 **FRs covered:** FR4, FR5, FR8-FR13, FR84, FR110, FR114, FR117  
 **User outcome:** Community can participate in live services remotely and access past recordings with search/filtering  
 **Standalone:** Complete streaming + archive system with email notifications
 
-### Epic 4: Live Chat During Services
+### Legacy Sequence A - Epic 4: Live Chat During Services
 Enable visitors to participate in moderated live chat during Facebook Live services with resilience features.
 
 **FRs covered:** FR14-FR20, FR109, FR112  
 **User outcome:** Real-time community connection during services with moderation and graceful degradation  
 **Standalone:** Complete chat system with WebSocket + polling fallback
 
-### Epic 5: Announcements & Member Communications
+### Legacy Sequence A - Epic 5: Announcements & Member Communications
 Enable Rabbi to post temple announcements with automatic email notifications to members.
 
 **FRs covered:** FR29-FR35, FR86, FR88, FR111  
 **User outcome:** Members stay informed about temple news with email notifications and opt-out controls  
 **Standalone:** Complete announcement system with featured posts and email preferences
 
-### Epic 6: Calendar Management & Event Notifications
+### Legacy Sequence A - Epic 6: Calendar Management & Event Notifications
 Enable Rabbi to manage public/members-only calendars and send event reminders to members.
 
 **FRs covered:** FR36, FR37, FR39-FR43, FR87  
 **User outcome:** Community can view upcoming events and members receive reminders with calendar files  
 **Standalone:** Complete calendar system with public/private events and email reminders
 
-### Epic 7: Visitor & Member Messaging
+### Legacy Sequence A - Epic 7: Visitor & Member Messaging
 Enable public visitors and members to send messages to Rabbi/admin with CAPTCHA protection and unified inbox.
 
 **FRs covered:** FR44-FR50, FR85, FR106, FR113  
 **User outcome:** Two-way communication between community and leadership with spam protection  
 **Standalone:** Complete messaging system with unified inbox and automated replies
 
-### Epic 8: Donations & Financial Transparency
+### Legacy Sequence A - Epic 8: Donations & Financial Transparency
 Enable visitors to make one-time or recurring donations via PayPal with automated tax receipts and admin dashboard visibility.
 
 **FRs covered:** FR51-FR60, FR89, FR90, FR115, FR118  
 **User outcome:** Easy giving with immediate receipts, recurring options, and transparent reporting  
 **Standalone:** Complete donation system with PayPal integration and tax receipts
 
-### Epic 9: Admin Dashboard & Operations
+### Legacy Sequence A - Epic 9: Admin Dashboard & Operations
 Enable Rabbi/Admin to monitor site health, view analytics, manage content, and access audit logs for all sensitive operations.
 
 **FRs covered:** FR61-FR67, FR91-FR99, FR100-FR105, FR116  
@@ -503,7 +530,7 @@ Enable Rabbi/Admin to monitor site health, view analytics, manage content, and a
 
 ---
 
-## Epic 1: Project Foundation & Infrastructure Setup
+## Canonical Story Catalog - Epic 1: Project Foundation & Infrastructure Setup
 
 Development environment ready, hosting operational, core services deployed for all future epics to build upon.
 
@@ -777,7 +804,7 @@ So that email notifications are delivered even when the email service is tempora
 
 ---
 
-## Epic 2: Public Website & Content Discovery
+## Legacy Sequence B - Epic 2: Public Website & Content Discovery
 
 Enable public visitors to discover the temple, view mission/values, and access basic information without requiring an account.
 
@@ -875,7 +902,7 @@ So that I can access temple information from my phone, tablet, or desktop seamle
 
 ---
 
-## Epic 3: Member Authentication & Account Management
+## Legacy Sequence B - Epic 3: Member Authentication & Account Management
 
 Enable visitors to register as members and manage their accounts, establishing the authentication foundation for members-only features.
 
@@ -1014,7 +1041,7 @@ So that I can control how the temple communicates with me and keep my informatio
 
 ---
 
-## Epic 3: Facebook Live Streaming & Video Archive
+## Legacy Sequence B - Epic 4: Facebook Live Streaming & Video Archive
 
 Enable visitors to watch live services via Facebook Live embed and members to browse/search archived recordings.
 
@@ -1141,7 +1168,7 @@ So that the community knows when services will be streamed live.
 
 ---
 
-## Epic 4: Live Chat During Services
+## Legacy Sequence B - Epic 5: Live Chat During Services
 
 Enable visitors to participate in moderated live chat during Facebook Live services with resilience features.
 
@@ -1284,7 +1311,7 @@ So that the experience remains stable even during High Holy Days with many parti
 
 ---
 
-## Epic 5: Announcements & Member Communications
+## Legacy Sequence B - Epic 6: Announcements & Member Communications
 
 Enable Rabbi to post temple announcements with automatic email notifications to members.
 
@@ -1431,7 +1458,7 @@ So that critical information remains visible for an extended period.
 
 ---
 
-## Epic 6: Calendar Management & Event Notifications
+## Legacy Sequence B - Epic 7: Calendar Management & Event Notifications
 
 Enable Rabbi to manage public/members-only calendars and send event reminders to members.
 
@@ -1577,7 +1604,7 @@ So that the calendar remains accurate and up-to-date.
 
 ---
 
-## Epic 7: Visitor & Member Messaging
+## Legacy Sequence B - Epic 8: Visitor & Member Messaging
 
 Enable public visitors and members to send messages to Rabbi/admin with CAPTCHA protection and unified inbox.
 
@@ -1732,7 +1759,7 @@ So that there's a clear record of all community communications.
 
 ---
 
-## Epic 8: Donations & Financial Transparency
+## Legacy Sequence B - Epic 9: Donations & Financial Transparency
 
 Enable visitors to make one-time or recurring donations via PayPal with automated tax receipts and admin dashboard visibility.
 
@@ -1898,7 +1925,7 @@ So that I can successfully complete my donation despite technical issues.
 
 ---
 
-## Epic 9: Admin Dashboard & Operations
+## Legacy Sequence B - Epic 10: Admin Dashboard & Operations
 
 Enable Rabbi/Admin to monitor site health, view analytics, manage content, and access audit logs for all sensitive operations.
 

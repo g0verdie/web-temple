@@ -1,4 +1,5 @@
 const EventService = require('../services/EventService');
+const StreamingService = require('../services/StreamingService');
 
 /**
  * Calculate time remaining until next service
@@ -38,26 +39,92 @@ function formatEventDate(date) {
   return date.toLocaleDateString('en-US', options);
 }
 
+function buildUnavailableStreamViewModel() {
+  return {
+    status: 'unavailable',
+    isLive: false,
+    title: "Temple B'nai Israel Live Service",
+    embedUrl: null,
+    watchUrl: null,
+    scheduledStart: null,
+    formattedScheduledStart: null,
+    iframeTitle: 'Temple B\'nai Israel livestream',
+    helperText: 'The livestream is temporarily unavailable. Please check back shortly.',
+    fallbackActionLabel: null
+  };
+}
+
+function buildStreamViewModel(streamMetadata) {
+  const scheduledStart = streamMetadata && streamMetadata.scheduledStart
+    ? new Date(streamMetadata.scheduledStart)
+    : null;
+
+  const isValidScheduledStart = scheduledStart && !Number.isNaN(scheduledStart.getTime());
+  const formattedScheduledStart = isValidScheduledStart ? formatEventDate(scheduledStart) : null;
+  const title = (streamMetadata && streamMetadata.title) || "Temple B'nai Israel Live Service";
+
+  if (!streamMetadata || streamMetadata.status === 'unavailable') {
+    return {
+      ...buildUnavailableStreamViewModel(),
+      title,
+      watchUrl: streamMetadata && streamMetadata.watchUrl ? streamMetadata.watchUrl : null,
+      scheduledStart: isValidScheduledStart ? scheduledStart : null,
+      formattedScheduledStart
+    };
+  }
+
+  if (streamMetadata.status === 'live' && streamMetadata.embedUrl) {
+    return {
+      status: 'live',
+      isLive: true,
+      title,
+      embedUrl: streamMetadata.embedUrl,
+      watchUrl: streamMetadata.watchUrl || null,
+      scheduledStart: isValidScheduledStart ? scheduledStart : null,
+      formattedScheduledStart,
+      iframeTitle: `${title} livestream player`,
+      helperText: 'If playback does not start automatically, press play in the player or use the Facebook link.',
+      fallbackActionLabel: streamMetadata.watchUrl ? 'Watch on Facebook' : null
+    };
+  }
+
+  return {
+    status: 'inactive',
+    isLive: false,
+    title,
+    embedUrl: null,
+    watchUrl: streamMetadata.watchUrl || null,
+    scheduledStart: isValidScheduledStart ? scheduledStart : null,
+    formattedScheduledStart,
+    iframeTitle: `${title} livestream player`,
+    helperText: 'The livestream will appear here when services go live.',
+    fallbackActionLabel: null
+  };
+}
+
 /**
  * Homepage controller
  * Renders the homepage with mission, countdown, and upcoming events
  */
 exports.getHomepage = async (req, res) => {
   try {
-    const nextService = await EventService.getNextService();
-    const events = await EventService.getUpcomingEvents(3);
+    const [nextService, events, rawStream] = await Promise.all([
+      EventService.getNextService(),
+      EventService.getUpcomingEvents(3),
+      StreamingService.getPublicEmbedMetadata().catch(() => buildUnavailableStreamViewModel())
+    ]);
 
-    // Calculate countdown for next service
     let countdown = null;
     if (nextService) {
       countdown = getTimeUntilService(new Date(nextService.date));
     }
 
-    // Format event dates for display
     const formattedEvents = events.map(event => ({
       ...event,
       formattedDate: formatEventDate(new Date(event.date))
     }));
+
+    const stream = buildStreamViewModel(rawStream);
 
     res.render('layout', {
       title: 'Temple B\'nai Israel - Welcome Home',
@@ -68,12 +135,13 @@ exports.getHomepage = async (req, res) => {
           statement: 'A warm, inclusive Jewish community in Hattiesburg, MS, celebrating tradition, fostering spiritual growth, and building lasting connections.',
           cta: {
             text: 'New Here? Learn More',
-            link: '/visit-us'
+            link: '/about'
           }
         },
         nextService,
         countdown,
         events: formattedEvents,
+        stream,
         formatEventDate
       }
     });

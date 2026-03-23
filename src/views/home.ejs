@@ -9,6 +9,49 @@
   </div>
 </section>
 
+<!-- Live Stream -->
+<section class="stream-section" role="region" aria-labelledby="stream-heading">
+  <div class="stream-header">
+    <h3 id="stream-heading" class="section-title">Live Stream</h3>
+    <% if (stream && stream.isLive) { %>
+      <span class="stream-badge" aria-label="Live now">Live Now</span>
+    <% } %>
+  </div>
+
+  <% if (stream && stream.isLive && stream.embedUrl) { %>
+    <div class="stream-card">
+      <div class="stream-player-frame">
+        <iframe
+          src="<%= stream.embedUrl %>"
+          title="<%= stream.iframeTitle %>"
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowfullscreen
+          loading="eager"
+          referrerpolicy="no-referrer">
+        </iframe>
+      </div>
+      <div class="stream-details">
+        <p class="stream-title"><%= stream.title %></p>
+        <p class="stream-helper"><%= stream.helperText %></p>
+        <% if (stream.watchUrl) { %>
+          <a href="<%= stream.watchUrl %>" class="stream-link">Watch on Facebook</a>
+        <% } %>
+      </div>
+    </div>
+  <% } else { %>
+    <div class="stream-card stream-card--fallback">
+      <p class="stream-title"><%= stream.title %></p>
+      <p class="stream-helper"><%= stream.helperText %></p>
+      <% if (stream.formattedScheduledStart) { %>
+        <p class="stream-schedule">Next scheduled stream: <%= stream.formattedScheduledStart %></p>
+      <% } %>
+      <% if (stream.status === 'unavailable' && stream.watchUrl) { %>
+        <a href="<%= stream.watchUrl %>" class="stream-link">Open on Facebook</a>
+      <% } %>
+    </div>
+  <% } %>
+</section>
+
 <!-- Countdown Timer to Next Service -->
 <% if (nextService && countdown) { %>
 <section class="countdown-section" role="region" aria-labelledby="countdown-heading">
@@ -19,10 +62,10 @@
       <%= formatEventDate(nextService.date) %>
     </p>
   </div>
-  
-  <div class="countdown-timer" 
-       role="timer" 
-       aria-live="polite" 
+
+  <div class="countdown-timer"
+       role="timer"
+       aria-live="polite"
        aria-atomic="true"
        data-service-date="<%= nextService.date.toISOString() %>">
     <div class="countdown-unit">
@@ -48,7 +91,7 @@
 <!-- Upcoming Events -->
 <section class="events-section" role="region" aria-labelledby="events-heading">
   <h3 id="events-heading" class="section-title">Upcoming Events</h3>
-  
+
   <% if (events && events.length > 0) { %>
     <ul class="events-list" role="list">
       <% events.forEach((event, index) => { %>
@@ -75,16 +118,16 @@
 <script>
   (function() {
     'use strict';
-    
+
     const countdownTimer = document.querySelector('.countdown-timer');
     if (!countdownTimer) return;
-    
+
     const serviceDate = new Date(countdownTimer.dataset.serviceDate);
-    
+
     function updateCountdown() {
       const now = new Date();
       const diff = serviceDate - now;
-      
+
       if (diff <= 0) {
         document.getElementById('countdown-days').textContent = '0';
         document.getElementById('countdown-hours').textContent = '0';
@@ -92,19 +135,18 @@
         document.getElementById('countdown-seconds').textContent = '0';
         return;
       }
-      
+
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
       const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-      
+
       document.getElementById('countdown-days').textContent = days;
       document.getElementById('countdown-hours').textContent = hours;
       document.getElementById('countdown-minutes').textContent = minutes;
       document.getElementById('countdown-seconds').textContent = seconds;
     }
-    
-    // Update countdown every second
+
     setInterval(updateCountdown, 1000);
   })();
 </script>

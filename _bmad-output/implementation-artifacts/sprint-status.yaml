@@ -1,4 +1,4 @@
-# generated: 2026-02-04
+# generated: 2026-03-23
 # project: web-temple
 # project_key: NOKEY
 # tracking_system: file-system
@@ -33,7 +33,7 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: 2026-02-04
+generated: 2026-03-23
 project: web-temple
 project_key: NOKEY
 tracking_system: file-system
@@ -65,14 +65,14 @@ development_status:
   2-5-session-management-timeouts: done
   2-6-rabbi-onboarding-tour: done
   2-7-account-settings-preferences: done
-  epic-2-retrospective: optional
-  epic-3: backlog
-  3-1-facebook-live-stream-embed: backlog
-  3-2-stream-status-display-error-handling: backlog
-  3-3-rabbi-publishes-recording-to-archive: backlog
-  3-4-member-archive-browsing-search: backlog
-  3-5-recording-playback-with-accessibility: backlog
-  3-6-authorized-user-stream-scheduling: backlog
+  epic-2-retrospective: done
+  epic-3: in-progress
+  3-1-facebook-live-stream-embed: done
+  3-2-stream-status-display-error-handling: ready-for-dev
+  3-3-rabbi-publishes-recording-to-archive: ready-for-dev
+  3-4-member-archive-browsing-search: ready-for-dev
+  3-5-recording-playback-with-accessibility: ready-for-dev
+  3-6-authorized-user-stream-scheduling: ready-for-dev
   epic-3-retrospective: optional
   epic-4: backlog
   4-1-post-messages-to-live-chat: backlog
