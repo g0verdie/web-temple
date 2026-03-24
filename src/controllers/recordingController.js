@@ -39,7 +39,8 @@ exports.saveDraft = async (req, res) => {
             description,
             serviceDate,
             torahPortion,
-            durationSeconds
+            durationSeconds,
+            serviceType
         } = req.body;
 
         // Validate required provider fields
@@ -59,7 +60,8 @@ exports.saveDraft = async (req, res) => {
             description,
             serviceDate,
             torahPortion,
-            durationSeconds
+            durationSeconds,
+            serviceType
         }, req.user.id);
 
         res.json({
@@ -89,7 +91,8 @@ exports.publishRecording = async (req, res) => {
             description,
             serviceDate,
             torahPortion,
-            durationSeconds
+            durationSeconds,
+            serviceType
         } = req.body;
 
         // Validate required fields for publish
@@ -109,7 +112,10 @@ exports.publishRecording = async (req, res) => {
             description,
             serviceDate,
             torahPortion,
-            durationSeconds
+            durationSeconds,
+            serviceType
+        }, {
+            serviceType
         }, {
             userId: req.user.id,
             ipAddress: req.ip || req.connection?.remoteAddress
@@ -126,6 +132,45 @@ exports.publishRecording = async (req, res) => {
         res.status(statusCode).json({
             success: false,
             error: error.message
+        });
+    }
+};
+
+/**
+ * Get archive recordings list for members
+ */
+exports.getArchiveList = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = 20;
+
+        const filters = {
+            search: req.query.search || '',
+            serviceType: req.query.serviceType || '',
+            torahPortion: req.query.torahPortion || '',
+            startDate: req.query.startDate || '',
+            endDate: req.query.endDate || ''
+        };
+
+        const result = await RecordingService.getArchiveRecordings(filters, page, limit);
+
+        res.render('layout', {
+            title: 'Recording Archive',
+            bodyView: 'recordings/index',
+            viewData: {
+                recordings: result.recordings,
+                currentPage: result.currentPage,
+                totalPages: result.totalPages,
+                totalCount: result.totalCount,
+                filters,
+                csrfToken: req.csrfToken ? req.csrfToken() : null
+            }
+        });
+    } catch (error) {
+        console.error('Error loading archive:', error);
+        res.status(500).render('error', { 
+            title: '500 - Server Error',
+            message: 'Unable to load archive.' 
         });
     }
 };

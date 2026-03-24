@@ -212,4 +212,45 @@ describe('RecordingService', () => {
             ipAddress: '127.0.0.1'
         })).rejects.toThrow('Service date and duration are required');
     });
+    describe('getArchiveRecordings', () => {
+        it('should correctly query with no filters applying 52-week default', async () => {
+            client.query.mockResolvedValueOnce({ rows: [{ count: '1' }] });
+            client.query.mockResolvedValueOnce({ rows: [{ id: 'test-1' }] });
+
+            const result = await RecordingService.getArchiveRecordings({}, 1, 20);
+
+            expect(client.query).toHaveBeenCalledTimes(2);
+            // Verify count query bounds
+            const countCall = client.query.mock.calls[0];
+            expect(countCall[0]).toContain("publish_state = 'published'");
+            expect(countCall[0]).toContain("service_date >= NOW() - INTERVAL '52 weeks'");
+            
+            expect(result.totalCount).toBe(1);
+            expect(result.recordings.length).toBe(1);
+        });
+
+        it('should correctly query with explicit startDate', async () => {
+            client.query.mockResolvedValueOnce({ rows: [{ count: '1' }] });
+            client.query.mockResolvedValueOnce({ rows: [{ id: 'test-1' }] });
+
+            await RecordingService.getArchiveRecordings({ startDate: '2023-01-01' }, 1, 20);
+
+            const countCall = client.query.mock.calls[0];
+            expect(countCall[0]).toContain("service_date >= $");
+            // should not contain the 52 weeks fallback
+            expect(countCall[0]).not.toContain("52 weeks");
+            expect(countCall[1]).toContain('2023-01-01');
+        });
+
+        it('should include serviceType in where clause', async () => {
+            client.query.mockResolvedValueOnce({ rows: [{ count: '1' }] });
+            client.query.mockResolvedValueOnce({ rows: [{ id: 'test-1' }] });
+
+            await RecordingService.getArchiveRecordings({ serviceType: 'Holiday' }, 1, 20);
+
+            const countCall = client.query.mock.calls[0];
+            expect(countCall[0]).toContain("service_type = $");
+            expect(countCall[1]).toContain('Holiday');
+        });
+    });
 });

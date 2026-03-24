@@ -1,6 +1,6 @@
 # Story 3.4: Member Archive Browsing & Search
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -27,7 +27,7 @@ so that I can watch services I missed or rewatch meaningful moments.
 
 ## Tasks / Subtasks
 
-- [ ] Establish the member-facing archive route, controller, and query contract.
+- [/] Establish the member-facing archive route, controller, and query contract.
   - [ ] Add a protected recordings archive page for authenticated members only.
   - [ ] Use GET query parameters for filters and pagination so server-rendered search state is shareable and keyboard-friendly.
   - [ ] Only surface published recordings from the canonical recording store introduced by Story 3.3.
