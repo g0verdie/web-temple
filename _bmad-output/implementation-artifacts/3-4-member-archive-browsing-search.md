@@ -50,6 +50,70 @@ so that I can watch services I missed or rewatch meaningful moments.
   - [ ] Add service tests for query construction and 52-week cutoff behavior.
   - [ ] Add rendering assertions for filter controls, recording metadata, and the older-recordings message.
 
+## Code Review Findings (2026-03-24)
+
+### Decisions Made
+- Route mounting: `/archive`
+- Database schema: Add `publish_status` column, ensure `first_name`/`last_name` non-nullable
+- Recording display: Date display confirmed in template
+
+### Critical Patches
+
+- [ ] [Review][Patch] Mount recordings route at `/archive` not `/recordings/` [src/routes/recordings.js + src/server.js]
+  - Route file defines `GET /` but needs to mount at `/archive`. Must update server.js registration and all test references.
+
+- [ ] [Review][Patch] Add `publish_status` column to recordings table [migrations/013_add_service_type_and_indexes.sql]
+  - Service queries `WHERE publish_status = $1` but column doesn't exist. Migration must create column with NOT NULL constraint and default 'draft'.
+
+- [ ] [Review][Patch] Ensure `first_name`, `last_name` columns non-nullable [migrations/013_add_service_type_and_indexes.sql]
+  - Schema must guarantee Rabbi names exist. Add NOT NULL constraints and populate defaults for existing nulls. Consider foreign key to users table.
+
+- [ ] [Review][Patch] Add `service_date` index for 52-week filter [migrations/013_add_service_type_and_indexes.sql]
+  - Most-frequent query filter lacks index. Add `CREATE INDEX idx_recordings_service_date ON recordings(service_date);`
+
+### High-Priority Patches
+
+- [ ] [Review][Patch] Validate date range inputs [src/controllers/recordingController.js:6-20]
+  - Add ISO 8601 validation: `if (startDate && !/^\d{4}-\d{2}-\d{2}$/.test(startDate))`. Validate `startDate <= endDate`.
+
+- [ ] [Review][Patch] Fix pagination DOS vulnerability [src/controllers/recordingController.js:7]
+  - `parseInt()` accepts partial numerics. Use `Number.isInteger()` and cap page to `Math.min(page, Math.ceil(totalCount / 20))`.
+
+- [ ] [Review][Patch] Handle null COUNT result [src/services/RecordingService.js:52]
+  - Guard: `const totalCount = countResult.rows.length > 0 ? parseInt(countResult.rows[0].cnt) : 0;`
+
+- [ ] [Review][Patch] Null-safe date rendering [src/views/recordings/index.ejs:22]
+  - Fix: `<p class="date"><%= (recording.service_date ? new Date(recording.service_date).toLocaleDateString() : 'Date unavailable') %></p>`
+
+- [ ] [Review][Patch] Null-safe duration rendering [src/views/recordings/index.ejs:27]
+  - Fix: `<p class="duration">Duration: <%= (recording.duration_seconds ? Math.floor(recording.duration_seconds / 60) : 'N/A') %> mins</p>`
+
+- [ ] [Review][Patch] Encode date parameters in pagination links [src/views/recordings/index.ejs:44-45]
+  - Add `encodeURIComponent()` to `startDate` and `endDate` for consistency.
+
+- [ ] [Review][Patch] Trim whitespace-only search terms [src/services/RecordingService.js:19]
+  - Check `if (filters.search && filters.search.trim())` before adding search filter.
+
+- [ ] [Review][Patch] Render error page not JSON [src/controllers/recordingController.js:43]
+  - Replace `res.status(500).json({})` with `res.render('error', { message: '...' })` to match server-rendered pattern.
+
+### Medium-Priority Patches
+
+- [ ] [Review][Patch] Fix Rabbi name trailing space [src/views/recordings/index.ejs:23]
+  - Use: `(recording.first_name + (recording.last_name ? ' ' + recording.last_name : '')).trim()`
+
+- [ ] [Review][Patch] Rewrite "Available on request" logic [src/views/recordings/index.ejs:49]
+  - Current condition `(!filters.startDate || currentPage === 1)` is pagination-based, not age-based. Should show for individual old recordings or as single notice when no results exist for older ranges.
+
+- [ ] [Review][Patch] Add comprehensive edge case tests [__tests__/routes/archiveRoutes.test.js]
+  - Missing: `?page=0`, `?page=-1`, `?page=abc`, invalid dates, `startDate > endDate`, empty results, NULL fields, XSS attempts.
+
+### Deferred (Pre-Existing / Out of Scope)
+
+- [x] [Review][Defer] Add responsive CSS/Bootstrap styling [src/views/recordings/index.ejs] — Product/UX decision on styling framework; template structure is ready
+- [x] [Review][Defer] Add keyboard navigation & focus management [src/views/recordings/index.ejs] — a11y hardening after template stabilizes
+- [x] [Review][Defer] Add performance monitoring & query optimization [src/services/RecordingService.js] — covers AC9/AC10 targets; deferred to perf optimization sprint
+
 ## Dev Notes
 
 - This story creates the first member-facing recordings archive browse/search experience. It should consume the published-recording data established by Story 3.3.

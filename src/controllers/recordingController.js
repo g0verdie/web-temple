@@ -141,7 +141,38 @@ exports.publishRecording = async (req, res) => {
  */
 exports.getArchiveList = async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
+        // Validate and parse page number (fix parseInt('5abc') -> 5 vulnerability)
+        let page = parseInt(req.query.page, 10);
+        if (isNaN(page) || !Number.isInteger(page) || page < 1) {
+            return res.status(400).render('error', { 
+                title: '400 - Invalid Request',
+                message: 'Invalid page number' 
+            });
+        }
+
+        // Validate date inputs are ISO 8601 format
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (req.query.startDate && !dateRegex.test(req.query.startDate)) {
+            return res.status(400).render('error', { 
+                title: '400 - Invalid Request',
+                message: 'Invalid start date format (use YYYY-MM-DD)' 
+            });
+        }
+        if (req.query.endDate && !dateRegex.test(req.query.endDate)) {
+            return res.status(400).render('error', { 
+                title: '400 - Invalid Request',
+                message: 'Invalid end date format (use YYYY-MM-DD)' 
+            });
+        }
+
+        // Validate date range: startDate must be <= endDate
+        if (req.query.startDate && req.query.endDate && req.query.startDate > req.query.endDate) {
+            return res.status(400).render('error', { 
+                title: '400 - Invalid Request',
+                message: 'Start date must be before or equal to end date' 
+            });
+        }
+
         const limit = 20;
 
         const filters = {

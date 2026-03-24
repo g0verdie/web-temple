@@ -306,9 +306,9 @@ const getArchiveRecordings = async (filters, page = 1, limit = 20) => {
     let values = [];
     let paramIndex = 1;
 
-    if (search) {
+    if (search && search.trim()) {
         whereClauses.push(`(title ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`);
-        values.push(`%${search}%`);
+        values.push(`%${search.trim()}%`);
         paramIndex++;
     }
 
@@ -362,7 +362,10 @@ const getArchiveRecordings = async (filters, page = 1, limit = 20) => {
     const client = await db.pool.connect();
     try {
         const countResult = await client.query(countQuery, values);
-        const totalCount = parseInt(countResult.rows[0].count);
+        // Guard against empty COUNT result (edge case)
+        const totalCount = (countResult.rows && countResult.rows.length > 0) 
+            ? parseInt(countResult.rows[0].count) 
+            : 0;
         
         const dataResult = await client.query(dataQuery, dataValues);
         
