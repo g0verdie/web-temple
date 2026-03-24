@@ -71,7 +71,17 @@ If you did not request this change, you can ignore this email.`
         subject: 'Your Temple donation receipt',
         html: `<p>Thank you for your donation${data.amount ? ` of ${data.amount}` : ''}.</p><p>Receipt ID: ${data.receiptId || 'N/A'}</p>`,
         text: `Thank you for your donation${data.amount ? ` of ${data.amount}` : ''}.\nReceipt ID: ${data.receiptId || 'N/A'}`
+    }),
+    'new-recording-available': (data = {}) => ({
+        subject: 'New Recording: ' + (data.title || 'Service Recording'),
+        html: `<p>Shalom${data.memberName ? ` ${data.memberName}` : ''}!</p>
+               <p>A new service recording is now available in our archive: <strong>${data.title || 'Service Recording'}</strong></p>
+               ${data.serviceDate ? `<p>Service Date: ${new Date(data.serviceDate).toDateString()}</p>` : ''}
+               ${data.torahPortion ? `<p>Torah Portion: ${data.torahPortion}</p>` : ''}
+               <p><a href="${data.archiveUrl || '#'}">View Recording</a></p>`,
+        text: `Shalom${data.memberName ? ` ${data.memberName}` : ''}!\n\nA new service recording is now available in our archive: ${data.title || 'Service Recording'}\n${data.serviceDate ? `Service Date: ${new Date(data.serviceDate).toDateString()}\n` : ''}${data.torahPortion ? `Torah Portion: ${data.torahPortion}\n` : ''}View Recording: ${data.archiveUrl || '#'}`
     })
+
 };
 
 const renderTemplate = (templateKey, data = {}) => {

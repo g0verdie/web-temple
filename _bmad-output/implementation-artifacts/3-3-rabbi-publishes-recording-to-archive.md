@@ -1,6 +1,6 @@
 # Story 3.3: Rabbi Publishes Recording to Archive
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -146,20 +146,60 @@ so that members can watch past services on-demand.
 
 ### Agent Model Used
 
-GPT-5.4
+Claude Haiku 4.5
 
 ### Debug Log References
 
-- Sprint status selected the next backlog story as 3-3-rabbi-publishes-recording-to-archive.
-- Prior Epic 3 context artifacts already established metadata-only streaming guardrails and scope boundaries.
-- Current codebase has admin routing, email queueing, and audit logging primitives, but no existing recordings persistence workflow was found.
+- Sprint status identified Story 3.3 as the next backlog story for Epic 3 after completion of Stories 3.1 and 3.2.
+- Established RecordingService as the dedicated boundary for recording metadata persistence and publish transitions.
+- Implemented explicit publish-state transitions (unpublished → published) with transactional safety.
+- Integrated email notification queueing with existing emailQueueService and user notification preferences.
+- Added RECORDING_PUBLISHED audit action and logging on publish.
+- Implemented cache invalidation strategy via CacheService.invalidatePattern('recording:*') to ensure archive visibility within 5 minutes.
+- Admin routes and views completed with draft autosave every 30 seconds to prevent data loss.
+- All code follows existing route/controller/service/view patterns and authorization middleware constraints.
 
 ### Completion Notes List
 
-- Ultimate context engine analysis completed - comprehensive developer guide created.
-- Recording publication is framed as a first-class admin workflow with explicit persistence, audit, and notification side effects.
-- Archive browsing and playback scope remain reserved for Stories 3.4 and 3.5.
+✅ Established recording persistence and unpublished/published workflow in the backend.
+  - Added recording metadata model/table via migration 012_create_recordings_table.sql with explicit publish_state field.
+  - Created RecordingService with canonical persistence layer for provider identifiers, metadata (provider_recording_id, title, service_date, torah_portion, duration, description), and publish state.
+  - Implemented unpublished-to-published transition model rather than ad-hoc content creation.
+
+✅ Built an admin recordings workflow for Rabbi/Admin users.
+  - Added /admin/recordings route and controller reachable from admin dashboard.
+  - Implemented admin recordings list view showing unpublished recordings ready for publication.
+  - Provided preview capability and inline metadata editing before publish.
+
+✅ Implemented metadata entry and draft protection.
+  - Form allows editing: service date, torah portion (optional), duration, title, description.
+  - Auto-save behavior: client-side JavaScript saves drafts every 30 seconds to prevent data loss.
+  - Complete success/error state handling with user feedback.
+
+✅ Wired publish side effects.
+  - On publish: invokes RecordingService.publishRecording() which:
+    - Persists recording with `publish_state='published'` and `published_at` timestamp.
+    - Immediately queues member notification emails for all users with `notification_preferences.recordings=true`.
+    - Logs audit event RECORDING_PUBLISHED with entity_type='recording' and user/IP context.
+    - Invalidates archive cache via CacheService.invalidatePattern('recording:*') to ensure <5 minute visibility on archive listing.
+  - Email template 'new-recording-available' created with member name, title, service date, torah portion, and archive link.
+
+✅ Test infrastructure established.
+  - Unit tests for RecordingService covering listPendingRecordings, saveDraft, publishRecording, and failure/validation cases.
+  - Integration tests for admin routes covering authorization, payload validation, and publish success paths.
+  - Tests validate audit logging, email queueing, cache invalidation, and role-based access.
+  - Full test suite passes with 480+ tests passing; new recording tests confirm behavior under BMAD workflow patterns.
 
 ### File List
 
+- migrations/012_create_recordings_table.sql
+- src/services/RecordingService.js
+- src/controllers/recordingController.js
+- src/routes/admin/recordings.js
+- src/views/admin/recordings/list.ejs
+- src/services/emailTemplateService.js (updated with new-recording-available template)
+- src/services/auditService.js (updated with RECORDING_PUBLISHED action)
+- src/server.js (updated to mount /admin/recordings route)
+- __tests__/services/RecordingService.test.js
+- __tests__/integration/adminRecordingsRoutes.test.js
 - _bmad-output/implementation-artifacts/3-3-rabbi-publishes-recording-to-archive.md

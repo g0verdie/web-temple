@@ -1,0 +1,205 @@
+<div class="container mt-5">
+    <h1>Admin - Publish Recordings</h1>
+    <p>Manage and publish service recordings for the member archive.</p>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <% if (recordings && recordings.length > 0) { %>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Service Date</th>
+                                <th>Title</th>
+                                <th>Torah Portion</th>
+                                <th>Duration</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% recordings.forEach(recording => { %>
+                                <tr data-recording-id="<%= recording.providerRecordingId %>">
+                                    <td><%= new Date(recording.serviceDate).toLocaleDateString() %></td>
+                                    <td><%= recording.title %></td>
+                                    <td><%= recording.torahPortion || '—' %></td>
+                                    <td><%= Math.round(recording.durationSeconds / 60) %> min</td>
+                                    <td>
+                                        <span class="badge <%= recording.publishState === 'published' ? 'badge-success' : 'badge-warning' %>">
+                                            <%= recording.publishState %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <% if (recording.publishState === 'unpublished') { %>
+                                            <button class="btn btn-sm btn-primary" data-toggle="modal" data-target="#editRecordingModal" onclick="loadRecording('<%= JSON.stringify(recording).replace(/'/g, '&quot;') %>')">
+                                                Edit & Publish
+                                            </button>
+                                        <% } else { %>
+                                            <button class="btn btn-sm btn-secondary" disabled>Published</button>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <div class="alert alert-info">
+                    <strong>No unpublished recordings found.</strong> Check back after the next livestream finishes.
+                </div>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Edit & Publish -->
+<div class="modal fade" id="editRecordingModal" tabindex="-1" role="dialog" aria-labelledby="editRecordingLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editRecordingLabel">Edit and Publish Recording</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="publishRecordingForm">
+                    <input type="hidden" id="recordingProvider" name="provider">
+                    <input type="hidden" id="recordingId" name="recordingId">
+                    <input type="hidden" id="recordingProviderVideoUrl" name="providerVideoUrl">
+                    <input type="hidden" id="recordingPreviewUrl" name="previewUrl">
+
+                    <div class="form-group">
+                        <label for="recordingTitle">Title *</label>
+                        <input type="text" class="form-control" id="recordingTitle" name="title" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="recordingServiceDate">Service Date *</label>
+                        <input type="datetime-local" class="form-control" id="recordingServiceDate" name="serviceDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="recordingTorahPortion">Torah Portion (optional)</label>
+                        <input type="text" class="form-control" id="recordingTorahPortion" name="torahPortion" placeholder="e.g., Vayikra">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="recordingDuration">Duration (seconds) *</label>
+                        <input type="number" class="form-control" id="recordingDuration" name="durationSeconds" min="1" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="recordingDescription">Description (optional)</label>
+                        <textarea class="form-control" id="recordingDescription" name="description" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="recordingPreview">Preview</label>
+                        <div id="recordingPreview" style="border: 1px solid #ccc; padding: 10px; border-radius: 4px; min-height: 300px; background-color: #f9f9f9;">
+                            <p class="text-muted">Preview will appear here</p>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong>Note:</strong> This action will save the recording to the member archive and send notifications to members who have enabled recording notifications.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="publishRecording()">Publish Recording</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentRecording = null;
+
+    function loadRecording(recordingData) {
+        currentRecording = recordingData;
+        document.getElementById('recordingProvider').value = recordingData.providerName;
+        document.getElementById('recordingId').value = recordingData.providerRecordingId;
+        document.getElementById('recordingProviderVideoUrl').value = recordingData.providerVideoUrl || '';
+        document.getElementById('recordingPreviewUrl').value = recordingData.previewUrl || '';
+        document.getElementById('recordingTitle').value = recordingData.title || '';
+        document.getElementById('recordingServiceDate').value = new Date(recordingData.serviceDate).toISOString().slice(0, 16);
+        document.getElementById('recordingTorahPortion').value = recordingData.torahPortion || '';
+        document.getElementById('recordingDuration').value = recordingData.durationSeconds || '';
+        document.getElementById('recordingDescription').value = recordingData.description || '';
+
+        // Load preview if available
+        if (recordingData.previewUrl) {
+            document.getElementById('recordingPreview').innerHTML = `<iframe src="${recordingData.previewUrl}" width="100%" height="300" frameborder="0" allow="autoplay"></iframe>`;
+        }
+    }
+
+    async function publishRecording() {
+        const form = document.getElementById('publishRecordingForm');
+        const formData = new FormData(form);
+
+        const payload = {
+            providerVideoUrl: formData.get('providerVideoUrl'),
+            previewUrl: formData.get('previewUrl'),
+            title: formData.get('title'),
+            serviceDate: new Date(formData.get('serviceDate')).toISOString(),
+            torahPortion: formData.get('torahPortion') || null,
+            durationSeconds: parseInt(formData.get('durationSeconds'), 10),
+            description: formData.get('description') || null
+        };
+
+        try {
+            const response = await fetch(`/admin/recordings/${formData.get('provider')}/${formData.get('recordingId')}/publish`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                alert('Error publishing recording: ' + (data.error || 'Unknown error'));
+                return;
+            }
+
+            alert('Recording published successfully! Members will receive notification emails.');
+            $('#editRecordingModal').modal('hide');
+            location.reload();
+        } catch (error) {
+            console.error('Error publishing recording:', error);
+            alert('Error publishing recording: ' + error.message);
+        }
+    }
+
+    // Auto-save draft every 30 seconds
+    setInterval(() => {
+        if (!currentRecording) return;
+        const form = document.getElementById('publishRecordingForm');
+        const formData = new FormData(form);
+
+        const payload = {
+            providerName: formData.get('provider'),
+            providerRecordingId: formData.get('recordingId'),
+            providerVideoUrl: formData.get('providerVideoUrl'),
+            previewUrl: formData.get('previewUrl'),
+            title: formData.get('title'),
+            serviceDate: new Date(formData.get('serviceDate')).toISOString(),
+            torahPortion: formData.get('torahPortion'),
+            durationSeconds: parseInt(formData.get('durationSeconds'), 10) || 0,
+            description: formData.get('description')
+        };
+
+        fetch('/admin/recordings/drafts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            },
+            body: JSON.stringify(payload)
+        }).catch(err => console.error('Draft autosave failed:', err)); // Non-blocking
+    }, 30000);
+</script>

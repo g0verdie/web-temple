@@ -166,6 +166,7 @@ const homeRoutes = require('./routes/home');
 const aboutRoutes = require('./routes/about');
 const contactRoutes = require('./routes/contact');
 const adminPagesRoutes = require('./routes/admin/pages');
+const adminRecordingsRoutes = require('./routes/admin/recordings');
 const adminDashboardRoutes = require('./routes/admin/dashboard');
 const pagesRoutes = require('./routes/pages');
 const apiRoutes = require('./routes/api');
@@ -176,6 +177,7 @@ app.use('/contact', contactRoutes);
 app.use('/', pagesRoutes);
 app.use('/admin', adminDashboardRoutes);
 app.use('/admin/pages', adminPagesRoutes);
+app.use('/admin/recordings', adminRecordingsRoutes);
 app.use('/api', apiRoutes);
 
 // 404 handler

@@ -1,0 +1,215 @@
+const db = require('../../src/config/db');
+const CacheService = require('../../src/services/CacheService');
+const emailQueueService = require('../../src/services/emailQueueService');
+const emailTemplateService = require('../../src/services/emailTemplateService');
+const auditService = require('../../src/services/auditService');
+
+jest.mock('../../src/config/db');
+jest.mock('../../src/services/CacheService');
+jest.mock('../../src/services/emailQueueService');
+jest.mock('../../src/services/emailTemplateService');
+jest.mock('../../src/services/auditService');
+
+describe('RecordingService', () => {
+    let RecordingService;
+    let client;
+
+    beforeAll(() => {
+        // Set audit actions before require
+        auditService.AUDIT_ACTIONS = {
+            RECORDING_PUBLISHED: 'RECORDING_PUBLISHED'
+        };
+        // Require the service once after all mocks are configured
+        RecordingService = require('../../src/services/RecordingService');
+    });
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+
+        client = {
+            query: jest.fn(),
+            release: jest.fn()
+        };
+
+        // Reset mocks with working defaults
+        db.query.mockResolvedValue({ rows: [] });
+        db.pool.connect.mockResolvedValue(client);
+        
+        emailTemplateService.renderTemplate.mockReturnValue({
+            subject: 'New recording available',
+            html: '<p>new recording</p>',
+            text: 'new recording'
+        });
+        emailQueueService.enqueueEmail.mockResolvedValue({ id: 'job-1' });
+        auditService.logAudit.mockResolvedValue(true);
+        CacheService.invalidatePattern.mockResolvedValue(true);
+    });
+
+    it('lists recent unpublished provider recordings merged with saved drafts', async () => {
+        process.env.FACEBOOK_RECENT_RECORDINGS = JSON.stringify([
+            {
+                providerRecordingId: 'fb-1',
+                title: 'Friday Night Service',
+                providerVideoUrl: 'https://www.facebook.com/temple/videos/fb-1',
+                previewUrl: 'https://www.facebook.com/plugins/video.php?href=https%3A%2F%2Fwww.facebook.com%2Ftemple%2Fvideos%2Ffb-1',
+                recordedAt: '2026-03-22T23:00:00.000Z',
+                durationSeconds: 3600
+            }
+        ]);
+
+        db.query.mockResolvedValueOnce({
+            rows: [
+                {
+                    provider_name: 'facebook',
+                    provider_recording_id: 'fb-1',
+                    title: 'Friday Night Service',
+                    service_date: '2026-03-22T23:00:00.000Z',
+                    torah_portion: 'Vayikra',
+                    duration_seconds: 3600,
+                    publish_state: 'unpublished',
+                    description: 'Draft description'
+                }
+            ]
+        });
+
+        const recordings = await RecordingService.listPendingRecordings();
+
+        expect(db.query).toHaveBeenCalledWith(expect.stringContaining('FROM recordings'), expect.any(Array));
+        expect(recordings).toHaveLength(1);
+        expect(recordings[0]).toMatchObject({
+            providerRecordingId: 'fb-1',
+            providerName: 'facebook',
+            title: 'Friday Night Service',
+            torahPortion: 'Vayikra',
+            publishState: 'unpublished'
+        });
+    });
+
+    it('saves an unpublished draft with provider metadata and user edits', async () => {
+        db.query.mockResolvedValueOnce({
+            rows: [{
+                id: 'recording-1',
+                provider_name: 'facebook',
+                provider_recording_id: 'fb-1',
+                title: 'Shabbat Morning Service',
+                publish_state: 'unpublished',
+                service_date: '2026-03-22T15:00:00.000Z',
+                torah_portion: 'Tzav',
+                duration_seconds: 4200,
+                description: 'Weekly service'
+            }]
+        });
+
+        const result = await RecordingService.saveDraft({
+            providerName: 'facebook',
+            providerRecordingId: 'fb-1',
+            providerVideoUrl: 'https://www.facebook.com/temple/videos/fb-1',
+            previewUrl: 'https://www.facebook.com/plugins/video.php?href=fb-1',
+            title: 'Shabbat Morning Service',
+            serviceDate: '2026-03-22T15:00:00.000Z',
+            torahPortion: 'Tzav',
+            durationSeconds: 4200,
+            description: 'Weekly service'
+        }, 'rabbi-1');
+
+        expect(db.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO recordings'), expect.any(Array));
+        expect(result.publishState).toBe('unpublished');
+        expect(result.providerRecordingId).toBe('fb-1');
+    });
+
+    it('publishes a recording, invalidates archive cache, writes audit data, and queues emails only for enabled users', async () => {
+        client.query
+            .mockResolvedValueOnce({})
+            .mockResolvedValueOnce({
+                rows: [{
+                    id: 'recording-1',
+                    provider_name: 'facebook',
+                    provider_recording_id: 'fb-1',
+                    provider_video_url: 'https://www.facebook.com/temple/videos/fb-1',
+                    preview_url: 'https://www.facebook.com/plugins/video.php?href=fb-1',
+                    title: 'Shabbat Service',
+                    service_date: '2026-03-22T15:00:00.000Z',
+                    torah_portion: 'Tzav',
+                    duration_seconds: 3600,
+                    description: 'Weekly service',
+                    publish_state: 'published',
+                    published_at: '2026-03-23T12:00:00.000Z'
+                }]
+            })
+            .mockResolvedValueOnce({
+                rows: [
+                    { id: 'member-1', email: 'member1@example.com', first_name: 'Ari' },
+                    { id: 'member-2', email: 'member2@example.com', first_name: 'Noa' }
+                ]
+            })
+            .mockResolvedValueOnce({});
+
+        const published = await RecordingService.publishRecording({
+            providerName: 'facebook',
+            providerRecordingId: 'fb-1',
+            providerVideoUrl: 'https://www.facebook.com/temple/videos/fb-1',
+            previewUrl: 'https://www.facebook.com/plugins/video.php?href=fb-1',
+            title: 'Shabbat Service',
+            serviceDate: '2026-03-22T15:00:00.000Z',
+            durationSeconds: 3600,
+            torahPortion: 'Tzav',
+            description: 'Weekly service'
+        }, {
+            userId: 'rabbi-1',
+            ipAddress: '127.0.0.1'
+        });
+
+        expect(client.query).toHaveBeenCalledWith('BEGIN');
+        expect(client.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO recordings'), expect.any(Array));
+        expect(client.query).toHaveBeenCalledWith(expect.stringContaining('SELECT id, email, first_name'), []);
+        expect(client.query).toHaveBeenCalledWith('COMMIT');
+        expect(auditService.logAudit).toHaveBeenCalledWith(expect.objectContaining({
+            user_id: 'rabbi-1',
+            action: 'RECORDING_PUBLISHED',
+            entity_type: 'recording',
+            entity_id: 'recording-1'
+        }));
+        expect(CacheService.invalidatePattern).toHaveBeenCalledWith('recording:*');
+        expect(emailTemplateService.renderTemplate).toHaveBeenCalledWith('new-recording-available', expect.objectContaining({
+            title: 'Shabbat Service'
+        }));
+        expect(emailQueueService.enqueueEmail).toHaveBeenCalledTimes(2);
+        expect(published.publishState).toBe('published');
+        expect(client.release).toHaveBeenCalled();
+    });
+
+    it('rolls back publish changes when persistence fails', async () => {
+        client.query
+            .mockResolvedValueOnce({})
+            .mockRejectedValueOnce(new Error('insert failed'))
+            .mockResolvedValueOnce({});
+
+        await expect(RecordingService.publishRecording({
+            providerName: 'facebook',
+            providerRecordingId: 'fb-2',
+            providerVideoUrl: 'https://www.facebook.com/temple/videos/fb-2',
+            title: 'Saturday Service',
+            serviceDate: '2026-03-22T15:00:00.000Z',
+            durationSeconds: 3600
+        }, {
+            userId: 'rabbi-1',
+            ipAddress: '127.0.0.1'
+        })).rejects.toThrow('insert failed');
+
+        expect(client.query).toHaveBeenCalledWith('ROLLBACK');
+        expect(client.release).toHaveBeenCalled();
+    });
+
+    it('rejects publish when required metadata is missing', async () => {
+        await expect(RecordingService.publishRecording({
+            providerName: 'facebook',
+            providerRecordingId: 'fb-3',
+            providerVideoUrl: 'https://www.facebook.com/temple/videos/fb-3',
+            title: 'Service without duration',
+            serviceDate: '2026-03-22T15:00:00.000Z'
+        }, {
+            userId: 'rabbi-1',
+            ipAddress: '127.0.0.1'
+        })).rejects.toThrow('Service date and duration are required');
+    });
+});
