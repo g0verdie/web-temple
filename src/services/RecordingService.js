@@ -82,8 +82,9 @@ const saveDraft = async (recording, userId) => {
             duration_seconds,
             publish_state,
             created_at,
-            updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'unpublished', NOW(), NOW())
+            updated_at,
+            updated_by
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'unpublished', NOW(), NOW(), $11)
         ON CONFLICT (provider_name, provider_recording_id) DO UPDATE SET
             title = COALESCE(EXCLUDED.title, recordings.title),
             description = COALESCE(EXCLUDED.description, recordings.description),
@@ -92,7 +93,8 @@ const saveDraft = async (recording, userId) => {
             duration_seconds = COALESCE(EXCLUDED.duration_seconds, recordings.duration_seconds),
             preview_url = COALESCE(EXCLUDED.preview_url, recordings.preview_url),
             provider_video_url = COALESCE(EXCLUDED.provider_video_url, recordings.provider_video_url),
-            updated_at = NOW()
+            updated_at = NOW(),
+            updated_by = EXCLUDED.updated_by
         RETURNING *
     `;
 
@@ -108,7 +110,8 @@ const saveDraft = async (recording, userId) => {
             description,
             serviceDate,
             torahPortion,
-            durationSeconds
+            durationSeconds,
+            userId
         ]);
 
         const saved = result.rows[0];
@@ -184,14 +187,16 @@ const publishRecording = async (recording, context) => {
                 publish_state,
                 published_at,
                 created_at,
-                updated_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'published', $11, NOW(), NOW())
+                updated_at,
+                updated_by
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'published', $11, NOW(), NOW(), $12)
             ON CONFLICT (provider_name, provider_recording_id) DO UPDATE SET
                 publish_state = 'published',
                 published_at = EXCLUDED.published_at,
                 title = COALESCE(EXCLUDED.title, recordings.title),
                 description = COALESCE(EXCLUDED.description, recordings.description),
-                updated_at = NOW()
+                updated_at = NOW(),
+                updated_by = EXCLUDED.updated_by
             RETURNING id, provider_recording_id, title
             `,
             [
@@ -205,7 +210,8 @@ const publishRecording = async (recording, context) => {
                 serviceDate,
                 torahPortion,
                 durationSeconds,
-                publishedAt
+                publishedAt,
+                userId
             ]
         );
 
@@ -232,7 +238,9 @@ const publishRecording = async (recording, context) => {
             ip_address: ipAddress
         });
 
-        // 4. Queue notification emails for members with preference enabled
+        await client.query('COMMIT');
+
+        // 4. Queue notification emails for members with preference enabled (OUTSIDE TRANSACTION)
         for (const member of members) {
             const emailContent = renderTemplate('new-recording-available', {
                 memberName: member.first_name || 'Member',
@@ -248,10 +256,8 @@ const publishRecording = async (recording, context) => {
                 html: emailContent.html,
                 text: emailContent.text,
                 priority: 2
-            });
+            }).catch(e => console.error('Failed to queue email for recording:', e));
         }
-
-        await client.query('COMMIT');
 
         // 5. Invalidate archive cache after successful publish
         await CacheService.invalidatePattern('recording:*');

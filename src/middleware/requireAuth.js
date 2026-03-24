@@ -78,6 +78,7 @@ const requireAuth = async (req, res, next) => {
         next();
 
     } catch (error) {
+        console.error('requireAuth catch error:', error);
         // Clear invalid cookie
         res.clearCookie('auth_token');
 

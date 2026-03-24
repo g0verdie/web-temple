@@ -1,6 +1,6 @@
 # Story 3.3: Rabbi Publishes Recording to Archive
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -203,3 +203,9 @@ Claude Haiku 4.5
 - __tests__/services/RecordingService.test.js
 - __tests__/integration/adminRecordingsRoutes.test.js
 - _bmad-output/implementation-artifacts/3-3-rabbi-publishes-recording-to-archive.md
+
+### Review Findings
+
+- [x] [Review][Patch] Fix draft autosave interval logic to stop or clear on modal close [src/views/admin/recordings/list.ejs]
+- [x] [Review][Patch] Move member email enqueuing outside of the DB transaction to prevent connection blocking [src/services/RecordingService.js]
+- [x] [Review][Patch] Fix `saveDraft` to actually persist or log the `userId` making the edit [src/services/RecordingService.js]

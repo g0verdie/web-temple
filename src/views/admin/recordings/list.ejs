@@ -176,9 +176,16 @@
     }
 
     // Auto-save draft every 30 seconds
-    setInterval(() => {
+    let autosaveInterval = setInterval(() => {
         if (!currentRecording) return;
         const form = document.getElementById('publishRecordingForm');
+        
+        // Stop saving if the modal is hidden
+        if (!$('#editRecordingModal').hasClass('show')) {
+            currentRecording = null;
+            return;
+        }
+
         const formData = new FormData(form);
 
         const payload = {
@@ -202,4 +209,9 @@
             body: JSON.stringify(payload)
         }).catch(err => console.error('Draft autosave failed:', err)); // Non-blocking
     }, 30000);
+
+    // Clear currentRecording when modal is closed to stop pending autosaves
+    $('#editRecordingModal').on('hidden.bs.modal', function () {
+        currentRecording = null;
+    });
 </script>

@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS recordings (
   published_at TIMESTAMP,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_by UUID REFERENCES users(id),
   UNIQUE (provider_name, provider_recording_id)
 );
 

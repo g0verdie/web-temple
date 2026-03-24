@@ -60,13 +60,13 @@ describe('RecordingService', () => {
         db.query.mockResolvedValueOnce({
             rows: [
                 {
-                    provider_name: 'facebook',
-                    provider_recording_id: 'fb-1',
+                    providerName: 'facebook',
+                    providerRecordingId: 'fb-1',
                     title: 'Friday Night Service',
-                    service_date: '2026-03-22T23:00:00.000Z',
-                    torah_portion: 'Vayikra',
-                    duration_seconds: 3600,
-                    publish_state: 'unpublished',
+                    serviceDate: '2026-03-22T23:00:00.000Z',
+                    torahPortion: 'Vayikra',
+                    durationSeconds: 3600,
+                    publishState: 'unpublished',
                     description: 'Draft description'
                 }
             ]
@@ -161,7 +161,7 @@ describe('RecordingService', () => {
 
         expect(client.query).toHaveBeenCalledWith('BEGIN');
         expect(client.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO recordings'), expect.any(Array));
-        expect(client.query).toHaveBeenCalledWith(expect.stringContaining('SELECT id, email, first_name'), []);
+        expect(client.query).toHaveBeenCalledWith(expect.stringContaining('SELECT id, email, first_name'));
         expect(client.query).toHaveBeenCalledWith('COMMIT');
         expect(auditService.logAudit).toHaveBeenCalledWith(expect.objectContaining({
             user_id: 'rabbi-1',

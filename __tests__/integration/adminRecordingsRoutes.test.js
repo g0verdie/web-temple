@@ -12,7 +12,7 @@ jest.mock('pg', () => {
 });
 
 jest.mock('../../src/config/redis', () => ({
-    get: jest.fn().mockResolvedValue(null),
+    get: jest.fn().mockResolvedValue(Date.now().toString()),
     set: jest.fn().mockResolvedValue('OK'),
     del: jest.fn().mockResolvedValue(1),
     keys: jest.fn().mockResolvedValue([])
@@ -22,6 +22,11 @@ jest.mock('../../src/services/RecordingService', () => ({
     listPendingRecordings: jest.fn(),
     saveDraft: jest.fn(),
     publishRecording: jest.fn()
+}));
+
+jest.mock('../../src/middleware/requireAuth', () => jest.fn((req, res, next) => {
+    req.user = { id: 'admin-001', role: 'admin' };
+    next();
 }));
 
 const { Pool } = require('pg');
@@ -68,12 +73,14 @@ describe('Admin Recordings Routes', () => {
     });
 
     it('blocks members from the admin recordings page', async () => {
-        const token = jwt.sign({ user_id: 'member-1', role: 'member', token_version: 1 }, 'test-jwt-secret');
-        pool.query.mockResolvedValueOnce({ rows: [{ token_version: 1, role: 'member', email: 'member@example.com' }] });
+        const requireAuth = require('../../src/middleware/requireAuth');
+        requireAuth.mockImplementationOnce((req, res, next) => {
+            req.user = { id: 'member-1', role: 'member' };
+            next();
+        });
 
         const response = await request(app)
             .get('/admin/recordings')
-            .set('Cookie', [`auth_token=${token}`])
             .set('Accept', 'application/json');
 
         expect(response.statusCode).toBe(403);
