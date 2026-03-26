@@ -50,6 +50,22 @@ so that I can watch services I missed or rewatch meaningful moments.
   - [ ] Add service tests for query construction and 52-week cutoff behavior.
   - [ ] Add rendering assertions for filter controls, recording metadata, and the older-recordings message.
 
+### Review Findings (2026-03-25)
+
+- [x] [Review][Defer] Add index for publish_state filtering [migrations/013_add_service_type_and_indexes.sql] — deferred: we will do this later during our optimization sprint
+- [x] [Review][Defer] Implement full responsive design for archive page [src/views/recordings/index.ejs] — deferred: we will also execute it later when polishing built product
+- [x] [Review][Defer] Add keyboard accessibility coverage [__tests__/routes/archiveRoutes.test.js] — deferred, pre-existing
+- [x] [Review][Defer] Add performance verification evidence for AC9/AC10 [src/services/RecordingService.js] — deferred, pre-existing
+- [x] [Review][Patch] Correct older-recordings message trigger logic [src/views/recordings/index.ejs] — ✅ FIXED
+- [x] [Review][Patch] Default page to 1 and enforce max page cap [src/controllers/recordingController.js] — ✅ FIXED
+- [x] [Review][Patch] Validate logical calendar dates (not regex-only) [src/controllers/recordingController.js] — ✅ FIXED
+- [x] [Review][Patch] Guard filter query parameters to string type before trim/SQL [src/controllers/recordingController.js] — ✅ FIXED
+- [x] [Review][Patch] Harden count parsing for null/non-numeric values [src/services/RecordingService.js] — ✅ FIXED
+- [x] [Review][Patch] Render pagination query params with null-safe defaults [src/views/recordings/index.ejs] — ✅ FIXED
+- [x] [Review][Patch] Treat zero duration as valid and clamp invalid negatives [src/views/recordings/index.ejs] — ✅ FIXED
+- [x] [Review][Patch] Fallback for invalid service_date values in template [src/views/recordings/index.ejs] — ✅ FIXED
+- [x] [Review][Patch] Expand tests for page/date boundary cases and include totalCount in mocks [__tests__/routes/archiveRoutes.test.js] — ✅ FIXED
+
 ## Code Review Findings (2026-03-24)
 
 ### Decisions Made

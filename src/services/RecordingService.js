@@ -362,10 +362,11 @@ const getArchiveRecordings = async (filters, page = 1, limit = 20) => {
     const client = await db.pool.connect();
     try {
         const countResult = await client.query(countQuery, values);
-        // Guard against empty COUNT result (edge case)
-        const totalCount = (countResult.rows && countResult.rows.length > 0) 
-            ? parseInt(countResult.rows[0].count) 
+        // Guard against null/empty/non-numeric COUNT edge cases.
+        const rawCount = countResult && countResult.rows && countResult.rows[0]
+            ? parseInt(countResult.rows[0].count, 10)
             : 0;
+        const totalCount = Number.isFinite(rawCount) && rawCount >= 0 ? rawCount : 0;
         
         const dataResult = await client.query(dataQuery, dataValues);
         

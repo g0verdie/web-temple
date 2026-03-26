@@ -141,24 +141,55 @@ exports.publishRecording = async (req, res) => {
  */
 exports.getArchiveList = async (req, res) => {
     try {
-        // Validate and parse page number (fix parseInt('5abc') -> 5 vulnerability)
-        let page = parseInt(req.query.page, 10);
-        if (isNaN(page) || !Number.isInteger(page) || page < 1) {
+        // Normalize query values to strings to avoid array/object edge cases.
+        const queryString = (value) => (typeof value === 'string' ? value : '');
+
+        // Validate and parse page number with safe defaults and bounds.
+        if (Array.isArray(req.query.page)) {
+            return res.status(400).render('error', {
+                title: '400 - Invalid Request',
+                message: 'Invalid page number'
+            });
+        }
+        const rawPage = queryString(req.query.page);
+        if (rawPage && !/^[1-9]\d{0,3}$/.test(rawPage)) {
+            return res.status(400).render('error', { 
+                title: '400 - Invalid Request',
+                message: 'Invalid page number' 
+            });
+        }
+        let page = rawPage ? parseInt(rawPage, 10) : 1;
+        if (isNaN(page) || !Number.isInteger(page) || page < 1 || page > 1000) {
             return res.status(400).render('error', { 
                 title: '400 - Invalid Request',
                 message: 'Invalid page number' 
             });
         }
 
-        // Validate date inputs are ISO 8601 format
+        // Validate date inputs are ISO 8601 format and real calendar dates.
         const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-        if (req.query.startDate && !dateRegex.test(req.query.startDate)) {
+        const startDate = queryString(req.query.startDate);
+        const endDate = queryString(req.query.endDate);
+
+        const isValidCalendarDate = (value) => {
+            if (!dateRegex.test(value)) {
+                return false;
+            }
+
+            const [year, month, day] = value.split('-').map(Number);
+            const dt = new Date(Date.UTC(year, month - 1, day));
+            return dt.getUTCFullYear() === year
+                && dt.getUTCMonth() === month - 1
+                && dt.getUTCDate() === day;
+        };
+
+        if (startDate && !isValidCalendarDate(startDate)) {
             return res.status(400).render('error', { 
                 title: '400 - Invalid Request',
                 message: 'Invalid start date format (use YYYY-MM-DD)' 
             });
         }
-        if (req.query.endDate && !dateRegex.test(req.query.endDate)) {
+        if (endDate && !isValidCalendarDate(endDate)) {
             return res.status(400).render('error', { 
                 title: '400 - Invalid Request',
                 message: 'Invalid end date format (use YYYY-MM-DD)' 
@@ -166,7 +197,7 @@ exports.getArchiveList = async (req, res) => {
         }
 
         // Validate date range: startDate must be <= endDate
-        if (req.query.startDate && req.query.endDate && req.query.startDate > req.query.endDate) {
+        if (startDate && endDate && startDate > endDate) {
             return res.status(400).render('error', { 
                 title: '400 - Invalid Request',
                 message: 'Start date must be before or equal to end date' 
@@ -174,13 +205,17 @@ exports.getArchiveList = async (req, res) => {
         }
 
         const limit = 20;
+        const cutoffDate = new Date();
+        cutoffDate.setUTCDate(cutoffDate.getUTCDate() - 364);
+        const cutoffIso = cutoffDate.toISOString().slice(0, 10);
+        const showOlderRecordingsNotice = !startDate || startDate < cutoffIso;
 
         const filters = {
-            search: req.query.search || '',
-            serviceType: req.query.serviceType || '',
-            torahPortion: req.query.torahPortion || '',
-            startDate: req.query.startDate || '',
-            endDate: req.query.endDate || ''
+            search: queryString(req.query.search),
+            serviceType: queryString(req.query.serviceType),
+            torahPortion: queryString(req.query.torahPortion),
+            startDate,
+            endDate
         };
 
         const result = await RecordingService.getArchiveRecordings(filters, page, limit);
@@ -194,6 +229,7 @@ exports.getArchiveList = async (req, res) => {
                 totalPages: result.totalPages,
                 totalCount: result.totalCount,
                 filters,
+                showOlderRecordingsNotice,
                 csrfToken: req.csrfToken ? req.csrfToken() : null
             }
         });

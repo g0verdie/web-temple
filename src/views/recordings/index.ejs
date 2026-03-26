@@ -26,13 +26,20 @@
                         <% } %>
                         <div class="recording-details">
                             <h2><%= recording.title %></h2>
-                            <p class="date"><%= (recording.service_date ? new Date(recording.service_date).toLocaleDateString() : 'Date unavailable') %></p>
+                            <p class="date">
+                                <% if (recording.service_date && !isNaN(new Date(recording.service_date).getTime())) { %>
+                                    <%= new Date(recording.service_date).toLocaleDateString() %>
+                                <% } else { %>
+                                    Date unavailable
+                                <% } %>
+                            </p>
                             <p class="rabbi">Rabbi: <%= (recording.first_name && (recording.first_name + (recording.last_name ? ' ' + recording.last_name : '')).trim()) || 'Rabbi' %></p>
                             <% if (recording.torah_portion) { %>
                                 <p class="portion">Portion: <%= recording.torah_portion %></p>
                             <% } %>
-                            <% if (recording.duration_seconds) { %>
-                                <p class="duration">Duration: <%= Math.floor(recording.duration_seconds / 60) %> mins</p>
+                            <% const durationRaw = typeof recording.duration_seconds === 'string' ? recording.duration_seconds.trim() : recording.duration_seconds; %>
+                            <% if (durationRaw !== '' && durationRaw !== null && durationRaw !== undefined && Number.isFinite(Number(durationRaw))) { %>
+                                <p class="duration">Duration: <%= Math.floor(Math.max(0, Number(durationRaw)) / 60) %> mins</p>
                             <% } else { %>
                                 <p class="duration">Duration: N/A</p>
                             <% } %>
@@ -49,16 +56,16 @@
     <% if (totalPages > 1) { %>
         <div class="pagination">
             <% if (currentPage > 1) { %>
-                <a href="/archive?page=<%= currentPage - 1 %>&search=<%= encodeURIComponent(filters.search) %>&serviceType=<%= encodeURIComponent(filters.serviceType) %>&torahPortion=<%= encodeURIComponent(filters.torahPortion) %>&startDate=<%= encodeURIComponent(filters.startDate) %>&endDate=<%= encodeURIComponent(filters.endDate) %>" rel="prev">Previous</a>
+                <a href="/archive?page=<%= currentPage - 1 %>&search=<%= encodeURIComponent(filters.search || '') %>&serviceType=<%= encodeURIComponent(filters.serviceType || '') %>&torahPortion=<%= encodeURIComponent(filters.torahPortion || '') %>&startDate=<%= encodeURIComponent(filters.startDate || '') %>&endDate=<%= encodeURIComponent(filters.endDate || '') %>" rel="prev">Previous</a>
             <% } %>
             <span>Page <%= currentPage %> of <%= totalPages %></span>
             <% if (currentPage < totalPages) { %>
-                <a href="/archive?page=<%= currentPage + 1 %>&search=<%= encodeURIComponent(filters.search) %>&serviceType=<%= encodeURIComponent(filters.serviceType) %>&torahPortion=<%= encodeURIComponent(filters.torahPortion) %>&startDate=<%= encodeURIComponent(filters.startDate) %>&endDate=<%= encodeURIComponent(filters.endDate) %>" rel="next">Next</a>
+                <a href="/archive?page=<%= currentPage + 1 %>&search=<%= encodeURIComponent(filters.search || '') %>&serviceType=<%= encodeURIComponent(filters.serviceType || '') %>&torahPortion=<%= encodeURIComponent(filters.torahPortion || '') %>&startDate=<%= encodeURIComponent(filters.startDate || '') %>&endDate=<%= encodeURIComponent(filters.endDate || '') %>" rel="next">Next</a>
             <% } %>
         </div>
     <% } %>
 
-    <% if (!filters.startDate || currentPage === 1) { %>
+    <% if (showOlderRecordingsNotice) { %>
         <div class="archive-notice">
             <p>Available on request - contact Rabbi for older recordings.</p>
         </div>
