@@ -1,0 +1,136 @@
+<%
+    // Helpers scoped to this view.
+    const captionFormat = (recording.caption_format || 'burned-in').toLowerCase();
+    const hasWebVtt = captionFormat === 'webvtt' && recording.caption_url;
+    const playbackUrl = recording.provider_video_url || '';
+    const previewUrl = recording.preview_url || '';
+
+    const rabbiName = (recording.first_name && (recording.first_name + (recording.last_name ? ' ' + recording.last_name : '')).trim()) || 'Rabbi';
+
+    const serviceDateValid = recording.service_date && !isNaN(new Date(recording.service_date).getTime());
+    const serviceDateText = serviceDateValid ? new Date(recording.service_date).toLocaleDateString() : 'Date unavailable';
+
+    const durationRaw = typeof recording.duration_seconds === 'string' ? recording.duration_seconds.trim() : recording.duration_seconds;
+    const durationValid = durationRaw !== '' && durationRaw !== null && durationRaw !== undefined && Number.isFinite(Number(durationRaw));
+    const durationMinutes = durationValid ? Math.floor(Math.max(0, Number(durationRaw)) / 60) : null;
+%>
+<article class="recording-detail" aria-labelledby="recording-title">
+    <p class="recording-back"><a href="/archive">&larr; Back to archive</a></p>
+
+    <h1 id="recording-title"><%= recording.title || 'Recording' %></h1>
+
+    <dl class="recording-meta">
+        <div>
+            <dt>Service date</dt>
+            <dd><%= serviceDateText %></dd>
+        </div>
+        <div>
+            <dt>Rabbi</dt>
+            <dd><%= rabbiName %></dd>
+        </div>
+        <% if (recording.torah_portion) { %>
+            <div>
+                <dt>Torah portion</dt>
+                <dd><%= recording.torah_portion %></dd>
+            </div>
+        <% } %>
+        <% if (recording.service_type) { %>
+            <div>
+                <dt>Service type</dt>
+                <dd><%= recording.service_type %></dd>
+            </div>
+        <% } %>
+        <% if (durationMinutes !== null) { %>
+            <div>
+                <dt>Duration</dt>
+                <dd><%= durationMinutes %> mins</dd>
+            </div>
+        <% } %>
+    </dl>
+
+    <% if (playbackUrl) { %>
+        <div class="recording-player-wrapper">
+            <video
+                id="recording-player"
+                class="recording-player"
+                controls
+                preload="metadata"
+                playsinline
+                aria-label="Service recording player"
+                <% if (previewUrl) { %>poster="<%= previewUrl %>"<% } %>
+                data-recording-id="<%= recording.id %>"
+            >
+                <source src="<%= playbackUrl %>" />
+                <% if (hasWebVtt) { %>
+                    <track
+                        kind="captions"
+                        src="<%= recording.caption_url %>"
+                        srclang="en"
+                        label="English captions"
+                        default
+                    />
+                <% } %>
+                <p>
+                    Your browser does not support embedded video playback.
+                    Please <a href="<%= playbackUrl %>" rel="noopener">open the recording directly</a>.
+                </p>
+            </video>
+
+            <div class="recording-controls" role="group" aria-label="Playback controls">
+                <fieldset class="recording-speed">
+                    <legend>Playback speed</legend>
+                    <% [0.5, 1, 1.5, 2].forEach((rate, i) => { %>
+                        <label>
+                            <input
+                                type="radio"
+                                name="playbackRate"
+                                value="<%= rate %>"
+                                <%= rate === 1 ? 'checked' : '' %>
+                                data-playback-rate
+                            />
+                            <span><%= rate %>x</span>
+                        </label>
+                    <% }) %>
+                </fieldset>
+
+                <% if (hasWebVtt) { %>
+                    <button
+                        type="button"
+                        class="recording-captions-toggle"
+                        data-captions-toggle
+                        aria-pressed="true"
+                    >
+                        Captions: <span data-captions-state>On</span>
+                    </button>
+                <% } else { %>
+                    <p class="recording-captions-note" role="note">
+                        Captions are burned into the video and are always visible.
+                    </p>
+                <% } %>
+            </div>
+
+            <p class="recording-keyboard-help">
+                Keyboard shortcuts: <kbd>Space</kbd> play / pause,
+                <kbd>&larr;</kbd> / <kbd>&rarr;</kbd> seek,
+                <kbd>F</kbd> fullscreen.
+            </p>
+        </div>
+
+        <% if (recording.description) { %>
+            <section class="recording-description" aria-labelledby="recording-description-heading">
+                <h2 id="recording-description-heading">About this recording</h2>
+                <p><%= recording.description %></p>
+            </section>
+        <% } %>
+    <% } else { %>
+        <div class="recording-unavailable" role="alert">
+            <h2>Playback unavailable</h2>
+            <p>
+                This recording does not currently have a playable source.
+                Please <a href="/contact">contact the Rabbi</a> for assistance.
+            </p>
+        </div>
+    <% } %>
+</article>
+
+<script src="/js/recording-player.js" defer></script>

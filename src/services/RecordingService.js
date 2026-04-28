@@ -384,9 +384,50 @@ const getArchiveRecordings = async (filters, page = 1, limit = 20) => {
     }
 };
 
+/**
+ * Fetch a single published recording by id, joined with the publishing user's
+ * name. Returns null when the recording does not exist OR is not in the
+ * 'published' state. The 404-vs-403 distinction is enforced by the caller; the
+ * service deliberately conflates "missing" and "not published" so draft
+ * existence is not leakable through timing or distinct error paths.
+ *
+ * @param {string} id - recording UUID
+ * @returns {Promise<Object|null>} recording row or null
+ */
+const getPublishedRecordingById = async (id) => {
+    if (typeof id !== 'string' || id.trim() === '') {
+        return null;
+    }
+
+    // Postgres rejects malformed UUIDs at parse time. Catch that and treat as
+    // "not found" so callers can map cleanly to 404 without leaking validation
+    // signals via 400.
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+        return null;
+    }
+
+    const query = `
+        SELECT r.*, u.first_name, u.last_name
+        FROM recordings r
+        LEFT JOIN users u ON r.updated_by = u.id
+        WHERE r.id = $1 AND r.publish_state = 'published'
+        LIMIT 1
+    `;
+
+    try {
+        const result = await db.query(query, [id]);
+        return result.rows[0] || null;
+    } catch (error) {
+        console.error('Error fetching published recording by id:', error);
+        throw error;
+    }
+};
+
 module.exports = {
     listPendingRecordings,
     saveDraft,
     publishRecording,
-    getArchiveRecordings
+    getArchiveRecordings,
+    getPublishedRecordingById
 };

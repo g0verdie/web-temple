@@ -21,11 +21,12 @@
             <ul class="recording-list">
                 <% recordings.forEach(recording => { %>
                     <li class="recording-card">
-                        <% if (recording.preview_url) { %>
-                            <img src="<%= recording.preview_url %>" alt="Thumbnail for <%= recording.title %>" class="recording-thumbnail">
-                        <% } %>
-                        <div class="recording-details">
-                            <h2><%= recording.title %></h2>
+                        <a class="recording-card-link" href="/archive/<%= encodeURIComponent(recording.id) %>" aria-label="Play recording: <%= recording.title %>">
+                            <% if (recording.preview_url) { %>
+                                <img src="<%= recording.preview_url %>" alt="" class="recording-thumbnail">
+                            <% } %>
+                            <div class="recording-details">
+                                <h2><%= recording.title %></h2>
                             <p class="date">
                                 <% if (recording.service_date && !isNaN(new Date(recording.service_date).getTime())) { %>
                                     <%= new Date(recording.service_date).toLocaleDateString() %>
@@ -44,7 +45,8 @@
                                 <p class="duration">Duration: N/A</p>
                             <% } %>
                             <p class="description"><%= recording.description %></p>
-                        </div>
+                            </div>
+                        </a>
                     </li>
                 <% }) %>
             </ul>

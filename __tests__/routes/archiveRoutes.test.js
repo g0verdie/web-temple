@@ -189,4 +189,83 @@ describe('Archive Routes', () => {
             );
         });
     });
+
+    // Story 3.5 honors Story 3.4 deferred items:
+    // AC5 (keyboard) and AC7 (responsive) of Story 3.5 depend on the archive
+    // surface being keyboard-accessible and responsive, not only the playback
+    // page. These tests guard against regressions on the archive index view.
+    describe('Archive surface keyboard accessibility (deferred from Story 3.4)', () => {
+        const buildRecording = () => ({
+            id: '11111111-1111-4111-8111-111111111111',
+            title: 'Shabbat Service',
+            description: 'desc',
+            preview_url: 'https://media.example.com/x.jpg',
+            service_date: '2026-01-10T18:00:00Z',
+            torah_portion: 'Bereshit',
+            service_type: 'Shabbat',
+            duration_seconds: 3600,
+            first_name: 'Avi',
+            last_name: 'Cohen'
+        });
+
+        it('renders filter inputs with accessible labels (keyboard + screen reader navigable)', async () => {
+            RecordingService.getArchiveRecordings.mockResolvedValue({
+                recordings: [],
+                totalCount: 0,
+                totalPages: 1,
+                currentPage: 1
+            });
+
+            const res = await request(app)
+                .get('/archive')
+                .set('Cookie', [`auth_token=${authToken}`]);
+
+            expect(res.status).toBe(200);
+            // Native form controls with aria-label are reachable via Tab and announced by AT.
+            expect(res.text).toMatch(/<input[^>]*name="search"[^>]*aria-label="Search keywords"/);
+            expect(res.text).toMatch(/<select[^>]*name="serviceType"[^>]*aria-label="Service Type"/);
+            expect(res.text).toMatch(/<input[^>]*name="startDate"[^>]*aria-label="Start Date"/);
+            expect(res.text).toMatch(/<input[^>]*name="endDate"[^>]*aria-label="End Date"/);
+            expect(res.text).toMatch(/<button[^>]*type="submit"[^>]*>\s*Filter\s*<\/button>/);
+        });
+
+        it('renders each recording card as a real <a> link (keyboard activatable, no role="button" hacks)', async () => {
+            RecordingService.getArchiveRecordings.mockResolvedValue({
+                recordings: [buildRecording()],
+                totalCount: 1,
+                totalPages: 1,
+                currentPage: 1
+            });
+
+            const res = await request(app)
+                .get('/archive')
+                .set('Cookie', [`auth_token=${authToken}`]);
+
+            expect(res.status).toBe(200);
+            // <a href> is keyboard-activatable by Enter without extra JS or tabindex.
+            expect(res.text).toMatch(/<a[^>]*class="recording-card-link"[^>]*href="\/archive\/[^"]+"[^>]*aria-label="Play recording: Shabbat Service"/);
+            // Cards must NOT use ad-hoc clickable divs that break keyboard support.
+            expect(res.text).not.toMatch(/<div[^>]*onclick=/i);
+            expect(res.text).not.toMatch(/<li[^>]*onclick=/i);
+        });
+
+        it('loads the responsive recordings stylesheet so layout adapts on small screens', async () => {
+            RecordingService.getArchiveRecordings.mockResolvedValue({
+                recordings: [],
+                totalCount: 0,
+                totalPages: 1,
+                currentPage: 1
+            });
+
+            const res = await request(app)
+                .get('/archive')
+                .set('Cookie', [`auth_token=${authToken}`]);
+
+            expect(res.status).toBe(200);
+            // recordings.css ships the @media (max-width: 600px) rules.
+            expect(res.text).toMatch(/<link[^>]+href="\/css\/recordings\.css"/);
+            // Viewport meta enables responsive scaling on mobile.
+            expect(res.text).toMatch(/<meta[^>]+name="viewport"[^>]+content="[^"]*width=device-width/);
+        });
+    });
 });

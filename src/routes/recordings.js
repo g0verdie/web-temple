@@ -9,4 +9,7 @@ router.use(requireAuth);
 // GET /archive
 router.get('/', recordingController.getArchiveList);
 
+// GET /archive/:id - playback detail page (Story 3.5)
+router.get('/:id', recordingController.getRecordingDetail);
+
 module.exports = router;

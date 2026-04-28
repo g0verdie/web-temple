@@ -1,0 +1,206 @@
+/* Recording playback (Story 3.5) and archive responsive polish (Story 3.4 deferred work). */
+
+.recording-detail {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.recording-back a {
+    text-decoration: none;
+}
+
+.recording-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem 1.5rem;
+    margin: 1rem 0 1.5rem;
+    padding: 0;
+}
+
+.recording-meta > div {
+    margin: 0;
+}
+
+.recording-meta dt {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #444;
+}
+
+.recording-meta dd {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.recording-player-wrapper {
+    margin: 1rem 0 2rem;
+}
+
+.recording-player {
+    width: 100%;
+    height: auto;
+    max-height: 70vh;
+    background: #000;
+    border-radius: 4px;
+}
+
+.recording-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 1.5rem;
+    align-items: center;
+    margin-top: 0.75rem;
+}
+
+.recording-speed {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    margin: 0;
+}
+
+.recording-speed legend {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0 0.25rem;
+}
+
+.recording-speed label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-right: 0.75rem;
+    cursor: pointer;
+}
+
+.recording-captions-toggle {
+    cursor: pointer;
+    padding: 0.5rem 0.9rem;
+    border: 1px solid #444;
+    background: #fff;
+    border-radius: 4px;
+    font: inherit;
+}
+
+.recording-captions-toggle[aria-pressed="false"] {
+    background: #f3f3f3;
+    color: #333;
+}
+
+.recording-captions-toggle:focus,
+.recording-speed input:focus + span {
+    outline: 2px solid #2a5db0;
+    outline-offset: 2px;
+}
+
+.recording-captions-note {
+    margin: 0;
+    color: #444;
+    font-style: italic;
+}
+
+.recording-keyboard-help {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    color: #444;
+}
+
+.recording-keyboard-help kbd {
+    background: #eee;
+    border: 1px solid #bbb;
+    border-radius: 3px;
+    padding: 0.05rem 0.35rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+}
+
+.recording-description {
+    margin-top: 1.5rem;
+}
+
+.recording-unavailable {
+    border: 1px solid #c98a8a;
+    background: #fff5f5;
+    padding: 1rem;
+    border-radius: 4px;
+}
+
+/* Story 3.4 deferred: responsive polish for the archive list page. */
+
+.archive-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.archive-filters form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.archive-filters input,
+.archive-filters select,
+.archive-filters button {
+    padding: 0.5rem 0.6rem;
+    font: inherit;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    min-width: 0;
+}
+
+.archive-filters input:focus,
+.archive-filters select:focus,
+.archive-filters button:focus {
+    outline: 2px solid #2a5db0;
+    outline-offset: 2px;
+}
+
+.recording-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+}
+
+.recording-card {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 0.75rem;
+    background: #fff;
+}
+
+.recording-card a:focus-visible {
+    outline: 2px solid #2a5db0;
+    outline-offset: 2px;
+}
+
+.recording-thumbnail {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+.archive-notice {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: #f6f3ea;
+    border-left: 4px solid #b89d3a;
+}
+
+@media (max-width: 600px) {
+    .archive-filters form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .archive-filters input,
+    .archive-filters select,
+    .archive-filters button {
+        width: 100%;
+    }
+}

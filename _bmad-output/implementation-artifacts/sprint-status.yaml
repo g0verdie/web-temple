@@ -71,7 +71,7 @@ development_status:
   3-2-stream-status-display-error-handling: done
   3-3-rabbi-publishes-recording-to-archive: done
   3-4-member-archive-browsing-search: done
-  3-5-recording-playback-with-accessibility: ready-for-dev
+  3-5-recording-playback-with-accessibility: ready-for-review
   3-6-authorized-user-stream-scheduling: ready-for-dev
   epic-3-retrospective: optional
   epic-4: backlog

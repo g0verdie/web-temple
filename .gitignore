@@ -43,3 +43,6 @@ test_output.txt
 .agent/
 _bmad/
 .agents/
+
+
+.opencode/

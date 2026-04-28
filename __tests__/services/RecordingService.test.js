@@ -253,4 +253,56 @@ describe('RecordingService', () => {
             expect(countCall[1]).toContain('Holiday');
         });
     });
+
+    describe('getPublishedRecordingById (Story 3.5)', () => {
+        const VALID_ID = '11111111-1111-4111-8111-111111111111';
+
+        it('returns the recording when found and published', async () => {
+            db.query.mockResolvedValueOnce({
+                rows: [{
+                    id: VALID_ID,
+                    title: 'Service',
+                    publish_state: 'published',
+                    caption_format: 'webvtt'
+                }]
+            });
+
+            const result = await RecordingService.getPublishedRecordingById(VALID_ID);
+
+            expect(result).not.toBeNull();
+            expect(result.id).toBe(VALID_ID);
+            // Must filter by publish_state at the SQL level, not in JS.
+            const sql = db.query.mock.calls[db.query.mock.calls.length - 1][0];
+            expect(sql).toContain("publish_state = 'published'");
+            expect(sql).toContain('LIMIT 1');
+        });
+
+        it('returns null when no row matches (treats unpublished and missing the same)', async () => {
+            db.query.mockResolvedValueOnce({ rows: [] });
+            const result = await RecordingService.getPublishedRecordingById(VALID_ID);
+            expect(result).toBeNull();
+        });
+
+        it('returns null for malformed UUID without hitting the database', async () => {
+            const before = db.query.mock.calls.length;
+            const result = await RecordingService.getPublishedRecordingById('not-a-uuid');
+            expect(result).toBeNull();
+            expect(db.query.mock.calls.length).toBe(before);
+        });
+
+        it('returns null for empty / non-string id without hitting the database', async () => {
+            const before = db.query.mock.calls.length;
+            expect(await RecordingService.getPublishedRecordingById('')).toBeNull();
+            expect(await RecordingService.getPublishedRecordingById(null)).toBeNull();
+            expect(await RecordingService.getPublishedRecordingById(undefined)).toBeNull();
+            expect(await RecordingService.getPublishedRecordingById(123)).toBeNull();
+            expect(db.query.mock.calls.length).toBe(before);
+        });
+
+        it('propagates unexpected database errors so the caller can render 500', async () => {
+            db.query.mockRejectedValueOnce(new Error('db down'));
+            await expect(RecordingService.getPublishedRecordingById(VALID_ID))
+                .rejects.toThrow('db down');
+        });
+    });
 });

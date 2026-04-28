@@ -223,6 +223,7 @@ exports.getArchiveList = async (req, res) => {
         res.render('layout', {
             title: 'Recording Archive',
             bodyView: 'recordings/index',
+            stylesheets: ['/css/recordings.css'],
             viewData: {
                 recordings: result.recordings,
                 currentPage: result.currentPage,
@@ -238,6 +239,44 @@ exports.getArchiveList = async (req, res) => {
         res.status(500).render('error', { 
             title: '500 - Server Error',
             message: 'Unable to load archive.' 
+        });
+    }
+};
+
+/**
+ * Render the playback page for a single published recording.
+ *
+ * Story 3.5 AC contract:
+ * - Returns 200 only when the recording exists and is in 'published' state.
+ * - Returns 404 (not 403) for any non-published or missing id, to avoid
+ *   leaking the existence of unpublished drafts via a distinct error code.
+ * - Caption metadata (caption_url, caption_format) is forwarded to the view
+ *   so it can render either a WebVTT <track> with toggle, or the
+ *   "captions are burned in" affordance.
+ */
+exports.getRecordingDetail = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const recording = await RecordingService.getPublishedRecordingById(id);
+
+        if (!recording) {
+            return res.status(404).render('404', { title: '404 - Recording Not Found' });
+        }
+
+        res.render('layout', {
+            title: recording.title || 'Recording',
+            bodyView: 'recordings/show',
+            stylesheets: ['/css/recordings.css'],
+            viewData: {
+                recording,
+                csrfToken: req.csrfToken ? req.csrfToken() : null
+            }
+        });
+    } catch (error) {
+        console.error('Error loading recording detail:', error);
+        res.status(500).render('error', {
+            title: '500 - Server Error',
+            message: 'Unable to load recording.'
         });
     }
 };
