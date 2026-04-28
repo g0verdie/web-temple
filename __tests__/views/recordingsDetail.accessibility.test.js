@@ -78,6 +78,68 @@ describe('Recording detail page accessibility (WCAG AA, Story 3.5)', () => {
         expect(results).toHaveNoViolations();
     }, 15000);
 
+    it('has no WCAG AA violations for burned-in state', async () => {
+        RecordingService.getPublishedRecordingById.mockResolvedValue({
+            id: VALID_ID,
+            title: 'Accessible Service Recording',
+            description: 'Recording with burned-in captions',
+            provider_video_url: 'https://media.example.com/recording.mp4',
+            preview_url: 'https://media.example.com/recording.jpg',
+            service_date: '2026-02-14T18:00:00Z',
+            torah_portion: 'Yitro',
+            service_type: 'Shabbat',
+            duration_seconds: 3600,
+            publish_state: 'published',
+            caption_url: null,
+            caption_format: 'burned-in',
+            first_name: 'Avi',
+            last_name: 'Cohen'
+        });
+
+        const res = await request(app)
+            .get(`/archive/${VALID_ID}`)
+            .set('Cookie', [`auth_token=${authToken}`]);
+        
+        const results = await axe(res.text, {
+            runOnly: {
+                type: 'tag',
+                values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
+            }
+        });
+        expect(results).toHaveNoViolations();
+    }, 15000);
+
+    it('has no WCAG AA violations for unavailable state', async () => {
+        RecordingService.getPublishedRecordingById.mockResolvedValue({
+            id: VALID_ID,
+            title: 'Accessible Service Recording',
+            description: 'Recording unavailable',
+            provider_video_url: null,
+            preview_url: null,
+            service_date: '2026-02-14T18:00:00Z',
+            torah_portion: 'Yitro',
+            service_type: 'Shabbat',
+            duration_seconds: 0,
+            publish_state: 'published',
+            caption_url: null,
+            caption_format: 'burned-in',
+            first_name: 'Avi',
+            last_name: 'Cohen'
+        });
+
+        const res = await request(app)
+            .get(`/archive/${VALID_ID}`)
+            .set('Cookie', [`auth_token=${authToken}`]);
+        
+        const results = await axe(res.text, {
+            runOnly: {
+                type: 'tag',
+                values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
+            }
+        });
+        expect(results).toHaveNoViolations();
+    }, 15000);
+
     it('has a main landmark and skip link', () => {
         expect(document.querySelector('main')).toBeTruthy();
         expect(document.querySelector('a[href="#main-content"]')).toBeTruthy();

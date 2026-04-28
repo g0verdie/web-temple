@@ -1,23 +1,8 @@
-<%
-    // Helpers scoped to this view.
-    const captionFormat = (recording.caption_format || 'burned-in').toLowerCase();
-    const hasWebVtt = captionFormat === 'webvtt' && recording.caption_url;
-    const playbackUrl = recording.provider_video_url || '';
-    const previewUrl = recording.preview_url || '';
 
-    const rabbiName = (recording.first_name && (recording.first_name + (recording.last_name ? ' ' + recording.last_name : '')).trim()) || 'Rabbi';
-
-    const serviceDateValid = recording.service_date && !isNaN(new Date(recording.service_date).getTime());
-    const serviceDateText = serviceDateValid ? new Date(recording.service_date).toLocaleDateString() : 'Date unavailable';
-
-    const durationRaw = typeof recording.duration_seconds === 'string' ? recording.duration_seconds.trim() : recording.duration_seconds;
-    const durationValid = durationRaw !== '' && durationRaw !== null && durationRaw !== undefined && Number.isFinite(Number(durationRaw));
-    const durationMinutes = durationValid ? Math.floor(Math.max(0, Number(durationRaw)) / 60) : null;
-%>
 <article class="recording-detail" aria-labelledby="recording-title">
     <p class="recording-back"><a href="/archive">&larr; Back to archive</a></p>
 
-    <h1 id="recording-title"><%= recording.title || 'Recording' %></h1>
+    <h2 id="recording-title"><%= recording.title || 'Recording' %></h2>
 
     <dl class="recording-meta">
         <div>
@@ -72,7 +57,7 @@
                 <% } %>
                 <p>
                     Your browser does not support embedded video playback.
-                    Please <a href="<%= playbackUrl %>" rel="noopener">open the recording directly</a>.
+                    Please <a href="<%= playbackUrl %>" rel="noopener noreferrer">open the recording directly</a>.
                 </p>
             </video>
 

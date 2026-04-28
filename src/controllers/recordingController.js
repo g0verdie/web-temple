@@ -2,8 +2,8 @@
  * controllers/recordingController.js
  * Admin interface for recording publication workflow
  */
-
 const RecordingService = require('../services/RecordingService');
+const logger = require('../utils/logger');
 
 /**
  * Get list of unpublished recordings for admin publication
@@ -263,17 +263,37 @@ exports.getRecordingDetail = async (req, res) => {
             return res.status(404).render('404', { title: '404 - Recording Not Found' });
         }
 
+        const captionFormat = recording.caption_format.toLowerCase();
+        const hasWebVtt = captionFormat === 'webvtt' && recording.caption_url;
+        const playbackUrl = recording.provider_video_url || '';
+        const previewUrl = recording.preview_url || '';
+
+        const rabbiName = (recording.first_name && (recording.first_name + (recording.last_name ? ' ' + recording.last_name : '')).trim()) || 'Rabbi';
+
+        const serviceDateValid = recording.service_date && !isNaN(new Date(recording.service_date).getTime());
+        const serviceDateText = serviceDateValid ? new Date(recording.service_date).toLocaleDateString() : 'Date unavailable';
+
+        const durationRaw = typeof recording.duration_seconds === 'string' ? recording.duration_seconds.trim() : recording.duration_seconds;
+        const durationValid = durationRaw !== '' && durationRaw !== null && durationRaw !== undefined && Number.isFinite(Number(durationRaw));
+        const durationMinutes = durationValid ? Math.floor(Math.max(0, Number(durationRaw)) / 60) : null;
+
         res.render('layout', {
             title: recording.title || 'Recording',
             bodyView: 'recordings/show',
             stylesheets: ['/css/recordings.css'],
             viewData: {
                 recording,
-                csrfToken: req.csrfToken ? req.csrfToken() : null
+                captionFormat,
+                hasWebVtt,
+                playbackUrl,
+                previewUrl,
+                rabbiName,
+                serviceDateText,
+                durationMinutes
             }
         });
     } catch (error) {
-        console.error('Error loading recording detail:', error);
+        logger.error('Error loading recording detail:', error);
         res.status(500).render('error', {
             title: '500 - Server Error',
             message: 'Unable to load recording.'

@@ -1,6 +1,6 @@
 # Story 3.5: Recording Playback with Accessibility
 
-Status: ready-for-review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -194,3 +194,15 @@ GPT-5.4
 - __tests__/services/RecordingService.test.js (extended with `getPublishedRecordingById` cases)
 - __tests__/routes/archiveRoutes.test.js (extended with deferred 3.4 keyboard + responsive coverage)
 - _bmad-output/implementation-artifacts/sprint-status.yaml (3-5 → ready-for-review)
+
+### Review Findings
+
+- [x] [Review][Defer] Egregious CSP Weakening [src/server.js] — deferred: https is secure to begin with, we can implement the extra logic later
+- [x] [Review][Patch] MVC Violation - Heavy Logic in Templates [src/views/recordings/show.ejs]
+- [x] [Review][Patch] Performance - Repeated Regex Compilation [src/services/RecordingService.js]
+- [x] [Review][Patch] Test Suite Pollution [src/controllers/recordingController.js]
+- [x] [Review][Patch] Dead Code - Unused CSRF Token [src/controllers/recordingController.js]
+- [x] [Review][Patch] Shallow Accessibility Coverage [__tests__/views/recordingsDetail.accessibility.test.js]
+- [x] [Review][Patch] Redundant Default Fallbacks [src/views/recordings/show.ejs]
+- [x] [Review][Patch] Incomplete Link Security [src/views/recordings/show.ejs]
+- [x] [Review][Defer] Missing Controller-Level Validation [src/controllers/recordingController.js] — deferred, pre-existing

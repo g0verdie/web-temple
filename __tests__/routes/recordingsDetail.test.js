@@ -3,6 +3,7 @@ const app = require('../../src/server');
 const db = require('../../src/config/db');
 const RecordingService = require('../../src/services/RecordingService');
 const jwt = require('jsonwebtoken');
+const logger = require('../../src/utils/logger');
 
 jest.mock('../../src/config/db', () => ({
     query: jest.fn()
@@ -149,6 +150,7 @@ describe('Recording detail route GET /archive/:id (Story 3.5)', () => {
     });
 
     it('returns 500 when the service throws an unexpected error', async () => {
+        jest.spyOn(logger, 'error').mockImplementation(() => {});
         RecordingService.getPublishedRecordingById.mockRejectedValue(new Error('boom'));
 
         const res = await request(app)

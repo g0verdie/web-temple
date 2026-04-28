@@ -224,6 +224,7 @@ describe('Archive Routes', () => {
             // Native form controls with aria-label are reachable via Tab and announced by AT.
             expect(res.text).toMatch(/<input[^>]*name="search"[^>]*aria-label="Search keywords"/);
             expect(res.text).toMatch(/<select[^>]*name="serviceType"[^>]*aria-label="Service Type"/);
+            expect(res.text).toMatch(/<input[^>]*name="torahPortion"[^>]*aria-label="Torah Portion"/);
             expect(res.text).toMatch(/<input[^>]*name="startDate"[^>]*aria-label="Start Date"/);
             expect(res.text).toMatch(/<input[^>]*name="endDate"[^>]*aria-label="End Date"/);
             expect(res.text).toMatch(/<button[^>]*type="submit"[^>]*>\s*Filter\s*<\/button>/);

@@ -9,6 +9,9 @@ const { enqueueEmail } = require('./emailQueueService');
 const { renderTemplate } = require('./emailTemplateService');
 const { logAudit, AUDIT_ACTIONS } = require('./auditService');
 const { v4: uuidv4 } = require('uuid');
+const logger = require('../utils/logger');
+
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * List unpublished recordings ready for publish workflow
@@ -402,7 +405,6 @@ const getPublishedRecordingById = async (id) => {
     // Postgres rejects malformed UUIDs at parse time. Catch that and treat as
     // "not found" so callers can map cleanly to 404 without leaking validation
     // signals via 400.
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(id)) {
         return null;
     }
@@ -419,7 +421,7 @@ const getPublishedRecordingById = async (id) => {
         const result = await db.query(query, [id]);
         return result.rows[0] || null;
     } catch (error) {
-        console.error('Error fetching published recording by id:', error);
+        logger.error('Error fetching published recording by id:', error);
         throw error;
     }
 };
