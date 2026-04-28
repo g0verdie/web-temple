@@ -38,14 +38,36 @@ so that I can watch past services with accessibility support.
   - [ ] Support keyboard interactions for play/pause, seeking, fullscreen, and caption toggling where technically supported by the chosen player approach.
   - [ ] Provide a visible captions state and playback speed controls.
   - [ ] Avoid inaccessible custom controls unless they are necessary and fully tested.
-- [ ] Handle performance and resilience concerns.
-  - [ ] Allow provider-managed adaptive playback quality rather than inventing in-house transcoding logic.
-  - [ ] Ensure the page still renders useful metadata and recovery guidance if the provider player fails to load.
-  - [ ] Review CSP implications if external tracks, players, or media origins require policy updates.
-- [ ] Cover playback and accessibility behavior with tests.
-  - [ ] Add view/integration coverage for rendering the player, captions affordances, and playback-related metadata.
-  - [ ] Add accessibility tests for the playback page or archive playback state using the repo’s jest-axe pattern.
-  - [ ] Add regression coverage ensuring only published recordings can be played through member-facing routes.
+- [ ] Add caption metadata to the recordings schema.
+  - [ ] Inspect the current `recordings` table (migrations 012 and 013); it has no caption columns today.
+  - [ ] Add migration `014_add_caption_metadata_to_recordings.sql` introducing `caption_url TEXT NULL`, `caption_format VARCHAR(20) NOT NULL DEFAULT 'burned-in' CHECK (caption_format IN ('webvtt','burned-in'))`, and a backfill statement defaulting existing rows to `'burned-in'`.
+  - [ ] Surface these fields through `RecordingService` read methods only. Do not modify Story 3.3 admin publish UI in this story; read-side defaults are sufficient.
+- [ ] Add the playback route, controller action, and view.
+  - [ ] Mount `GET /archive/:id` in [src/routes/recordings.js](src/routes/recordings.js); it inherits the existing `requireAuth` router-level middleware. Use the recording UUID; do not introduce a slug column.
+  - [ ] Add `recordingController.getRecordingDetail` that loads a single published recording via `RecordingService` and returns 404 (not 403) when the row is missing or `publish_state != 'published'`, to avoid leaking draft existence.
+  - [ ] Render `src/views/recordings/show.ejs` for the detail page; keep server-rendered EJS with optional progressive enhancement.
+- [ ] Choose and commit to a player strategy that can actually satisfy AC4 and AC5.
+  - [ ] Default approach: HTML5 `<video>` with provider-hosted MP4/HLS source plus WebVTT `<track>`, because Facebook iframe embeds do not expose host-controlled playback rate or guaranteed Space/Arrow/F shortcuts.
+  - [ ] If a Facebook iframe embed is used as a fallback for any recording, AC4 (rate) and AC5 (shortcuts) are not host-controllable; in that case the recording must either also expose a provider MP4/HLS URL for native `<video>` playback, or the limitation must be raised for explicit acceptance amendment before marking ACs satisfied. Do not silently mark AC4/AC5 as met.
+  - [ ] Support WebVTT caption toggle when `caption_format = 'webvtt'`; when `'burned-in'`, render a visible "captions are burned into the video" affordance instead.
+  - [ ] Preserve responsive rendering across mobile, tablet, and desktop layouts and keep the solution metadata-only (no local video storage).
+- [ ] Update CSP deliberately for native `<video>` playback.
+  - [ ] In [src/server.js](src/server.js#L46) `contentSecurityPolicy.directives`: add the provider media origin to `mediaSrc` (currently `"'self'"` only); add the WebVTT host to `connectSrc` if it differs; leave `frameSrc` unchanged.
+  - [ ] Add an integration test asserting the CSP header on the playback route includes the new origins and that no broader wildcards were introduced.
+- [ ] Add accessible playback controls and semantics.
+  - [ ] Use the native `<video controls>` element so Space, Arrow keys, and F (fullscreen) are honored by the browser.
+  - [ ] Provide visible playback speed controls at 0.5x, 1x, 1.5x, 2x bound to `video.playbackRate`.
+  - [ ] Provide ARIA labels and a visible captions on/off control when WebVTT is present.
+  - [ ] Avoid custom controls unless they are necessary; if added, they must meet the same keyboard and ARIA expectations as the rest of the app.
+- [ ] Handle performance and resilience.
+  - [ ] Rely on provider-managed adaptive quality (HLS or provider CDN); do not implement local bitrate selection or transcoding.
+  - [ ] Render useful recording metadata and a recovery message when the player fails to load (e.g., network error, removed source).
+- [ ] Cover playback and accessibility with tests.
+  - [ ] Add route/integration coverage for `GET /archive/:id`: authenticated member success, unauthenticated rejection, 404 for unpublished IDs (not 403, not 200).
+  - [ ] Add view rendering assertions for captions affordance, playback-speed controls, and recording metadata.
+  - [ ] Add a jest-axe accessibility test for the playback page modeled on [__tests__/views/home.accessibility.test.js](__tests__/views/home.accessibility.test.js) and [__tests__/views/contact.accessibility.test.js](__tests__/views/contact.accessibility.test.js).
+  - [ ] Add a CSP regression test as described above.
+  - [ ] Honor Story 3.4's deferred work that AC5 and AC7 now depend on: keyboard accessibility coverage and responsive layout for the archive surface ([src/views/recordings/index.ejs](src/views/recordings/index.ejs) and [__tests__/routes/archiveRoutes.test.js](__tests__/routes/archiveRoutes.test.js)).
 
 ## Dev Notes
 
@@ -56,67 +78,60 @@ so that I can watch past services with accessibility support.
 
 ### Technical Requirements
 
-- Playback must start from an archive recording surfaced by the published-recording data model.
-- All recordings must have captions available, either burned-in or via WebVTT/subtitle tracks.
-- If the selected playback approach supports text tracks, provide caption toggle behavior.
-- Provide playback speed options at 0.5x, 1x, 1.5x, and 2x.
-- Support keyboard playback affordances and ensure the player surface is screen-reader compatible.
-- Keep video hosting external. The database should store metadata such as provider ID, playback URL, thumbnail URL, caption metadata, duration, and descriptive fields only.
-- Use provider-managed adaptive quality where available instead of implementing local bitrate selection or transcoding.
-- Review current CSP before implementation. The app already allows Facebook and YouTube frames, but current policy does not broadly allow external media sources for native video tags. That means the final implementation should either remain within approved embed patterns or update CSP deliberately as part of the story.
+- Playback must start from a recording with `publish_state = 'published'`. The detail route must return 404 for any other state, not 403, to avoid leaking existence of drafts.
+- Caption metadata is required for AC2/AC3. The current `recordings` schema (migrations 012 and 013) has no caption columns, so this story adds migration 014 with `caption_url` and `caption_format ('webvtt' | 'burned-in')`.
+- AC3 caption toggle applies only when `caption_format = 'webvtt'`; for `'burned-in'`, render a visible "captions are burned into the video" affordance.
+- AC4 (0.5x / 1x / 1.5x / 2x) and AC5 (Space, Arrow, F) require host-controlled playback. Default implementation is an HTML5 `<video>` element with provider-hosted MP4/HLS source plus WebVTT `<track>`. A Facebook iframe embed cannot satisfy AC4/AC5 on its own; if used, it must coexist with a native `<video>` source or the AC limitation must be explicitly amended before completion.
+- The video element must expose ARIA labels and use `<video controls>` so browser-native keyboard shortcuts apply.
+- Video hosting stays external. The database stores only metadata: provider ID, playback URL, thumbnail URL, caption URL/format, duration, and descriptive fields.
+- Use provider-managed adaptive quality; do not implement local bitrate selection or transcoding.
+- CSP changes are explicit and minimal: in [src/server.js](src/server.js#L46) `contentSecurityPolicy.directives`, extend `mediaSrc` to include the provider media origin and `connectSrc` to include the WebVTT host. Leave `frameSrc` unchanged. Cover with an integration test on the playback route.
 
 ### Architecture Compliance
 
-- Continue the monolith structure: route -> controller -> service -> view.
-- Extend the recordings domain introduced by Stories 3.3 and 3.4 instead of creating a standalone media subsystem.
-- Keep provider-specific playback details isolated in the recordings/streaming service boundary rather than leaking them into templates.
-- Preserve the server-rendered MPA pattern. The playback page can use targeted client-side behavior if needed, but should not require a SPA rewrite.
-- Favor accessible native or provider-supported controls first. If custom controls are necessary, they must meet the same keyboard and ARIA expectations as the rest of the app.
-- Ensure playback failures degrade gracefully to an understandable member-facing message rather than a broken blank embed.
+Extend the existing route → controller → service → view monolith for the recordings domain established by Stories 3.3 and 3.4. Keep provider-specific playback details inside `RecordingService`, never in templates. Stay server-rendered (MPA); progressive enhancement is allowed but no SPA rewrite. Playback failures must degrade to a clear member-facing message, not a blank embed.
 
 ### Library / Framework Requirements
 
-- Stay with the existing Node.js, Express, EJS, and browser-native stack.
-- Do not introduce a large third-party frontend player framework unless provider/native capabilities prove insufficient.
-- Reuse existing layout, auth, and route organization patterns.
-- Reuse the repo’s accessibility testing stack built on jest-axe and server-rendered page responses.
-- If external caption or player resources require additional CSP allowances, make those changes minimally and intentionally in src/server.js.
+Stay on Node.js, Express, EJS, and browser-native APIs (`<video>`, `<track>`, `playbackRate`). Do not add a third-party video player framework. Reuse existing auth middleware, route organization, and the repo's jest-axe accessibility test pattern. CSP changes belong in [src/server.js](src/server.js#L46) only and must be minimal.
 
 ### File Structure Requirements
 
-- Likely touch points:
-  - src/server.js
-  - src/views/layout.ejs
-  - src/routes/recordings.js
-  - src/controllers/recordingController.js
-  - src/services/RecordingService.js or src/services/StreamingService.js
-- Likely new or extended view modules:
-  - src/views/recordings/show.ejs
-  - src/views/recordings/index.ejs if playback is in-page
-  - public/js/recording-player.js only if minimal progressive enhancement is required
-- Likely test additions:
-  - __tests__/routes/recordings.test.js or matching integration coverage
-  - __tests__/views/recordings.accessibility.test.js
-  - __tests__/services/RecordingService.test.js
-- Extend the same recordings module names introduced by Story 3.4 once implemented; do not fork playback into unrelated route namespaces.
+- Touch points:
+  - [src/server.js](src/server.js) — CSP `mediaSrc` / `connectSrc` extension only.
+  - [src/routes/recordings.js](src/routes/recordings.js) — add `GET /:id` (mounted under `/archive`).
+  - `src/controllers/recordingController.js` — add `getRecordingDetail`.
+  - `src/services/RecordingService.js` — add `getPublishedRecordingById` returning row only when `publish_state = 'published'`.
+- New files:
+  - `migrations/014_add_caption_metadata_to_recordings.sql`
+  - `src/views/recordings/show.ejs`
+  - `public/js/recording-player.js` only if progressive enhancement is needed for the speed control.
+- Test additions:
+  - `__tests__/routes/recordingsDetail.test.js` (auth, 404 for unpublished, CSP header).
+  - `__tests__/views/recordingsDetail.accessibility.test.js` (jest-axe).
+  - `__tests__/services/RecordingService.test.js` — extend with `getPublishedRecordingById` cases.
+- Do not fork playback into a separate route namespace; everything stays under `/archive`.
 
 ### Testing Requirements
 
-- Test playback route or playback state for authenticated members.
-- Test unpublished recordings are not playable through member-facing URLs.
-- Test rendered output includes captions affordance or burned-in caption expectation messaging as appropriate.
-- Test playback speed options are available.
-- Test keyboard-accessible controls and screen-reader-friendly labels in rendered markup.
-- Test responsive rendering of the player container.
-- Test graceful fallback messaging when playback metadata is incomplete or provider load fails.
-- Add a jest-axe accessibility suite for the playback page or playback-enabled archive view.
+- `GET /archive/:id` returns 200 for an authenticated member loading a published recording.
+- `GET /archive/:id` returns 404 (not 403, not 200) for unpublished or non-existent IDs, even when the user is authenticated.
+- Unauthenticated access is rejected by `requireAuth` (consistent with the existing archive list).
+- Rendered markup includes the playback speed controls (0.5x, 1x, 1.5x, 2x), ARIA labels on the player, and a captions affordance: a `<track kind="captions">` element when `caption_format = 'webvtt'`, or a visible "captions are burned into the video" notice when `'burned-in'`.
+- Graceful fallback messaging is rendered when `provider_video_url` is missing.
+- CSP integration test asserts the playback route's response header contains the new `mediaSrc` / `connectSrc` origins and no broader wildcards.
+- jest-axe accessibility suite for the playback page, modeled on [__tests__/views/home.accessibility.test.js](__tests__/views/home.accessibility.test.js) and [__tests__/views/contact.accessibility.test.js](__tests__/views/contact.accessibility.test.js).
 
 ### Previous Story Intelligence
 
-- Story 3.3 established the recording publication workflow and canonical metadata source.
-- Story 3.4 established the member archive route, query model, and navigation path that this story should extend.
-- Story 3.4 intentionally deferred playback and caption behavior to this story; keep that scope boundary intact by focusing on the player experience itself.
-- Earlier Epic 3 stories reinforced a metadata-first model and graceful degradation. That remains important here because playback should not depend on local video storage or fragile custom streaming logic.
+- Story 3.3 established the recording publication workflow and the canonical `recordings` table; its current schema (migrations 012 and 013) does not include caption metadata, which this story must add.
+- Story 3.4 mounted `/archive` with `requireAuth` at the router level ([src/routes/recordings.js](src/routes/recordings.js)) and introduced `RecordingService` query patterns; reuse both directly.
+- Story 3.4 explicitly deferred two items now required to honor Story 3.5's ACs:
+  - **Keyboard accessibility coverage** for the archive surface — required by AC5 (the playback route originates from the archive page).
+  - **Responsive layout** for the archive page — required by AC7.
+  Do not defer them again.
+- Story 3.4 deliberately left playback and caption behavior to this story; keep that boundary by not revisiting publish workflow or filter/search logic.
+- Epic 3 reinforces metadata-first storage and graceful degradation: playback must never depend on local video files or custom streaming logic.
 
 ### Git Intelligence Summary
 
@@ -133,15 +148,17 @@ so that I can watch past services with accessibility support.
 
 ### References
 
-- Source: _bmad-output/planning-artifacts/epics.md, Story 3.5 Recording Playback with Accessibility
-- Source: _bmad-output/planning-artifacts/prd.md, FR70, NFR-A3, NFR-A4
-- Source: _bmad-output/planning-artifacts/architecture.md, Accessibility support and server-rendered HTML approach
-- Source: _bmad-output/planning-artifacts/ux-design-specification.md, WCAG AA mandatory guidance
-- Source: _bmad-output/implementation-artifacts/3-4-member-archive-browsing-search.md
-- Source: src/server.js
-- Source: src/views/contact.ejs
-- Source: __tests__/views/home.accessibility.test.js
-- Source: __tests__/views/contact.accessibility.test.js
+- Source: [_bmad-output/planning-artifacts/epics.md](_bmad-output/planning-artifacts/epics.md), Story 3.5 Recording Playback with Accessibility
+- Source: [_bmad-output/planning-artifacts/prd.md](_bmad-output/planning-artifacts/prd.md), FR70, NFR-A3, NFR-A4
+- Source: [_bmad-output/planning-artifacts/architecture.md](_bmad-output/planning-artifacts/architecture.md), Accessibility support and server-rendered HTML approach
+- Source: [_bmad-output/planning-artifacts/ux-design-specification.md](_bmad-output/planning-artifacts/ux-design-specification.md), WCAG AA mandatory guidance
+- Source: [_bmad-output/implementation-artifacts/3-4-member-archive-browsing-search.md](_bmad-output/implementation-artifacts/3-4-member-archive-browsing-search.md)
+- Source: [src/server.js](src/server.js#L46) (CSP directives)
+- Source: [src/routes/recordings.js](src/routes/recordings.js) (existing `/archive` mount + `requireAuth`)
+- Source: [src/views/recordings/index.ejs](src/views/recordings/index.ejs) (sibling archive view)
+- Source: [migrations/012_create_recordings_table.sql](migrations/012_create_recordings_table.sql), [migrations/013_add_service_type_and_indexes.sql](migrations/013_add_service_type_and_indexes.sql)
+- Source: [__tests__/views/home.accessibility.test.js](__tests__/views/home.accessibility.test.js)
+- Source: [__tests__/views/contact.accessibility.test.js](__tests__/views/contact.accessibility.test.js)
 
 ## Dev Agent Record
 
