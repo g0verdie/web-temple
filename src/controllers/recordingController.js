@@ -115,8 +115,6 @@ exports.publishRecording = async (req, res) => {
             durationSeconds,
             serviceType
         }, {
-            serviceType
-        }, {
             userId: req.user.id,
             ipAddress: req.ip || req.connection?.remoteAddress
         });
