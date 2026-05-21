@@ -54,13 +54,13 @@ Temple B'nai Israel Website Modernization aims to transform a 10+ year-old aband
 - Age range: 28-72+ (wide tech literacy spectrum)
 - Device preference: 60% mobile-first, 40% desktop
 - Accessibility needs: Screen readers, keyboard nav, high contrast mandatory (WCAG AA)
-- Roles: 5 distinct permission levels (Visitor, Member, Rabbi, Treasurer, Admin)
+- Roles: 6 distinct permission levels (Visitor, Member, Social Chair, Treasurer, Rabbi, Admin)
 - Trust levels: Varying skepticism from past site failures (Thomas represents low-trust segment)
 
 ### Key Design Challenges
 
 **1. Multi-Role Complexity with Simple UX**
-- 5 distinct user roles each need different interfaces without overwhelming navigation
+- 6 distinct user roles each need different interfaces without overwhelming navigation
 - Rabbi must find admin features intuitive despite "tech-nervous" self-description
 - Members need seamless experience transitioning between public/members-only content
 - **Design Solution:** Role-based navigation visibility, progressive disclosure, admin interfaces hidden for public users
@@ -323,16 +323,13 @@ Temple B'nai Israel Website Modernization aims to transform a 10+ year-old aband
   - Redis memory limits with LRU eviction (3h) — Prevent cache crash from overwhelming load
 - **Why essential:** High Holidays are non-negotiable success moments; 300 members expecting flawless experience
 
-**Scenario 2: Bandwidth Cliff (Network Quality Collapse)**
-- **Threat:** Temple's shared 5G tower bandwidth drops from 50 Mbps to 8 Mbps (neighbor backup, peak usage), insufficient for 1080p streaming (requires 10-15 Mbps)
-- **Current gap:** Adaptive bitrate for viewers, but broadcaster bandwidth issues not monitored
-- **Strategic hardening (33 hours):**
-  - Broadcaster bandwidth monitoring (6h) — Check upload speed every 30 seconds, alert if <10 Mbps
-  - Auto-downgrade stream quality (8h) — Reduce 1080p → 720p → 480p → audio-only automatically
-  - Pre-stream bandwidth test (4h) — Test mode warns "Upload speed low (X Mbps). Quality may suffer."
-  - Audio-only broadcast option (10h) — Rabbi switches to audio with static image if video quality poor
-  - Facebook quality-termination handling (5h) — Detect Facebook ending stream due to quality, prompt "Continue audio-only?"
-- **Why essential:** Self-hosted on shared 5G = unpredictable bandwidth; audio-only fallback preserves worship experience
+**Scenario 2: Bandwidth Cliff (Broadcaster Network Quality Fallback)**
+- **Threat:** Temple's upload bandwidth drops, causing the live stream to stutter or fail.
+- **Constraint:** The live video broadcast occurs via external software (OBS) directly to Facebook Live. The website does not ingest or control the live video stream bitrate directly.
+- **Strategic Hardening (6 hours):**
+  - Web App Fallback Banner (6h): The web application detects stream unavailability/instability via the Facebook Live API. If the stream is active but degraded, or drops unexpectedly, the site displays a prominent alert banner for viewers: *"We are experiencing a temporary broadcast disruption. If the live feed fails to load, please check our Facebook page directly or watch the recording later."*
+  - Operational checklist: Upload bandwidth monitoring, pre-stream testing, and OBS bitrate optimization are managed manually at the broadcast location (e.g., via OBS software metrics and dedicated testing steps). The remaining 27 hours originally allocated to automated bitrate shifting and broadcaster notifications are deferred to Phase 2.
+- **Why essential:** Acknowledges the limits of our EJS MPA architecture while ensuring members are gracefully routed to fallbacks when local temple upload bandwidth collapses.
 
 **Deferred Scenarios (Phase 2 or Won't Implement):**
 - **Hardware Failure (Laptop death mid-service):** 41 hours — MEDIUM priority, unlikely scenario, Rabbi training + backup phone mitigates
@@ -641,201 +638,236 @@ Temple B'nai Israel Website Modernization aims to transform a 10+ year-old aband
 
 ---
 
-## Design System Foundation
+## Design System Choice
 
-### Design System Choice
+**Selected: Vanilla CSS (Custom Properties & Utility Classes)**
 
-**Selected: Tailwind CSS (Themeable Utility-First System)**
-
-Tailwind CSS provides the optimal foundation for Temple B'nai Israel's modernization project, balancing speed, maintainability, and brand flexibility within the 470-hour budget constraint.
+Vanilla CSS provides the optimal foundation for Temple B'nai Israel's modernization project, maximizing design flexibility, keeping the bundle size to an absolute minimum, and integrating seamlessly with our Express/EJS server-rendered MPA architecture.
 
 ### Rationale for Selection
 
-**1. Speed Priority (Critical for Solo Developer)**
-- Utility-first approach enables rapid development without learning complex component APIs
-- No JavaScript framework overhead (works perfectly with MPA server-rendering)
-- Fast iteration: Write `<button class="px-4 py-2 bg-blue-600">` directly in HTML templates
-- Production bundle: ~15KB (minified + gzipped) vs. Bootstrap's 50KB+ = faster mobile load for Garcia family
-- Development velocity: Build UI 2-3x faster than custom CSS or Bootstrap component wrangling
+**1. Architectural Simplicity & Zero Overhead**
+- Direct integration: Works natively in EJS templates without any compilation step, bundlers, or PostCSS pipeline.
+- Tiny bundle size: ~5KB of clean, minified custom CSS, resulting in lightning-fast mobile loads (critical for the Garcia family).
+- No package dependencies: Prevents node_modules bloat and long-term security/maintenance concerns.
 
-**2. Component Library Pattern Following**
-- Consistent utility naming conventions (text-*, bg-*, p-*, m-*) = predictable patterns Ilya can learn in days
-- Design tokens built-in (colors, spacing, typography, shadows) = no design decisions required
-- Accessibility baked into utilities (focus states, contrast ratios, semantic HTML patterns)
-- Clear hierarchy and documentation eliminates guesswork
+**2. Centralized Theming via CSS Variables**
+- Standardized `:root` custom properties enforce consistent color palette, typography scales, shadows, and spacing.
+- Dark mode/accessibility themes can be implemented instantly by toggling a root class (e.g., `theme-high-contrast`).
 
-**3. Branding from Existing Website**
-- Extract design tokens from florencetemple.org and configure in single `tailwind.config.js` file
-- **Colors:** Primary blue (from logo), Gold accent (from nav), Neutral grays
-- **Typography:** Georgia serif (headings, traditional feel), Trebuchet MS sans (body, accessible)
-- **Spacing:** Consistent rhythm from existing visual whitespace
-- All components automatically inherit temple brand, not generic Material Design gray palette
+**3. Branding Customization**
+- Directly matches the look and feel of the original `florencetemple.org` using custom colors, fonts, and borders.
+- Typography styling easily pairs Georgia (for traditional, reverent serif headings) with Trebuchet MS or system sans-serif (for highly legible, accessible body text).
 
-**4. Extensibility & Maintainability**
-- Design tokens centralized in `tailwind.config.js` (one file controls entire brand identity)
-- Easy Phase 2 evolution: Add custom plugins, extend color palette, create new components
-- Utility approach scales from 10 pages to 1000+ pages without architectural changes
-- Future developers see utilities in HTML, understand immediately (no hidden CSS files)
+**4. Built-in WCAG AA Compliance**
+- Enforces strict minimum color contrasts (using theme variables that guarantee a 7:1 ratio for Ruth).
+- High-visibility focus indicators (`outline`) defined globally for keyboard navigation.
+- Flexbox and Grid layouts built from scratch to stack fluidly on screens down to 320px wide (Garcia family's mobile-first needs).
 
-**5. MPA Perfect Fit**
-- Server-side rendering (Express templates) generates static HTML with Tailwind classes
-- No component state management needed (utilities work in plain HTML)
-- Minimal JavaScript footprint (critical for Ruth on slow connection)
-- Works seamlessly with streaming architecture (Socket.io + HTML templates)
+---
 
-**6. WCAG AA Accessibility Built-In**
-- Contrast utilities enforce 4.5:1 minimum (Ruth's high contrast need)
-- Focus ring utilities provide visible keyboard navigation (screen reader support)
-- Responsive utilities mobile-first (Garcia family primary device)
-- Semantic HTML encouraged by Tailwind patterns
+### Brand Design Tokens (`public/css/variables.css`)
 
-### Implementation Approach
+```css
+:root {
+  /* Colors - Extracted from florencetemple.org */
+  --color-primary-light: #e6f2ff;
+  --color-primary: #003366;       /* Temple Blue (Main) */
+  --color-primary-dark: #002952;  /* Hover / Active */
+  --color-primary-darkest: #001a33;
+  
+  --color-gold-light: #f4d03f;
+  --color-gold: #daa520;          /* Accent Gold (Main) */
+  --color-gold-dark: #b8860b;
+  
+  --color-neutral-bg: #f9fafb;    /* Light page backgrounds */
+  --color-neutral-card: #ffffff;  /* Card backgrounds */
+  --color-neutral-text: #4b5563;  /* Body copy */
+  --color-neutral-heading: #1f2937; /* Headings */
+  --color-neutral-border: #e5e7eb;
+  
+  --color-success: #10b981;
+  --color-error: #ef4444;
+  --color-warning: #f59e0b;
 
-**Phase 0: Design System Setup (Week 1-2, ~8 hours)**
+  /* Typography */
+  --font-serif: "Georgia", "Times New Roman", serif;
+  --font-sans: "Trebuchet MS", "Arial", sans-serif;
+  
+  /* Spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-xxl: 4.5rem; /* Section gaps (72px) */
+  
+  /* Sizing */
+  --hero-height: 22rem; /* 352px */
+  
+  /* Borders & Shadows */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 
-**Week 1 (4 hours):**
-1. Extract design tokens from florencetemple.org (colors, typography, spacing) - 1 hour
-2. Create `tailwind.config.js` with temple brand configuration - 1 hour
-3. Set up PostCSS + Tailwind build pipeline in Node.js/Express project - 1 hour
-4. Create base form components (inputs, buttons, checkboxes) using utility classes - 1 hour
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+}
 
-**Week 2 (4 hours):**
-1. Create Tailwind `@apply` component utilities for repeated patterns:
-   - Button variants (primary, secondary, text-only)
-   - Card containers (shadow, border, padding)
-   - Input styling (focus states, error states)
-   - Navigation patterns (header, mobile hamburger)
-2. Configure responsive breakpoints for mobile-first design (375px → 768px → 1024px)
-3. Test accessibility: color contrast checker, keyboard navigation, focus visibility
-4. Document common patterns for Ilya reference ("How to create a card", "How to style a button")
-
-**Total Setup Time:** 8 hours (1.7% of 470-hour budget)
-
-**Component Strategy:**
-
-**Out-of-Box Tailwind Handles (No Custom Code):**
-- Typography: `text-3xl font-serif`, `text-base font-sans`, `text-sm text-gray-600`
-- Colors: `bg-blue-600`, `text-white`, `border-gold-500`
-- Spacing: `p-4`, `m-8`, `gap-6`, `space-y-4`
-- Buttons: `px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700`
-- Forms: `border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-blue-500`
-- Cards: `bg-white shadow-lg rounded-lg p-6 border border-gray-200`
-- Navigation: `flex items-center justify-between`, `hidden md:flex` (mobile hamburger)
-
-**Custom Components (Built as Needed, Weeks 3-13):**
-- **Chat bubble:** Base Tailwind utilities + custom shape with `@apply` rule (Week 7, 2 hours)
-- **Stream player container:** Responsive video wrapper with aspect ratio utilities (Week 3, 1 hour)
-- **Moderation queue card:** Admin-specific with approve/reject button layout (Week 10, 2 hours)
-- **Donation progress bar:** Gamification element with gradient fill (Week 6, 2 hours)
-- **Live indicator pulse:** Red dot animation with `@keyframes` (Week 3, 1 hour)
-- **Status badges:** Pill shapes for "Supporter 🌟", "Recording", "Live" (Week 4, 1 hour)
-
-**Total Custom Components:** ~9 hours spread across implementation phase
-
-### Customization Strategy
-
-**Brand Tokens Configuration (tailwind.config.js):**
-
-```javascript
-module.exports = {
-  theme: {
-    extend: {
-      colors: {
-        // Extracted from florencetemple.org
-        primary: {
-          50: '#e6f2ff',   // light blue tints
-          100: '#cce5ff',
-          600: '#003366',  // temple blue (main)
-          700: '#002952',  // darker for hover
-          900: '#001a33',  // darkest
-        },
-        gold: {
-          400: '#f4d03f',  // light gold
-          500: '#DAA520',  // accent gold (main)
-          600: '#b8860b',  // darker gold
-        },
-        neutral: {
-          50: '#f9fafb',   // backgrounds
-          100: '#f3f4f6',
-          600: '#4b5563',  // body text
-          800: '#1f2937',  // headings
-        },
-      },
-      fontFamily: {
-        serif: ['Georgia', 'Times New Roman', 'serif'],        // traditional
-        sans: ['Trebuchet MS', 'Arial', 'sans-serif'],         // accessible
-      },
-      spacing: {
-        // Custom temple spacing rhythm
-        '18': '4.5rem',  // 72px (large section gaps)
-        '88': '22rem',   // 352px (hero height)
-      },
-    },
-  },
-  plugins: [],
+/* Accessibility High-Contrast Overrides */
+@media (prefers-contrast: more) {
+  :root {
+    --color-primary: #001a33;
+    --color-neutral-text: #111111;
+    --color-gold: #8b6508;
+  }
 }
 ```
 
-**Accessibility-First Utilities (WCAG AA Compliance):**
-- High contrast text: `text-neutral-800` on `bg-white` (7:1 ratio for Ruth)
-- Focus rings: `focus:ring-2 focus:ring-blue-500 focus:ring-offset-2` (visible keyboard nav)
-- Touch targets: Minimum 44px (`px-6 py-3` = 48px height)
-- Responsive font sizing: `text-base lg:text-lg` (mobile readable, desktop comfortable)
-
-**Component Utility Patterns (@apply rules):**
+### Core Utility Styles (`public/css/main.css`)
 
 ```css
-/* Button variants */
+/* Base Layouts & Containers */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+}
+
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-md { gap: var(--space-md); }
+.gap-lg { gap: var(--space-lg); }
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-lg);
+}
+
+@media (min-width: 768px) {
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Component Styles */
 .btn-primary {
-  @apply px-6 py-3 bg-primary-600 text-white rounded-lg font-semibold;
-  @apply hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
-  @apply transition-colors duration-150;
+  padding: var(--space-md) var(--space-xl);
+  background-color: var(--color-primary);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  min-height: 48px; /* 44px tap target minimum */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+.btn-primary:hover {
+  background-color: var(--color-primary-dark);
+}
+.btn-primary:focus-visible {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 2px;
 }
 
 .btn-secondary {
-  @apply px-6 py-3 bg-white text-primary-600 border-2 border-primary-600 rounded-lg font-semibold;
-  @apply hover:bg-primary-50 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+  padding: var(--space-md) var(--space-xl);
+  background-color: #ffffff;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+.btn-secondary:hover {
+  background-color: var(--color-primary-light);
+}
+.btn-secondary:focus-visible {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 2px;
 }
 
-/* Card container */
 .card {
-  @apply bg-white shadow-lg rounded-lg p-6 border border-neutral-100;
+  background-color: var(--color-neutral-card);
+  border: 1px solid var(--color-neutral-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-md);
 }
 
-/* Input field */
 .input {
-  @apply w-full px-4 py-2 border border-neutral-300 rounded-lg;
-  @apply focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
-  @apply placeholder-neutral-400 text-neutral-800;
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-neutral-border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  color: var(--color-neutral-heading);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+.input::placeholder {
+  color: var(--color-neutral-text);
+  opacity: 0.7;
+}
+
+/* Pulse animation for live indicators */
+.pulse-live {
+  width: 10px;
+  height: 10px;
+  background-color: var(--color-error);
+  border-radius: 50%;
+  animation: pulse-animation 1s infinite alternate;
+}
+
+@keyframes pulse-animation {
+  0% { transform: scale(0.9); opacity: 0.6; }
+  100% { transform: scale(1.1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse-live {
+    animation: none;
+  }
 }
 ```
 
-**Responsive Strategy (Mobile-First):**
-- Base styles: Mobile 375px width (Garcia family priority)
-- `sm:` (640px): Adjust spacing, typography for tablets
-- `md:` (768px): Show desktop nav, multi-column layouts
-- `lg:` (1024px): Wider containers, larger typography
-
-**Phase 2 Extension Points:**
-- Add custom Tailwind plugins for temple-specific patterns
-- Extend color palette if brand evolves (e.g., holiday themes)
-- Add animation utilities (`@keyframes` for delightful microinteractions)
-- Create component library documentation for future developers
-
 **Alternative Systems Considered:**
 
+**Tailwind CSS:**
+- ✅ Great utility speed.
+- ❌ Added compilation toolchain overhead, bundle bloat for basic layouts, lacks pure semantic CSS separation.
+- **Verdict:** Vanilla CSS is cleaner and zero-dependency for a standard Express EJS MPA.
+
 **Bootstrap 5:**
-- ✅ Works with MPA, proven accessibility
-- ❌ Larger bundle (50KB vs. Tailwind 15KB), heavier component approach, more CSS overhead
-- **Verdict:** Tailwind lighter + faster for solo developer
+- ✅ Works with MPA, proven accessibility.
+- ❌ Larger bundle (50KB vs. Vanilla 5KB), heavier component approach, generic design template feel.
+- **Verdict:** Vanilla CSS is lighter and fits the custom Temple brand better.
 
 **Material Design (MUI):**
-- ✅ Excellent components, great defaults
-- ❌ Requires React (not MPA), Google aesthetic (not temple brand), heavy JavaScript
-- **Verdict:** Wrong architecture fit
-
-**Custom Design System:**
-- ✅ Complete control, unique brand feeling
 - ❌ 60-100 hours for components + tokens (21% of budget vs. Tailwind's 8 hours)
 - **Verdict:** Too expensive for timeline and speed priority
 
@@ -1104,7 +1136,7 @@ flowchart TD
 
 ### Design System Components
 
-**Foundation components (Tailwind base):**
+**Foundation components (Vanilla CSS classes):**
 - Buttons (primary, secondary, text)
 - Inputs (text, email, amount, select)
 - Cards, badges, alerts
@@ -1174,7 +1206,7 @@ These cover ~80% of UI needs with consistent tokens and accessibility defaults.
 
 ### Component Implementation Strategy
 
-- Build custom components using Tailwind tokens
+- Build custom components using CSS custom properties (variables)
 - Ensure consistent spacing, typography, and color usage
 - Accessibility first (focus rings, ARIA labels, contrast)
 - Reuse shared patterns (cards, badges, buttons)

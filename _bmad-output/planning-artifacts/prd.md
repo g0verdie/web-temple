@@ -491,7 +491,7 @@ The eight journeys collectively reveal these critical capability areas:
 - **Member Data:** Email addresses, giving history stored in encrypted database
 - **Backup Strategy:** Daily automated cloud storage backups (with recovery capability)
 - **Audit Logs:** Track all admin actions (who posted what, when; who viewed metrics)
-- **Access Control:** Role-based permissions (Rabbi, Social Chair, Admin have different access levels)
+- **Access Control:** Role-based permissions (Rabbi, Treasurer, Social Chair, Admin have different access levels)
 
 **Phase 1 Scope:**
 - Standard database encryption (AES-256 or similar)
@@ -1070,10 +1070,11 @@ MVP is successful when:
 - **FR21:** Visitors can register as members via email + password on the website
 - **FR22:** Members can log in with email + password to access members-only content
 - **FR23:** Members can reset forgotten passwords via email link
-- **FR24:** Authorized users (Rabbi, Admin, Social Chair when added) can log in to admin interface
+- **FR24:** Authorized users (Rabbi, Admin, Treasurer, Social Chair when added) can log in to admin interface
 - **FR25:** Admin role can see all metrics, messages, and content across the site
 - **FR26:** Rabbi role can post announcements, manage calendars, reply to messages, view donations
-- **FR27:** Social Chair role (Phase 2) can post announcements and manage public calendar only
+- **FR27:** Social Chair role (Phase 2) can post announcements and manage public calendar only (does not have permission to moderate chat or view donations)
+- **FR27b:** Treasurer role can access the donation dashboard, view donation logs, and view MTD/YTD totals, but has no access to announcements, calendars, or messages
 - **FR28:** Member sessions time out after 30 days of inactivity (security)
 
 ### Capability Area 5: Announcement Management (Rabbi Core Feature)
@@ -1133,7 +1134,7 @@ MVP is successful when:
 - **FR64:** Admin can set system-wide notifications (maintenance alerts, system status)
 - **FR65:** Admin can view audit logs of all sensitive actions (donations, admin edits, message deletions)
 - **FR66:** Admin dashboard is accessible from desktop and mobile browsers
-- **FR67:** Admin receives email alerts for critical issues (site down, PayPal error, spam detected)
+- **FR67:** Admin receives email alerts for critical issues (PayPal error, spam detected). Note: Outage monitoring and downtime email alerts must be offloaded to external third-party services (e.g., Uptime Robot) rather than the local web server itself.
 - **FR116:** Audit logs record: all announcements posted/edited/deleted (user, timestamp, before/after text), all calendar changes, all donation records, all admin logins, password changes, and user role changes
 
 ### Capability Area 10: Accessibility (WCAG AA)
@@ -1146,7 +1147,7 @@ MVP is successful when:
 - **FR73:** Color contrast ratio meets 4.5:1 minimum (WCAG AA standard)
 - **FR74:** Form labels are explicitly associated with inputs for screen readers
 - **FR75:** Website has skip-to-main-content link for keyboard users
-- **FR76:** Videos include audio descriptions for visually impaired users (Phase 2 enhancement)
+- **FR76:** Videos include audio descriptions for visually impaired users (Phase 2 enhancement; deferred, not in Phase 1 MVP)
 
 ### Capability Area 11: Mobile Responsiveness
 
@@ -1369,7 +1370,7 @@ MVP is successful when:
 **NFR-R1: Uptime Target**
 - System targets 95% uptime (approximately 36 hours/month acceptable downtime)
 - Realistic for self-hosted on 5G connection subject to internet outages
-- Measured: availability of primary website + payment processing
+- Measured: availability of primary website + payment processing as monitored by an external third-party service (e.g., Uptime Robot)
 - Excludes planned maintenance windows
 
 **NFR-R2: Facebook Live Streaming Must Stay Up**

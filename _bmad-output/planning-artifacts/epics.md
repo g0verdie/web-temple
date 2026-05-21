@@ -238,321 +238,28 @@ Alignment rule:
 - If this document contains any alternate epic numbering later in the file, treat that numbering as legacy planning context only.
 - `sprint-status.yaml` numbering is canonical for ongoing development and retrospective/planning workflows.
 
-### Legacy Sequence C - Epic 1: Project Foundation & Infrastructure Setup
 
-Development environment ready, hosting operational, core services deployed for all future epics to build upon.
+## Canonical Story Catalog - Epic 1: Foundation & Public Website Baseline
 
-**FRs covered:** FR96, FR97, FR98, FR99, FR100, FR101, FR102, FR103, FR104  
-**NFRs covered:** NFR-S1, NFR-S2, NFR-R4, NFR-M1, NFR-M3, NFR-M5  
-**Additional requirements:** Node.js/Express setup, PostgreSQL + Redis, self-hosted Linux server, SSL/TLS (Let's Encrypt), AES-256 encryption at rest and in transit, daily cloud backups (S3), audit logging infrastructure, local monitoring, operational documentation (runbook, troubleshooting, backup/restore procedures)
+Provides the essential technical foundation, security configurations, operational monitoring, and user-facing homepage with primary content (mission statement, service times, upcoming events) to establish the public-facing baseline of the temple website.
 
-### Legacy Sequence C - Epic 2: User Authentication & Access Control
+### Story 1.1: Homepage with Temple Mission & Upcoming Services
 
-Visitors can register, members can log in, admins access admin interface, role-based permissions enforced throughout the system.
-
-**FRs covered:** FR21, FR22, FR23, FR24, FR25, FR26, FR27, FR28  
-**NFRs covered:** NFR-S3, NFR-S4, NFR-S8  
-**Additional requirements:** In-house JWT + Bcrypt authentication, RBAC with database-stored permissions matrix, role delegation support, session management (30-day member, 30-minute admin timeout), password reset flow, secure cookies (HTTPOnly, Secure flags), audit logging for all auth events
-
-### Legacy Sequence C - Epic 3: Public Homepage & Static Content
-
-Visitors see temple mission, service times, events; access About/Contact pages with full accessibility and mobile responsiveness.
-
-**FRs covered:** FR1, FR2, FR6, FR7, FR68, FR69, FR71, FR72, FR73, FR74, FR75, FR77, FR78, FR79, FR80, FR81, FR82, FR83, FR91, FR92, FR93, FR94, FR95  
-**NFRs covered:** NFR-P1, NFR-P6, NFR-A1, NFR-A2, NFR-A3, NFR-A5, NFR-A6, NFR-A7  
-**Additional requirements:** Mobile-first responsive design (375px-1200px breakpoints), WCAG AA accessibility (4.5:1 contrast, keyboard nav, screen reader support), static page CMS with rich text editor, version control (10 versions), publish/unpublish workflow, Tailwind CSS design system with temple brand tokens
-
-### Legacy Sequence C - Epic 4: Rabbi Announcement Management
-
-Rabbi posts announcements with safety nets, members see them on homepage, email notifications sent automatically.
-
-**FRs covered:** FR29, FR30, FR31, FR32, FR33, FR34, FR35, FR86, FR88, FR107, FR111  
-**NFRs covered:** NFR-P5, NFR-I2, NFR-I3  
-**Additional requirements:** Draft auto-save (every 30 seconds), side-by-side preview before publish, confirmation dialogs for destructive actions, featured announcement pinning (30-day max), email queue with exponential backoff retry, Rabbi onboarding tour (announcement posting, calendar, inbox), mobile-friendly admin interface
-
-### Legacy Sequence C - Epic 5: Public & Members-Only Calendar
-
-Visitors see public events, members see private events, email reminders sent 24 hours before with iCal attachments.
-
-**FRs covered:** FR3, FR36, FR37, FR38, FR39, FR40, FR41, FR42, FR43, FR87  
-**NFRs covered:** NFR-P5  
-**Additional requirements:** Dual calendar system (public/members-only), calendar filtering UI, iCal attachment generation, 24-hour email reminders with event details and Zoom links, next 3 months + past 1 month display, event CRUD operations
-
-### Legacy Sequence C - Epic 6: Visitor & Member Messaging System
-
-Visitors send messages via CAPTCHA-protected contact form, members message Rabbi, Rabbi replies from unified inbox with spam filtering.
-
-**FRs covered:** FR44, FR45, FR46, FR47, FR48, FR49, FR50, FR85, FR106, FR113  
-**NFRs covered:** NFR-S7  
-**Additional requirements:** CAPTCHA protection (hCaptcha with audio fallback), spam filtering heuristics (all caps, external links, repeated messages), unified inbox (visitor + member messages), email notifications for replies, message audit logging with timestamps, admin review queue for flagged spam
-
-### Legacy Sequence C - Epic 7: Facebook Live Streaming Integration
-
-Authorized users broadcast Facebook Live, visitors watch embedded stream with status displays, bandwidth monitoring, and graceful error handling.
-
-**FRs covered:** FR8, FR9, FR10, FR11, FR110  
-**NFRs covered:** NFR-R2, NFR-Sc3, NFR-I4  
-**Additional requirements:** Facebook API integration for stream control, embedded player (no login required), stream status monitoring (live/upcoming/offline), graceful error messaging with fallback to previous recording, bandwidth monitoring with auto-downgrade (1080p → 720p → 480p → audio-only), recording publication workflow from admin dashboard, visible within 5 minutes
-
-### Legacy Sequence C - Epic 8: Service Recording Archive
-
-Members search/filter past recordings with captions, recordings auto-publish with metadata, 52-week display with older recordings on request.
-
-**FRs covered:** FR4, FR5, FR12, FR13, FR70, FR84, FR114, FR117  
-**NFRs covered:** NFR-P3, NFR-P4, NFR-Sc4, NFR-A4  
-**Additional requirements:** Metadata-only storage (no local video files), searchable by date/Torah portion/service type, thumbnail generation, caption support (WebVTT or burned-in), email notifications for new recordings, pagination (<1 second), 52-week rolling display, older recordings archived but available on request
-
-### Legacy Sequence C - Epic 9: Live Chat During Services
-
-Visitors post messages during live services with moderation, real-time delivery via WebSocket with polling fallback, rate limiting, and disconnect handling.
-
-**FRs covered:** FR14, FR15, FR16, FR17, FR18, FR19, FR20, FR109, FR112  
-**NFRs covered:** NFR-P2, NFR-Sc1, NFR-Sc2  
-**Additional requirements:** Socket.io with polling fallback (3-second interval), moderation queue (approve/reject before public display), rate limiting (1 message per 10 seconds), pause chat feature for sacred moments, 20 concurrent users (target 30-50, max 1000 with queue), disconnect handling (reconnect with one click, preserve unsent message), poster name required (member or anonymous)
-
-### Future Capability 10: Donation System & PayPal Integration
-
-Visitors donate (one-time/recurring) via PayPal, receive instant PDF tax receipts, errors handled gracefully with retry and backup payment options.
-
-**FRs covered:** FR51, FR52, FR53, FR54, FR55, FR56, FR59, FR89, FR90, FR115, FR118  
-**NFRs covered:** NFR-S5, NFR-I1, NFR-I6  
-**Additional requirements:** PayPal Checkout integration (PCI compliance delegated), one-time and recurring donation support, anonymous giving option (donor_visible_to_treasurer flag), PDF tax receipt generation (donation date, amount, donor name if not anonymous, IRS confirmation, temple EIN), thank-you email within 1 hour, error handling with user-friendly messages and retry capability, failure logging with admin alerts after 3+ failures, backup payment options (Venmo/Zelle instructions)
-
-### Future Capability 11: Admin Dashboard & Operations
-
-Admin views key metrics, analytics, moderation queue, audit logs, donation dashboard; receives email alerts for critical issues.
-
-**FRs covered:** FR57, FR58, FR60, FR61, FR62, FR63, FR64, FR65, FR66, FR67, FR116  
-**NFRs covered:** NFR-P6, NFR-M2, NFR-M4, NFR-M6  
-**Additional requirements:** 6 key metrics on dashboard load (new members this month, total donations this month, active chat users, pending messages, system uptime last 24h, last backup timestamp), donation dashboard (month-to-date and year-to-date totals, donor count, recurring donors), analytics (page views, recording views, chat users, donation trends), moderation queue interface, audit logs (announcements, calendar changes, donations, admin logins, role changes), system-wide notification management, email alerts for critical issues (site down, PayPal error, spam detected), mobile-accessible dashboard
-
-### Future Capability 12: Member Account Settings & Preferences
-
-Members manage notification preferences (announcements, calendars, messages), update profile, control email subscriptions with granular opt-in/opt-out.
-
-**FRs covered:** FR34, FR88, FR108  
-**Additional requirements:** Account settings page, notification preference management per type (announcements, calendar events, message replies, new recordings), profile information updates, unsubscribe links in all emails, preference persistence in database
-
-### FR Coverage Map
-
-| FR# | Epic | Description |
-|-----|------|-------------|
-| FR96 | Epic 1 | Automated daily backups to cloud storage |
-| FR97 | Epic 1 | Database backups include all user data, messages, donations, settings |
-| FR98 | Epic 1 | Backup restore testable without affecting live site |
-| FR99 | Epic 1 | Rabbi/Admin view last backup timestamp and status |
-| FR100 | Epic 1 | All data encrypted in transit via HTTPS/TLS |
-| FR101 | Epic 1 | Database encrypted at rest (AES-256) |
-| FR102 | Epic 1 | Sensitive audit logs stored securely |
-| FR103 | Epic 1 | Password reset tokens expire after 24 hours |
-| FR104 | Epic 1 | Admin sessions auto-logout after 30 minutes inactivity |
-| FR21 | Epic 2 | Visitors register as members via email + password |
-| FR22 | Epic 2 | Members log in with email + password |
-| FR23 | Epic 2 | Members reset forgotten passwords via email |
-| FR24 | Epic 2 | Authorized users log in to admin interface |
-| FR25 | Epic 2 | Admin role sees all metrics, messages, content |
-| FR26 | Epic 2 | Rabbi role posts announcements, manages calendars, replies to messages, views donations |
-| FR27 | Epic 2 | Social Chair role (Phase 2) posts announcements, manages public calendar |
-| FR28 | Epic 2 | Member sessions timeout after 30 days inactivity |
-| FR1 | Epic 3 | Public visitors view homepage with mission, service times, events |
-| FR2 | Epic 3 | Public visitors see next service with countdown timer |
-| FR6 | Epic 3 | Public visitors view About page with values/welcome |
-| FR7 | Epic 3 | Public visitors access Contact Us page |
-| FR68 | Epic 3 | All pages support keyboard navigation |
-| FR69 | Epic 3 | All images have descriptive alt text for screen readers |
-| FR71 | Epic 3 | All interactive elements have visible focus indicators |
-| FR72 | Epic 3 | Text resizable up to 200% zoom without horizontal scrolling |
-| FR73 | Epic 3 | Color contrast ratio meets 4.5:1 minimum (WCAG AA) |
-| FR74 | Epic 3 | Form labels explicitly associated with inputs for screen readers |
-| FR75 | Epic 3 | Website has skip-to-main-content link for keyboard users |
-| FR77 | Epic 3 | All pages render correctly on mobile phones (375px+) |
-| FR78 | Epic 3 | All pages render correctly on tablets (768px+) |
-| FR79 | Epic 3 | All pages render correctly on desktop (1200px+) |
-| FR80 | Epic 3 | Touch targets minimum 44px for mobile accessibility |
-| FR81 | Epic 3 | Navigation collapses to hamburger menu on mobile (<768px) |
-| FR82 | Epic 3 | Videos and images scale responsively without distortion |
-| FR83 | Epic 3 | Forms are touch-friendly (large inputs, mobile-optimized) |
-| FR91 | Epic 3 | Rabbi/Admin view and edit static pages (About, Contact, policies) |
-| FR92 | Epic 3 | Static pages support rich text formatting |
-| FR93 | Epic 3 | Static pages published/unpublished without deletion |
-| FR94 | Epic 3 | Admin views previous 10 versions of static pages, restores any version |
-| FR95 | Epic 3 | Pages publicly visible once published, draft until published |
-| FR29 | Epic 4 | Rabbi writes and posts announcements visible on homepage immediately |
-| FR30 | Epic 4 | Announcements appear chronologically (newest first) on homepage |
-| FR31 | Epic 4 | Rabbi edits published announcements after posting |
-| FR32 | Epic 4 | Rabbi deletes announcements (removed from homepage, not archive) |
-| FR33 | Epic 4 | Announcement posts trigger automatic email to all members |
-| FR34 | Epic 4 | Members opt in/out of announcement emails |
-| FR35 | Epic 4 | Announcements include text, images, links |
-| FR86 | Epic 4 | Members receive email when new announcements posted |
-| FR88 | Epic 4 | All emails include unsubscribe link |
-| FR107 | Epic 4 | Rabbi receives in-app onboarding tour on first login |
-| FR111 | Epic 4 | Rabbi marks announcement as "featured" to pin to homepage for 30 days |
-| FR3 | Epic 5 | Members view public calendar of services/events |
-| FR36 | Epic 5 | Rabbi creates and edits public calendar events |
-| FR37 | Epic 5 | Rabbi creates members-only calendar events |
-| FR38 | Epic 5 | Public calendar visible to all visitors |
-| FR39 | Epic 5 | Members-only calendar visible only to logged-in members |
-| FR40 | Epic 5 | Calendar events show date, time, title, description |
-| FR41 | Epic 5 | Calendar events include Zoom link or meeting location (optional) |
-| FR42 | Epic 5 | Members receive email notification when new events added |
-| FR43 | Epic 5 | Calendar displays next 3 months + past 1 month archive |
-| FR87 | Epic 5 | Members receive email reminders 24h before events with ical attachment |
-| FR44 | Epic 6 | Public visitors submit message via Contact form with CAPTCHA |
-| FR45 | Epic 6 | Visitor messages queued in Rabbi's inbox with name/email |
-| FR46 | Epic 6 | Rabbi reads and replies to visitor messages from admin dashboard |
-| FR47 | Epic 6 | Visitor receives email reply when Rabbi responds |
-| FR48 | Epic 6 | Members send messages to Rabbi via member-only message form |
-| FR49 | Epic 6 | All messages logged with timestamps for accountability |
-| FR50 | Epic 6 | Admin views all messages (visitor + member) in unified inbox |
-| FR85 | Epic 6 | Members receive email when Rabbi replies to their message |
-| FR106 | Epic 6 | Contact forms include CAPTCHA to prevent spam |
-| FR113 | Epic 6 | System flags spam messages using heuristics, admin reviews/auto-deletes |
-| FR8 | Epic 7 | Authorized users schedule and broadcast Facebook Live |
-| FR9 | Epic 7 | Public visitors view embedded Facebook Live without login |
-| FR10 | Epic 7 | Website displays stream status (live/upcoming/offline) |
-| FR11 | Epic 7 | Graceful error message if stream unavailable |
-| FR110 | Epic 7 | Recording published from admin dashboard, visible within 5 minutes |
-| FR4 | Epic 8 | Members access searchable archive by date |
-| FR5 | Epic 8 | Members filter archive by date range, Torah portion, service type |
-| FR12 | Epic 8 | Rabbi manually publishes recorded services to archive |
-| FR13 | Epic 8 | Each recording displays date, Rabbi, Torah portion, duration |
-| FR70 | Epic 8 | All service recordings have captions |
-| FR84 | Epic 8 | Members receive email when new recording published |
-| FR114 | Epic 8 | Archive search supports date/keyword/service type filters with thumbnails |
-| FR117 | Epic 8 | Website displays latest 52 weeks of recordings |
-| FR14 | Epic 9 | Visitors post messages in live chat during broadcast |
-| FR15 | Epic 9 | Live chat displays messages real-time with name/timestamp |
-| FR16 | Epic 9 | Chat messages moderated before appearing |
-| FR17 | Epic 9 | Moderators delete inappropriate messages |
-| FR18 | Epic 9 | Chat supports 20 concurrent users with <500ms delivery |
-| FR19 | Epic 9 | Chat persists during service, logs available after |
-| FR20 | Epic 9 | WebSocket failure degrades to polling with "Slow connection" indicator |
-| FR109 | Epic 9 | Live chat requires poster name (member or anonymous) |
-| FR112 | Epic 9 | Disconnected users see "connection lost" indicator, reconnect with one click |
-| FR51 | Epic 10 | Public visitors see prominent "Donations" tab on navigation |
-| FR52 | Epic 10 | Donations page explains giving options, suggests levels ($18, $36, $100+) |
-| FR53 | Epic 10 | Visitors make one-time donations via PayPal (no account required) |
-| FR54 | Epic 10 | Visitors set up recurring monthly donations via PayPal |
-| FR55 | Epic 10 | Donors choose to give anonymously |
-| FR56 | Epic 10 | Donors receive automated tax receipt via email after donation |
-| FR59 | Epic 10 | All donations logged with date, amount, donor email, recurring status |
-| FR89 | Epic 10 | Donation thank-you emails sent within 1 hour |
-| FR90 | Epic 10 | Tax receipts included in donation confirmation emails |
-| FR115 | Epic 10 | Tax receipts include date, amount, donor name, IRS confirmation, temple EIN |
-| FR118 | Epic 10 | PayPal failures show clear error, retry immediately, log failures, alert after 3+ |
-| FR57 | Epic 11 | Rabbi/Admin view donation dashboard with totals, donor count, recurring |
-| FR58 | Epic 11 | Donation dashboard shows month-to-date and year-to-date totals |
-| FR60 | Epic 11 | Rabbi receives email notification for major donations (>$100) |
-| FR61 | Epic 11 | Admin dashboard displays 6 key metrics: new members, donations, chat users, messages, uptime, backup |
-| FR62 | Epic 11 | Admin views analytics: page views, recording views, chat users, donation trends |
-| FR63 | Epic 11 | Admin accesses moderation queue (pending messages, chat approvals) |
-| FR64 | Epic 11 | Admin sets system-wide notifications (maintenance alerts, status) |
-| FR65 | Epic 11 | Admin views audit logs of sensitive actions |
-| FR66 | Epic 11 | Admin dashboard accessible from desktop and mobile browsers |
-| FR67 | Epic 11 | Admin receives email alerts for critical issues (site down, PayPal error, spam) |
-| FR116 | Epic 11 | Audit logs record all announcements, calendar changes, donations, logins, role changes |
-| FR34 | Epic 12 | Members opt in/out of announcement emails |
-| FR88 | Epic 12 | All emails include unsubscribe link |
-| FR108 | Epic 12 | Members access account settings for notifications/profile |
-
-**Note:** FR68-FR76 (accessibility requirements) and FR76 (Phase 2 audio descriptions) are cross-cutting concerns implemented within each epic's stories as acceptance criteria rather than separate stories.
-
-<!-- Repeat for each epic in epics_list (N = 1, 2, 3...) -->
-
-## Deprecated Alternate Epic Sequence (Archived)
-
-The sequence below is retained for historical context but is not the active execution sequence.
-Do not use these heading numbers for new story creation or sprint tracking.
-
-### Legacy Sequence A - Epic 1: Public Website & Content Discovery
-Enable public visitors to discover the temple, view mission/values, and access basic information without requiring an account.
-
-**FRs covered:** FR1, FR2, FR3, FR6, FR7, FR38, FR77-FR83  
-**User outcome:** Anonymous visitors can learn about the temple, view upcoming services/events, and navigate the site on any device  
-**Standalone:** Complete public-facing content foundation with responsive design
-
-### Legacy Sequence A - Epic 2: Member Authentication & Account Management
-Enable visitors to register as members and manage their accounts, establishing the authentication foundation for members-only features.
-
-**FRs covered:** FR21-FR24, FR28, FR104, FR107, FR108  
-**User outcome:** Users can create accounts, log in securely, manage preferences, and access members-only content  
-**Standalone:** Complete auth system with RBAC, session management, and onboarding
-
-### Legacy Sequence A - Epic 3: Facebook Live Streaming & Video Archive
-Enable visitors to watch live services via Facebook Live embed and members to browse/search archived recordings.
-
-**FRs covered:** FR4, FR5, FR8-FR13, FR84, FR110, FR114, FR117  
-**User outcome:** Community can participate in live services remotely and access past recordings with search/filtering  
-**Standalone:** Complete streaming + archive system with email notifications
-
-### Legacy Sequence A - Epic 4: Live Chat During Services
-Enable visitors to participate in moderated live chat during Facebook Live services with resilience features.
-
-**FRs covered:** FR14-FR20, FR109, FR112  
-**User outcome:** Real-time community connection during services with moderation and graceful degradation  
-**Standalone:** Complete chat system with WebSocket + polling fallback
-
-### Legacy Sequence A - Epic 5: Announcements & Member Communications
-Enable Rabbi to post temple announcements with automatic email notifications to members.
-
-**FRs covered:** FR29-FR35, FR86, FR88, FR111  
-**User outcome:** Members stay informed about temple news with email notifications and opt-out controls  
-**Standalone:** Complete announcement system with featured posts and email preferences
-
-### Legacy Sequence A - Epic 6: Calendar Management & Event Notifications
-Enable Rabbi to manage public/members-only calendars and send event reminders to members.
-
-**FRs covered:** FR36, FR37, FR39-FR43, FR87  
-**User outcome:** Community can view upcoming events and members receive reminders with calendar files  
-**Standalone:** Complete calendar system with public/private events and email reminders
-
-### Legacy Sequence A - Epic 7: Visitor & Member Messaging
-Enable public visitors and members to send messages to Rabbi/admin with CAPTCHA protection and unified inbox.
-
-**FRs covered:** FR44-FR50, FR85, FR106, FR113  
-**User outcome:** Two-way communication between community and leadership with spam protection  
-**Standalone:** Complete messaging system with unified inbox and automated replies
-
-### Legacy Sequence A - Epic 8: Donations & Financial Transparency
-Enable visitors to make one-time or recurring donations via PayPal with automated tax receipts and admin dashboard visibility.
-
-**FRs covered:** FR51-FR60, FR89, FR90, FR115, FR118  
-**User outcome:** Easy giving with immediate receipts, recurring options, and transparent reporting  
-**Standalone:** Complete donation system with PayPal integration and tax receipts
-
-### Legacy Sequence A - Epic 9: Admin Dashboard & Operations
-Enable Rabbi/Admin to monitor site health, view analytics, manage content, and access audit logs for all sensitive operations.
-
-**FRs covered:** FR61-FR67, FR91-FR99, FR100-FR105, FR116  
-**User outcome:** Site administrators can operate, monitor, secure, and maintain the website  
-**Standalone:** Complete admin tooling with metrics, backups, security, and audit trails
-
----
-
-## Canonical Story Catalog - Epic 1: Project Foundation & Infrastructure Setup
-
-Development environment ready, hosting operational, core services deployed for all future epics to build upon.
-
-### Story 1.1: Node.js/Express Application Setup
-
-As a **developer**,
-I want to set up the Node.js/Express application foundation with PostgreSQL and Redis,
-So that all future features have a stable backend to build upon.
+As a **public visitor**,
+I want to view the temple's homepage with the mission statement, service times, and upcoming events with a countdown to the next service,
+So that I can quickly understand the temple's values and know when to join the community for worship.
 
 **Acceptance Criteria:**
 
-**Given** I am setting up the development and production environments
-**When** I initialize the Node.js project
-**Then** Node.js v18+ and Express v4+ are installed and configured
-**And** PostgreSQL database is installed and running locally
-**And** Redis server is installed and configured for caching and queues
-**And** Environment variables are configured via .env file (DB connection, Redis URL, JWT secret)
-**And** Database migrations framework (e.g., node-pg-migrate) is configured
-**And** API endpoints return JSON responses with proper error handling
-**And** Server starts successfully on port 3000 (development) or configured port (production)
-**And** Health check endpoint `/api/health` returns server status
-**And** All configuration follows NFR-M1 (code quality standards, clear documentation)
+**Given** I am a public visitor on any device
+**When** I navigate to the temple website homepage
+**Then** I see the temple mission statement displayed prominently above the fold
+**And** I see the next upcoming service with a real-time countdown timer (days, hours, minutes)
+**And** I see a list of the next 3 upcoming events with dates and titles
+**And** The page loads in under 2 seconds on 5G connection (NFR-P1)
+**And** All interactive elements have 3px focus indicators for keyboard navigation (NFR-A6)
+**And** All images have descriptive alt text for screen readers (NFR-A3)
+**And** Color contrast meets 4.5:1 minimum ratio (NFR-A2)
 
 ### Story 1.2: SSL/TLS Security Configuration
 
@@ -573,7 +280,64 @@ So that sensitive information (passwords, donations, messages) is protected from
 **And** Mixed content warnings are resolved (all assets served via HTTPS)
 **And** SSL Labs test scores A or higher
 
-### Story 1.3: Database Encryption at Rest
+### Story 1.3: About the Temple Page
+
+As a **public visitor**,
+I want to view an "About the Temple" page with the community's values and welcome message,
+So that I can learn about the temple's history, beliefs, and community culture before deciding to engage.
+
+**Acceptance Criteria:**
+
+**Given** I am a public visitor
+**When** I navigate to the About page from the main navigation
+**Then** I see a welcome message introducing the temple community (FR6)
+**And** I see the temple's core values and mission prominently displayed
+**And** I see information about the Rabbi and community leadership
+**And** All text is readable with 4.5:1 contrast ratio (NFR-A2)
+**And** The page supports text zoom up to 200% without horizontal scrolling (NFR-A5)
+**And** All images have descriptive alt text (NFR-A3)
+**And** The page is fully responsive on mobile, tablet, and desktop (FR77-79)
+**And** The page loads in under 2 seconds (NFR-P1)
+
+### Story 1.4: Contact Us Page
+
+As a **public visitor**,
+I want to access a "Contact Us" page with the temple's contact information,
+So that I can find ways to reach out to the temple community.
+
+**Acceptance Criteria:**
+
+**Given** I am a public visitor
+**When** I navigate to the Contact Us page
+**Then** I see the temple's email address, phone number, and physical address (FR7)
+**And** I see a placeholder for the contact form (form functionality will be implemented in Epic 7)
+**And** All contact information is keyboard accessible and screen reader compatible (NFR-A1, NFR-A3)
+**And** The page is fully responsive on all device sizes (FR77-79)
+**And** Touch targets are minimum 44px for mobile accessibility (FR80)
+**And** The page loads in under 2 seconds (NFR-P1)
+
+### Story 1.5: Mobile Responsive Design Foundation
+
+As a **website visitor on any device**,
+I want all public pages to render correctly and be touch-friendly,
+So that I can access temple information from my phone, tablet, or desktop seamlessly.
+
+**Acceptance Criteria:**
+
+**Given** I am visiting the website on any device
+**When** I view the homepage, calendar, about page, or contact page
+**Then** All pages render correctly on mobile phones (375px width and up) (FR77)
+**And** All pages render correctly on tablets (768px width and up) (FR78)
+**And** All pages render correctly on desktop (1200px width and up) (FR79)
+**And** Touch targets (buttons, links) are minimum 44px for mobile accessibility (FR80)
+**And** Navigation collapses to hamburger menu on mobile (<768px) (FR81)
+**And** Images and embedded content scale responsively without distortion (FR82)
+**And** Forms are touch-friendly with large input fields when applicable (FR83)
+**And** The skip-to-main-content link is available for keyboard users (FR75)
+
+---
+
+### Story 1.6: Database Encryption at Rest
 
 As a **system administrator**,
 I want the database and backups encrypted at rest with AES-256,
@@ -592,7 +356,7 @@ So that sensitive data (passwords, donations, PII) is protected if storage is co
 **And** Encryption performance overhead is <5% (acceptable for self-hosted)
 **And** Decryption process is documented for disaster recovery
 
-### Story 1.4: Automated Daily Backups
+### Story 1.7: Automated Daily Backups
 
 As a **system administrator**,
 I want automated daily backups to cloud storage with restore testing capability,
@@ -613,7 +377,7 @@ So that the temple's data is protected and recoverable in case of failure.
 **And** Restore procedure is documented in operational runbook (NFR-M5)
 **And** Failed backups trigger email alert to admin (FR67)
 
-### Story 1.5: Audit Logging Infrastructure
+### Story 1.8: Audit Logging Infrastructure
 
 As a **developer**,
 I want comprehensive audit logging for all sensitive actions,
@@ -634,7 +398,7 @@ So that security events and admin actions are traceable for accountability and c
 **And** Audit logs are retained for 1 year minimum (NFR-M3)
 **And** Sensitive audit logs (donations, admin actions, messages) are stored securely (FR102)
 
-### Story 1.6: Local Logging & Monitoring
+### Story 1.9: Local Logging & Monitoring
 
 As a **system administrator**,
 I want local logging and monitoring with 30-day online retention,
@@ -655,7 +419,7 @@ So that I can troubleshoot issues and monitor system health.
 **And** Logs are readable with `tail -f` for real-time monitoring
 **And** Log format is consistent and parseable for future analysis tools
 
-### Story 1.7: Operational Documentation & Runbook
+### Story 1.10: Operational Documentation & Runbook
 
 As a **successor developer or system administrator**,
 I want comprehensive operational documentation and troubleshooting guides,
@@ -684,7 +448,7 @@ So that I can maintain and troubleshoot the system without prior knowledge.
 **And** Documentation includes version/last updated date
 **And** Architecture diagrams (system overview, database schema) are included
 
-### Story 1.8: WCAG AA Compliance Validation
+### Story 1.11: WCAG AA Compliance Validation
 
 As a **developer**,
 I want automated accessibility testing to validate WCAG AA compliance,
@@ -707,7 +471,7 @@ So that all users including those with disabilities can use the website.
 **And** Manual screen reader testing (NVDA or VoiceOver) confirms all content is accessible
 **And** Accessibility testing is documented with pass/fail results and remediation notes
 
-### Story 1.9: Performance Benchmarking & Optimization
+### Story 1.12: Performance Benchmarking & Optimization
 
 As a **developer**,
 I want to measure and optimize performance against NFR targets,
@@ -731,7 +495,7 @@ So that the website loads quickly and provides a responsive user experience.
 **And** Performance testing is conducted with Chrome DevTools and Lighthouse CI
 **And** Optimization techniques are documented for future reference
 
-### Story 1.10: Redis Caching Infrastructure
+### Story 1.13: Redis Caching Infrastructure
 
 As a **developer**,
 I want Redis caching for frequently accessed data,
@@ -753,7 +517,7 @@ So that database load is reduced and page performance improves.
 **And** Cache failures degrade gracefully (fetch from database if Redis unavailable)
 **And** Cache performance improvement is measurable (compare with/without caching)
 
-### Story 1.11: Automated Test Infrastructure
+### Story 1.14: Automated Test Infrastructure
 
 As a **developer**,
 I want automated testing with 60% code coverage,
@@ -779,7 +543,7 @@ So that critical functionality is protected from regressions and bugs are caught
 **And** Mock data and fixtures are provided for repeatable testing
 **And** Testing documentation explains how to run tests and add new tests
 
-### Story 1.12: Email Queue Infrastructure
+### Story 1.15: Email Queue Infrastructure
 
 As a **developer**,
 I want a reliable email queue with retry logic and admin monitoring,
@@ -804,105 +568,8 @@ So that email notifications are delivered even when the email service is tempora
 
 ---
 
-## Legacy Sequence B - Epic 2: Public Website & Content Discovery
 
-Enable public visitors to discover the temple, view mission/values, and access basic information without requiring an account.
-
-### Story 2.1: Homepage with Temple Mission & Upcoming Services
-
-As a **public visitor**,
-I want to view the temple's homepage with the mission statement, service times, and upcoming events with a countdown to the next service,
-So that I can quickly understand the temple's values and know when to join the community for worship.
-
-**Acceptance Criteria:**
-
-**Given** I am a public visitor on any device
-**When** I navigate to the temple website homepage
-**Then** I see the temple mission statement displayed prominently above the fold
-**And** I see the next upcoming service with a real-time countdown timer (days, hours, minutes)
-**And** I see a list of the next 3 upcoming events with dates and titles
-**And** The page loads in under 2 seconds on 5G connection (NFR-P1)
-**And** All interactive elements have 3px focus indicators for keyboard navigation (NFR-A6)
-**And** All images have descriptive alt text for screen readers (NFR-A3)
-**And** Color contrast meets 4.5:1 minimum ratio (NFR-A2)
-
-### Story 2.2: Public Calendar View
-
-As a **public visitor or member**,
-I want to view a public calendar displaying all temple services and events,
-So that I can plan my participation in temple activities.
-
-**Acceptance Criteria:**
-
-**Given** I am on the temple website
-**When** I navigate to the calendar page
-**Then** I see a calendar displaying the next 3 months of events plus the past 1 month archive (FR43)
-**And** Each event shows date, time, title, and description (FR40)
-**And** Events can include optional Zoom links or location information (FR41)
-**And** The calendar is accessible without requiring login (FR38)
-**And** I can navigate between months using prev/next buttons
-**And** All controls are keyboard accessible with Tab/Enter navigation (NFR-A1)
-**And** The calendar loads in under 2 seconds (NFR-P1)
-**And** The page is fully responsive on mobile (375px+), tablet (768px+), and desktop (1200px+) devices (FR77-79)
-
-### Story 2.3: About the Temple Page
-
-As a **public visitor**,
-I want to view an "About the Temple" page with the community's values and welcome message,
-So that I can learn about the temple's history, beliefs, and community culture before deciding to engage.
-
-**Acceptance Criteria:**
-
-**Given** I am a public visitor
-**When** I navigate to the About page from the main navigation
-**Then** I see a welcome message introducing the temple community (FR6)
-**And** I see the temple's core values and mission prominently displayed
-**And** I see information about the Rabbi and community leadership
-**And** All text is readable with 4.5:1 contrast ratio (NFR-A2)
-**And** The page supports text zoom up to 200% without horizontal scrolling (NFR-A5)
-**And** All images have descriptive alt text (NFR-A3)
-**And** The page is fully responsive on mobile, tablet, and desktop (FR77-79)
-**And** The page loads in under 2 seconds (NFR-P1)
-
-### Story 2.4: Contact Us Page
-
-As a **public visitor**,
-I want to access a "Contact Us" page with the temple's contact information,
-So that I can find ways to reach out to the temple community.
-
-**Acceptance Criteria:**
-
-**Given** I am a public visitor
-**When** I navigate to the Contact Us page
-**Then** I see the temple's email address, phone number, and physical address (FR7)
-**And** I see a placeholder for the contact form (form functionality will be implemented in Epic 7)
-**And** All contact information is keyboard accessible and screen reader compatible (NFR-A1, NFR-A3)
-**And** The page is fully responsive on all device sizes (FR77-79)
-**And** Touch targets are minimum 44px for mobile accessibility (FR80)
-**And** The page loads in under 2 seconds (NFR-P1)
-
-### Story 2.5: Mobile Responsive Design Foundation
-
-As a **website visitor on any device**,
-I want all public pages to render correctly and be touch-friendly,
-So that I can access temple information from my phone, tablet, or desktop seamlessly.
-
-**Acceptance Criteria:**
-
-**Given** I am visiting the website on any device
-**When** I view the homepage, calendar, about page, or contact page
-**Then** All pages render correctly on mobile phones (375px width and up) (FR77)
-**And** All pages render correctly on tablets (768px width and up) (FR78)
-**And** All pages render correctly on desktop (1200px width and up) (FR79)
-**And** Touch targets (buttons, links) are minimum 44px for mobile accessibility (FR80)
-**And** Navigation collapses to hamburger menu on mobile (<768px) (FR81)
-**And** Images and embedded content scale responsively without distortion (FR82)
-**And** Forms are touch-friendly with large input fields when applicable (FR83)
-**And** The skip-to-main-content link is available for keyboard users (FR75)
-
----
-
-## Legacy Sequence B - Epic 3: Member Authentication & Account Management
+## Canonical Story Catalog - Epic 2: User Authentication & Access Control
 
 Enable visitors to register as members and manage their accounts, establishing the authentication foundation for members-only features.
 
@@ -965,22 +632,23 @@ So that I can regain access to my account securely.
 
 ### Story 2.4: Admin Authentication & RBAC
 
-As an **authorized admin user (Rabbi or Admin)**,
+As an **authorized admin user (Rabbi, Admin, or Treasurer)**,
 I want to log in with role-based access permissions,
 So that I can access administrative features appropriate to my role.
 
 **Acceptance Criteria:**
 
-**Given** I am a user with an assigned role (Rabbi, Admin, or future Social Chair)
+**Given** I am a user with an assigned role (Rabbi, Admin, Treasurer, or future Social Chair)
 **When** I log in successfully
 **Then** My role and permissions are loaded from the database into my session
 **And** Admin role can access all metrics, messages, and content (FR25)
 **And** Rabbi role can post announcements, manage calendars, reply to messages, view donations (FR26)
+**And** Treasurer role can view donation dashboards, logs, and financial metrics (FR57, FR59), but is denied access to all other administrative pages/functions
 **And** Social Chair role (Phase 2) can post announcements and manage public calendar only (FR27)
 **And** My admin login is recorded in the audit log with timestamp (NFR-S8)
-**And** Admin sessions automatically log out after 30 minutes of inactivity (FR104)
+**And** Admin/Rabbi/Treasurer sessions automatically log out after 30 minutes of inactivity (FR104)
 **And** Each admin action checks role permissions before execution
-**And** Unauthorized access attempts are logged and display "Access Denied" message
+**And** Access to unauthorized pages or functions returns an "Access Denied" message and logs the attempt
 
 ### Story 2.5: Session Management & Timeouts
 
@@ -1030,8 +698,8 @@ So that I can control how the temple communicates with me and keep my informatio
 **Given** I am a logged-in member
 **When** I navigate to my account settings page
 **Then** I can update my profile information (name, email)
-**And** I can manage notification preferences for announcements, calendar events, and messages (FR108)
-**And** I can opt in/out of each email type independently (FR34, FR88)
+**And** I can manage general account settings (e.g., display name or language preference)
+**And** The settings page structure allows dynamic injection of notification preferences by other epics (announcements, calendar, messages), but does not implement them yet (FR108)
 **And** I can change my password (requires current password for verification)
 **And** All changes are saved to the database immediately
 **And** I see a success confirmation message after saving
@@ -1039,9 +707,8 @@ So that I can control how the temple communicates with me and keep my informatio
 **And** The settings page is fully responsive on all devices (FR77-79)
 **And** All controls are keyboard accessible (NFR-A1)
 
----
 
-## Legacy Sequence B - Epic 4: Facebook Live Streaming & Video Archive
+## Canonical Story Catalog - Epic 3: Facebook Live Streaming & Video Archive
 
 Enable visitors to watch live services via Facebook Live embed and members to browse/search archived recordings.
 
@@ -1168,7 +835,8 @@ So that the community knows when services will be streamed live.
 
 ---
 
-## Legacy Sequence B - Epic 5: Live Chat During Services
+
+## Canonical Story Catalog - Epic 4: Live Chat During Services
 
 Enable visitors to participate in moderated live chat during Facebook Live services with resilience features.
 
@@ -1300,18 +968,15 @@ So that the experience remains stable even during High Holy Days with many parti
 
 **Given** The live chat is active during a high-attendance service
 **When** The concurrent user count approaches 1000 (maximum capacity)
-**Then** New users attempting to join see a message: "Chat at capacity - please try again in a moment" (NFR-Sc1, NFR-Sc2)
-**And** Users are placed in a queue and automatically joined when space becomes available
-**And** The target capacity is 30-50 concurrent users with best performance (NFR-Sc1)
-**And** The system supports up to 20 concurrent users without any performance degradation (FR18, NFR-Sc1)
+**Then** New users attempting to connect are gracefully degraded to a read-only polling mode (no real-time WebSocket connection allowed)
+**And** If the user count exceeds 1000, new WebSocket connection requests are rejected with a capacity message: "Chat at capacity - please try again later" (NFR-Sc2)
+**And** The system supports up to 20 concurrent WebSocket users with latency <500ms (FR18, NFR-Sc1)
+**And** If WebSocket capacity limit (e.g. 50 concurrent users) is reached, subsequent users degrade to read-only polling mode every 3 seconds with a "Slow connection mode" indicator (FR20, NFR-R3)
 **And** Performance monitoring tracks active connections, message rate, and latency
 **And** Admin dashboard displays current active chat users (FR61)
-**And** If capacity exceeds 1000, overflow users are queued with estimated wait time (NFR-Sc2)
-**And** The system gracefully degrades rather than crashing under load (NFR-R3)
 
----
 
-## Legacy Sequence B - Epic 6: Announcements & Member Communications
+## Canonical Story Catalog - Epic 5: Announcements & Member Communications
 
 Enable Rabbi to post temple announcements with automatic email notifications to members.
 
@@ -1425,10 +1090,8 @@ So that I can manage communication from the temple according to my preferences.
 
 **Given** I am a logged-in member in my account settings
 **When** I view the notification preferences section
-**Then** I can toggle announcement email notifications on/off (FR34)
-**And** I can toggle calendar event email notifications on/off (FR34)
-**And** I can toggle message reply email notifications on/off (FR34)
-**And** I can toggle recording publication email notifications on/off (FR34)
+**Then** I see options to toggle announcement email notifications (FR34) and recording publication email notifications (FR34)
+**And** These toggles are dynamically injected/integrated into the account settings page as part of Epic 5
 **And** Each preference is saved immediately to the database
 **And** I see confirmation when preferences are updated
 **And** My preferences apply immediately to future notifications
@@ -1458,7 +1121,8 @@ So that critical information remains visible for an extended period.
 
 ---
 
-## Legacy Sequence B - Epic 7: Calendar Management & Event Notifications
+
+## Canonical Story Catalog - Epic 6: Calendar Management & Event Notifications
 
 Enable Rabbi to manage public/members-only calendars and send event reminders to members.
 
@@ -1559,6 +1223,7 @@ So that I don't miss important temple activities.
 **And** The email includes an "Add to Calendar" link/attachment (iCal format)
 **And** The email includes an unsubscribe link for calendar notifications (FR88)
 **And** Members who opted out of calendar emails do not receive the notification (FR34)
+**And** The calendar notification preferences toggle is dynamically injected/integrated into the member account settings page as part of Epic 6
 **And** Emails are sent within 5 minutes of event creation
 **And** If email delivery fails, messages are queued locally with exponential backoff retry (NFR-I2, NFR-I3)
 **And** Failed email attempts trigger admin alerts after 3 failures
@@ -1580,6 +1245,7 @@ So that I don't forget about upcoming temple activities.
 **And** The reminder includes a countdown: "Event starts in 24 hours"
 **And** Members who opted out of calendar emails do not receive reminders (FR34)
 **And** Each event sends only one 24-hour reminder (tracked in database)
+**And** The calendar event reminder preferences toggle is dynamically injected/integrated into the member account settings page as part of Epic 6
 **And** If email delivery fails, reminders are retried with exponential backoff (NFR-I2, NFR-I3)
 **And** The email includes an unsubscribe link for calendar notifications (FR88)
 
@@ -1604,7 +1270,8 @@ So that the calendar remains accurate and up-to-date.
 
 ---
 
-## Legacy Sequence B - Epic 8: Visitor & Member Messaging
+
+## Canonical Story Catalog - Epic 7: Visitor & Member Messaging
 
 Enable public visitors and members to send messages to Rabbi/admin with CAPTCHA protection and unified inbox.
 
@@ -1708,6 +1375,7 @@ So that I can continue the conversation without constantly checking the website.
 **And** The email subject is "Re: [original message subject or first line]"
 **And** The email includes the full reply text from the Rabbi
 **And** The email includes a link to view the full conversation on the website (for members)
+**And** The message reply notification preferences toggle is dynamically injected/integrated into the member account settings page as part of Epic 7
 **And** The email is sent within 1 minute of the Rabbi clicking "Send Reply"
 **And** If email delivery fails, the message is queued locally with exponential backoff retry (NFR-I2)
 **And** Failed email attempts trigger admin alerts after 3 failures
@@ -1724,16 +1392,16 @@ So that I can focus on legitimate community inquiries.
 
 **Given** A visitor submits a message via the contact form
 **When** The message is processed
-**Then** The system checks for spam indicators using simple heuristics (FR113)
-**And** Messages with ALL CAPS text are flagged as potential spam (FR113)
-**And** Messages with external links to suspicious domains are flagged (FR113)
-**And** Repeated identical messages from the same email are flagged (FR113)
-**And** Messages with excessive special characters or emoji are flagged
+**Then** The system checks for spam indicators using simple heuristics (FR113):
+  - Messages where uppercase letters exceed 70% of total letters (ALL CAPS)
+  - Messages containing links to external domains not in a pre-approved whitelist (e.g., domain other than the temple website itself or trusted partners)
+  - Repeated identical messages from the same email within a 5-minute window
+  - Messages with more than 5 special characters or emojis in sequence
 **And** Flagged messages appear in a separate "Spam Queue" section of the inbox
 **And** The admin can review flagged messages before they reach the Rabbi's inbox (FR113)
 **And** The admin can mark flagged messages as "Not Spam" to move them to the main inbox
 **And** The admin can auto-delete confirmed spam with one click (FR113)
-**And** The spam detection rules can be adjusted by the admin
+**And** The spam detection rules can be adjusted by the admin via a configuration file (`config/spam-rules.json`)
 **And** All spam actions are logged in the audit trail (NFR-S8)
 
 ### Story 7.7: Message Logging and Accountability
@@ -1759,7 +1427,8 @@ So that there's a clear record of all community communications.
 
 ---
 
-## Legacy Sequence B - Epic 9: Donations & Financial Transparency
+
+## Canonical Story Catalog - Epic 8: Donations & Financial Transparency
 
 Enable visitors to make one-time or recurring donations via PayPal with automated tax receipts and admin dashboard visibility.
 
@@ -1865,13 +1534,13 @@ So that I have documentation for tax deductions.
 
 ### Story 8.6: Donation Dashboard for Rabbi/Admin
 
-As the **Rabbi or Admin**,
+As the **Rabbi, Admin, or Treasurer**,
 I want to view a donation dashboard with financial totals and donor information,
 So that I can track the temple's financial health and thank supporters.
 
 **Acceptance Criteria:**
 
-**Given** I am logged in as Rabbi or Admin
+**Given** I am logged in as Rabbi, Admin, or Treasurer
 **When** I navigate to the Donations section in the admin dashboard
 **Then** I see total donations received (all-time, year-to-date, month-to-date) (FR57, FR58)
 **And** I see total donor count (unique donors) (FR57)
@@ -1883,6 +1552,7 @@ So that I can track the temple's financial health and thank supporters.
 **And** Access to donation data is logged in the audit trail (NFR-S6, NFR-S8)
 **And** The dashboard loads in under 2 seconds (NFR-P1, NFR-P5)
 **And** The dashboard is fully responsive on desktop and mobile (FR66)
+**And** Users without Rabbi, Admin, or Treasurer roles are denied access to this dashboard
 
 ### Story 8.7: Major Donation Email Alerts
 
@@ -1925,35 +1595,38 @@ So that I can successfully complete my donation despite technical issues.
 
 ---
 
-## Legacy Sequence B - Epic 10: Admin Dashboard & Operations
+
+## Canonical Story Catalog - Epic 9: Admin Dashboard & Operations
 
 Enable Rabbi/Admin to monitor site health, view analytics, manage content, and access audit logs for all sensitive operations.
 
 ### Story 9.1: Admin Dashboard with Key Metrics
 
-As an **Admin**,
+As an **Admin, Rabbi, or Treasurer**,
 I want to view key site metrics on the dashboard when I log in,
 So that I can quickly assess the temple website's health and activity.
 
 **Acceptance Criteria:**
 
-**Given** I am logged in as Admin
+**Given** I am logged in as Admin, Rabbi, or Treasurer
 **When** I navigate to the admin dashboard
-**Then** I see 6 key metrics displayed prominently (FR61):
+**Then** If logged in as Admin or Rabbi, I see all 6 key metrics displayed prominently (FR61):
   1. New members this month (count)
   2. Total donations this month (dollar amount)
   3. Active live chat users (current count)
   4. Pending messages (count needing response)
   5. System uptime percentage (last 24 hours)
   6. Last backup timestamp (date/time)
-**And** Each metric displays the current value with clear labels
-**And** A “Today’s Priorities” panel highlights: pending messages, upcoming events in 7 days, and active alerts
-**And** The priorities panel is the first visible element on login
+**And** If logged in as Treasurer, I see only the donation metrics (total donations this month) and the other metrics are hidden or show "Access Denied" (FR61)
+**And** Each visible metric displays the current value with clear labels
+**And** A “Today’s Priorities” panel highlights: pending messages, upcoming events in 7 days, and active alerts (visible to Rabbi and Admin only)
+**And** The priorities panel is the first visible element on login for Rabbi/Admin
 **And** Metrics auto-refresh every 30 seconds without page reload
-**And** Clicking a metric navigates to the detailed view for that category
+**And** Clicking a visible metric navigates to the detailed view for that category (subject to RBAC checks)
 **And** The dashboard loads in under 2 seconds (NFR-P6)
 **And** The dashboard is fully responsive on desktop and mobile (FR66)
 **And** All dashboard elements are keyboard accessible (NFR-A1)
+**And** Treasurer access to non-donation dashboard pages/metrics returns an "Access Denied" message
 
 ### Story 9.2: Analytics and Reporting
 
@@ -2012,7 +1685,7 @@ So that I can communicate site status to users proactively.
 **And** Active notifications display prominently at the top of all pages
 **And** Users can dismiss dismissible notifications
 **And** Critical notifications cannot be dismissed until issue is resolved
-**And** I receive email alerts for critical issues: site down, PayPal error, spam detected (FR67)
+**And** I receive email alerts for critical issues: PayPal error, spam detected, backup failures (FR67)
 **And** All notification actions are logged in the audit trail (NFR-S8)
 
 ### Story 9.5: Static Content Management
@@ -2086,13 +1759,11 @@ So that I can verify backups are working correctly.
 **Given** I am logged in as Admin with backup files available
 **When** I navigate to Backup Management
 **Then** I see a list of available backup files with dates and sizes (FR99)
-**And** I can initiate a test restore to a sandbox environment (FR98)
-**And** The test restore creates a separate database instance (not affecting live site) (FR98)
-**And** I can verify the restored data is complete and accurate
-**And** I receive a report summarizing the test restore results
-**And** In a real emergency, I can perform a production restore with explicit confirmation
-**And** All restore operations are logged in the audit trail (NFR-S8)
-**And** The restore interface clearly distinguishes between test and production modes
+**And** I can download backup files to perform manual restore verification procedures documented in the runbook (FR98)
+**And** I can run the command-line verification script `node scripts/verify-backup.js` locally or on a staging machine to check backup integrity (FR98)
+**And** The verification script performs integrity checks (verifies schema, decrypts records, and verifies sample counts) and prints a success report without spinning up an automated sandbox database instance
+**And** In a real emergency, I can perform a production restore using CLI command commands documented in the runbook, requiring explicit confirmation (FR98)
+**And** All restore and verification script actions are logged in the audit trail (NFR-S8)
 
 ### Story 9.9: Security and Encryption
 
@@ -2145,16 +1816,15 @@ So that I can quickly respond to technical issues.
 
 **Acceptance Criteria:**
 
-**Given** The monitoring service is running
-**When** I view the admin dashboard
-**Then** I see system uptime percentage for the last 24 hours (FR61)
+**Given** The process manager and external monitoring service are active
+**When** The Node process crashes or the server reboots
+**Then** The process manager (PM2 or systemd) automatically restarts the Node application process to minimize downtime (NFR-R4)
+**And** The external monitoring service (e.g., Uptime Robot) monitors port availability and HTTP response status (NFR-R1)
+**And** If the website becomes unresponsive or goes down, the external monitoring service sends an email/SMS notification to the Admin (FR67)
+**And** When downtime occurs, a public status banner is displayed on a downtime page pointing users to the Facebook Live stream as fallback (NFR-R5)
+**And** The admin dashboard displays system uptime percentage for the last 24 hours based on local health logs (FR61)
 **And** I can view uptime history for the last 7 days, 30 days, and 90 days
 **And** The target uptime is 95% (NFR-R1)
-**And** If the site goes down, the system attempts auto-restart (NFR-R4)
-**And** If restart fails, an email alert is sent to admin immediately (FR67)
-**And** A downtime communication page displays the Facebook Live link as fallback (NFR-R5)
-**And** When downtime occurs, a public status banner appears on the homepage with Facebook Live link (NFR-R5)
-**And** The status banner is visible without login and persists until admin clears it
 **And** All downtime incidents are logged with duration and cause
 **And** I can view a detailed incident report for each outage
 
@@ -2166,9 +1836,9 @@ So that I can respond quickly to problems requiring immediate attention.
 
 **Acceptance Criteria:**
 
-**Given** Critical issues occur on the website
+**Given** Critical issues (other than site downtime) occur on the website
 **When** An alert condition is triggered
-**Then** I receive email alerts for: site down, PayPal errors, spam detected, backup failures (FR67)
+**Then** I receive email alerts for: PayPal errors, spam detected, backup failures (FR67)
 **And** Alert emails include: severity level, timestamp, description, and recommended action
 **And** Alerts are sent to all users with Admin role
 **And** Alert emails have clear subject lines: "CRITICAL: [issue type]"
