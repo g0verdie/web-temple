@@ -168,3 +168,27 @@ GPT-5.4
 ### File List
 
 - _bmad-output/implementation-artifacts/3-6-authorized-user-stream-scheduling.md
+
+### Review Findings
+
+- [x] [Review][Decision] Out-of-Scope Roles (TREASURER) and session timeout logic added — User chose Option 1-B (Keep TREASURER additions).
+- [x] [Review][Decision] Undocumented Permission Design Choice — User chose Option 2-A (Keep MANAGE_STREAMING and add inline documentation patch).
+- [x] [Review][Patch] Add inline comments documenting choice of MANAGE_STREAMING over MANAGE_CALENDAR [src/config/roles-permissions.js]
+- [x] [Review][Patch] Facebook Video Watch URL Not Converted to Iframe Embed URL [src/services/StreamingService.js:90-97]
+- [x] [Review][Patch] Timezone Shift Bug in Date Parsing [src/services/StreamingService.js:169]
+- [x] [Review][Patch] Duplicated Countdown Timers on Homepage for Upcoming Streams [src/views/home.ejs:10]
+- [x] [Review][Patch] Cache Pollution on DB Errors in EventService [src/services/EventService.js:37-93]
+- [x] [Review][Patch] Audit Trail Gaps for Auto-Completed Streams [src/services/StreamingService.js:317]
+- [x] [Review][Patch] Strict Equality Type Mismatch in Event Linking [src/services/EventService.js:104]
+- [x] [Review][Patch] Virtual Stream Event Leaked in Event Selectors [src/views/admin/streaming/new.ejs:2019-2031]
+- [x] [Review][Patch] Description String Concatenation Undefined Leak [src/services/EventService.js:75-80]
+- [x] [Review][Patch] Console Logging Violations in Streaming Controllers/Services [src/services/StreamingService.js:113]
+- [x] [Review][Patch] Missing Integer Guard on Stream ID Parameter [src/services/StreamingService.js:154]
+- [x] [Review][Patch] Rescheduling to Past Dates Allowed on Update [src/services/StreamingService.js:228-232]
+- [x] [Review][Patch] Removal of URL from Active Stream Allowed [src/services/StreamingService.js:209-240]
+- [x] [Review][Patch] Null Filters Parameter in getScheduledStreams [src/services/StreamingService.js:134]
+- [x] [Review][Patch] Unsanitized success/error Query Parameters in rendering [src/controllers/streamingController.js:1003-1004]
+- [x] [Review][Patch] Raw DB Error Leaking in Form Submissions [src/controllers/streamingController.js:1047-1059]
+- [x] [Review][Patch] Varchar Limit for URL Columns in SQL Migration [migrations/015_create_scheduled_streams_table.sql:1]
+- [x] [Review][Patch] Admin UI Accessibility Gaps [src/views/admin/streaming/new.ejs:2005-2015]
+- [x] [Review][Patch] Inline layout CSS smell in templates [src/views/admin/streaming/new.ejs:2035]

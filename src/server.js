@@ -147,8 +147,13 @@ app.use((req, res, next) => {
     }
   }
 
-  // Expose user to views globally
+  // Expose user and permission helpers to views globally
   res.locals.user = req.user || null;
+  res.locals.hasPermission = (permission) => {
+    const { hasPermission: hasPerm } = require('./config/roles-permissions');
+    return hasPerm(req.user, permission);
+  };
+  res.locals.Permissions = require('./config/roles-permissions').Permissions;
   next();
 });
 
@@ -167,6 +172,7 @@ const aboutRoutes = require('./routes/about');
 const contactRoutes = require('./routes/contact');
 const adminPagesRoutes = require('./routes/admin/pages');
 const adminRecordingsRoutes = require('./routes/admin/recordings');
+const adminStreamingRoutes = require('./routes/admin/streaming');
 const adminDashboardRoutes = require('./routes/admin/dashboard');
 const pagesRoutes = require('./routes/pages');
 const apiRoutes = require('./routes/api');
@@ -179,6 +185,7 @@ app.use('/', pagesRoutes);
 app.use('/admin', adminDashboardRoutes);
 app.use('/admin/pages', adminPagesRoutes);
 app.use('/admin/recordings', adminRecordingsRoutes);
+app.use('/admin/streaming', adminStreamingRoutes);
 app.use('/api', apiRoutes);
 app.use('/archive', recordingsRoutes);
 

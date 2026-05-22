@@ -2,6 +2,13 @@ const EventService = require('../../src/services/EventService');
 const CacheService = require('../../src/services/CacheService');
 const AnnouncementService = require('../../src/services/AnnouncementService');
 
+// Mock StreamingService so EventService.getEvents() can merge streams
+// successfully and cache the result (the cache-pollution fix skips caching
+// on merge failure, which would break cache hit/miss assertions here).
+jest.mock('../../src/services/StreamingService', () => ({
+    getScheduledStreams: jest.fn().mockResolvedValue([])
+}));
+
 describe('Caching Integration', () => {
     beforeEach(async () => {
         // Clear cache and reset metrics before each test

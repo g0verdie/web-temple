@@ -1,4 +1,6 @@
 const CacheService = require('./CacheService');
+const StreamingService = require('./StreamingService');
+const logger = require('../utils/logger');
 
 // Static data moved from homeController
 const upcomingEvents = [
@@ -45,10 +47,51 @@ class EventService {
             }));
         }
 
-        // In a real app, this would be a DB query
-        const events = upcomingEvents;
+        // Clone upcomingEvents so we do not mutate the static array directly
+        const events = upcomingEvents.map(e => ({ ...e }));
 
-        // Cache for 5 minutes
+        try {
+            // Fetch scheduled and active streams
+            const scheduledStreams = await StreamingService.getScheduledStreams();
+
+            const activeAndScheduled = scheduledStreams.filter(
+                stream => stream.status === 'scheduled' || stream.status === 'active'
+            );
+
+            for (const stream of activeAndScheduled) {
+                if (stream.event_id) {
+                    // Coerce to number for safe comparison (event_id may arrive as string from DB or forms)
+                    const matchedEvent = events.find(e => Number(e.id) === Number(stream.event_id));
+                    if (matchedEvent) {
+                        matchedEvent.hasLiveStream = true;
+                        matchedEvent.facebookLiveUrl = stream.facebook_live_url;
+                        matchedEvent.streamStatus = stream.status;
+                        matchedEvent.description = `${matchedEvent.description} (This service will be livestreamed.)`;
+                        continue;
+                    }
+                }
+                
+                // If not linked to an in-memory event, dynamically construct a calendar event
+                events.push({
+                    id: `stream-${stream.id}`,
+                    title: stream.title,
+                    date: new Date(stream.scheduled_start),
+                    description: `Live Streamed Service: ${stream.title || 'Upcoming Stream'}`,
+                    type: 'service',
+                    location: 'Main Sanctuary (Online)',
+                    hasLiveStream: true,
+                    facebookLiveUrl: stream.facebook_live_url,
+                    streamStatus: stream.status
+                });
+            }
+        } catch (error) {
+            logger.error('Failed to merge scheduled streams into events list', { error: error.message });
+            // Do NOT cache degraded results — return them uncached so the next
+            // request retries the DB query instead of serving stale data.
+            return events;
+        }
+
+        // Cache for 5 minutes (only when streams were merged successfully)
         await CacheService.set(cacheKey, events, 300);
 
         return events;

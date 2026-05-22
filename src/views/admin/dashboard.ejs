@@ -32,6 +32,9 @@
 
                                         <hr>
                                         <a href="/admin/pages" class="btn btn-outline-primary me-2">Manage Pages</a>
+                                        <% if (hasPermission(Permissions.MANAGE_STREAMING)) { %>
+                                            <a href="/admin/streaming" class="btn btn-outline-info me-2">Manage Livestreams</a>
+                                        <% } %>
                                         <a href="/admin/audit-logs" class="btn btn-outline-secondary">Audit Logs</a>
                 </div>
             </div>

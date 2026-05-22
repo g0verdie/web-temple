@@ -20,7 +20,7 @@ const jwt = require('jsonwebtoken');
 
 const ADMIN_TIMEOUT_MINUTES = 30;
 const MEMBER_TIMEOUT_MINUTES = 30 * 24 * 60; // 30 days in minutes
-const DEFAULT_ADMIN_ROLES = [Roles.ADMIN, Roles.RABBI];
+const DEFAULT_ADMIN_ROLES = [Roles.ADMIN, Roles.RABBI, Roles.TREASURER];
 
 /**
  * Determine timeout in minutes based on user role
