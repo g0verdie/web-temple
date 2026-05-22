@@ -57,7 +57,7 @@ development_status:
   1-14-automated-test-infrastructure: done
   1-15-email-queue-infrastructure: done
   epic-1-retrospective: done
-  epic-2: in-progress
+  epic-2: done
   2-1-user-registration: done
   2-2-user-login: done
   2-3-password-reset: done
@@ -66,15 +66,15 @@ development_status:
   2-6-rabbi-onboarding-tour: done
   2-7-account-settings-preferences: done
   epic-2-retrospective: done
-  epic-3: in-progress
+  epic-3: done
   3-1-facebook-live-stream-embed: done
   3-2-stream-status-display-error-handling: done
   3-3-rabbi-publishes-recording-to-archive: done
   3-4-member-archive-browsing-search: done
   3-5-recording-playback-with-accessibility: done
-  3-6-authorized-user-stream-scheduling: ready-for-dev
+  3-6-authorized-user-stream-scheduling: done
   epic-3-retrospective: optional
-  epic-4: backlog
+  epic-4: in-progress
   4-1-post-messages-to-live-chat: backlog
   4-2-real-time-chat-display-with-websocket: backlog
   4-3-chat-moderation-controls: backlog
