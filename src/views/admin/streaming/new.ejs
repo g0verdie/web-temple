@@ -1,0 +1,86 @@
+<div class="streaming-admin-container">
+  <div class="streaming-header">
+    <h2>Schedule New Live Stream</h2>
+    <a href="/admin/streaming" class="btn btn-secondary">&larr; Back to Livestreams</a>
+  </div>
+
+  <% if (typeof errors !== 'undefined' && errors && errors.general) { %>
+    <div class="alert alert-danger" role="alert">
+      <%= errors.general %>
+    </div>
+  <% } %>
+
+  <div class="card">
+    <form action="/admin/streaming" method="POST" class="streaming-form">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <div class="form-group">
+        <label for="title">Stream Title *</label>
+        <input 
+          type="text" 
+          id="title" 
+          name="title" 
+          class="form-control" 
+          placeholder="e.g., Friday Night Shabbat Service" 
+          value="<%= (typeof data !== 'undefined' && data.title) ? data.title : '' %>" 
+          required
+          aria-required="true"
+          aria-describedby="title-help"
+        >
+        <span class="help-text" id="title-help">Give the live stream a descriptive name.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="scheduled_start">Scheduled Start Time *</label>
+        <input 
+          type="datetime-local" 
+          id="scheduled_start" 
+          name="scheduled_start" 
+          class="form-control" 
+          value="<%= (typeof data !== 'undefined' && data.scheduled_start) ? data.scheduled_start : '' %>" 
+          required
+          aria-required="true"
+          aria-describedby="scheduled-start-help"
+        >
+        <span class="help-text" id="scheduled-start-help">Select the date and time when the stream is scheduled to begin.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="facebook_live_url">Facebook Live URL (Optional)</label>
+        <input 
+          type="url" 
+          id="facebook_live_url" 
+          name="facebook_live_url" 
+          class="form-control" 
+          placeholder="https://www.facebook.com/watch/?v=..." 
+          value="<%= (typeof data !== 'undefined' && data.facebook_live_url) ? data.facebook_live_url : '' %>"
+          aria-describedby="facebook-url-help"
+        >
+        <span class="help-text" id="facebook-url-help">The full Facebook video watch URL. Can be added later.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="event_id">Link to Calendar Event (Optional)</label>
+        <select id="event_id" name="event_id" class="form-control" aria-describedby="event-id-help">
+          <option value="">-- Select an Event --</option>
+          <% if (typeof events !== 'undefined' && events && events.length > 0) { %>
+            <% events.filter(function(event) { return typeof event.id === 'number'; }).forEach(function(event) { %>
+              <option 
+                value="<%= event.id %>" 
+                <%= (typeof data !== 'undefined' && data.event_id && String(data.event_id) === String(event.id)) ? 'selected' : '' %>
+              >
+                <%= event.title %> (<%= new Date(event.date).toLocaleDateString() %>)
+              </option>
+            <% }); %>
+          <% } %>
+        </select>
+        <span class="help-text" id="event-id-help">Associate this live stream with an upcoming event on the calendar.</span>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Schedule Stream</button>
+        <a href="/admin/streaming" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>

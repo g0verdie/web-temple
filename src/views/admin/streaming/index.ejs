@@ -1,0 +1,118 @@
+<div class="streaming-admin-container">
+  <div class="streaming-header">
+    <h2>Livestream Management</h2>
+    <a href="/admin/streaming/new" class="btn btn-primary">+ Schedule New Stream</a>
+  </div>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="alert alert-success" role="alert">
+      <%= success %>
+    </div>
+  <% } %>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-danger" role="alert">
+      <%= error %>
+    </div>
+  <% } %>
+
+  <div class="streaming-dashboard-grid">
+    <div class="card">
+      <h3 class="card-title">Scheduled Streams</h3>
+      
+      <% if (streams && streams.length > 0) { %>
+        <div class="table-responsive">
+          <table class="stream-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Scheduled Start</th>
+                <th>Status</th>
+                <th>Linked Event</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% streams.forEach(function(stream) { %>
+                <tr>
+                  <td>
+                    <strong><%= stream.title %></strong>
+                    <% if (stream.facebook_live_url) { %>
+                      <br><small><a href="<%= stream.facebook_live_url %>" target="_blank" rel="noopener noreferrer">View Facebook Live URL</a></small>
+                    <% } %>
+                  </td>
+                  <td>
+                    <%= new Date(stream.scheduled_start).toLocaleString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit'
+                    }) %>
+                  </td>
+                  <td>
+                    <span class="badge badge-<%= stream.status %>"><%= stream.status %></span>
+                  </td>
+                  <td>
+                    <%= stream.event_id ? 'Yes (ID: ' + stream.event_id + ')' : 'No' %>
+                  </td>
+                  <td class="action-buttons">
+                    <% if (stream.status === 'scheduled') { %>
+                      <% if (stream.facebook_live_url) { %>
+                        <form action="/admin/streaming/<%= stream.id %>/start" method="POST">
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                          <button type="submit" class="btn btn-success btn-sm">Start Stream</button>
+                        </form>
+                      <% } else { %>
+                        <button class="btn btn-success btn-sm btn-outline" disabled title="Add Facebook Live URL first">Start Stream</button>
+                      <% } %>
+                      
+                      <a href="/admin/streaming/<%= stream.id %>/edit" class="btn btn-secondary btn-sm btn-outline">Edit</a>
+                      
+                      <form action="/admin/streaming/<%= stream.id %>/cancel" method="POST" onsubmit="return confirm('Are you sure you want to cancel this scheduled stream?');">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <button type="submit" class="btn btn-danger btn-sm">Cancel</button>
+                      </form>
+                    <% } else if (stream.status === 'active') { %>
+                      <form action="/admin/streaming/<%= stream.id %>/stop" method="POST">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <button type="submit" class="btn btn-danger btn-sm">Stop/Complete</button>
+                      </form>
+                    <% } else { %>
+                      <span class="help-text">None</span>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <p>No streams scheduled. Click "+ Schedule New Stream" above to schedule one.</p>
+      <% } %>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title">Setup Instructions</h3>
+      <ol class="instructions-list">
+        <li>
+          <strong>Create the Live Event on Facebook:</strong>
+          Go to your Facebook Page, click <em>Live Video</em>, and choose <em>Schedule a Live Video Event</em>.
+        </li>
+        <li>
+          <strong>Schedule the Stream here:</strong>
+          Click "+ Schedule New Stream", enter the service name, date, and optionally paste the Facebook watch/embed URL.
+        </li>
+        <li>
+          <strong>Start the Stream:</strong>
+          When it's time to go live, make sure your encoder (e.g. OBS) is streaming to Facebook, then click <strong>Start Stream</strong> in the list. This instantly overlays the active live player on our homepage.
+        </li>
+        <li>
+          <strong>Complete the Stream:</strong>
+          When the service is finished, click <strong>Stop/Complete</strong>. This takes the player offline and reverts the site to showing recordings.
+        </li>
+      </ol>
+    </div>
+  </div>
+</div>

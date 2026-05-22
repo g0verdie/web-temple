@@ -18,7 +18,7 @@ const MEMBER_TIMEOUT_MINUTES = 30 * 24 * 60; // 30 days
  * @private
  */
 const getTimeoutMinutes = (role) => {
-    return [Roles.ADMIN, Roles.RABBI].includes(role) ? ADMIN_TIMEOUT_MINUTES : MEMBER_TIMEOUT_MINUTES;
+    return [Roles.ADMIN, Roles.RABBI, Roles.TREASURER].includes(role) ? ADMIN_TIMEOUT_MINUTES : MEMBER_TIMEOUT_MINUTES;
 };
 
 /**
@@ -26,7 +26,7 @@ const getTimeoutMinutes = (role) => {
  * @private
  */
 const getSessionKeyPrefix = (role) => {
-    return [Roles.ADMIN, Roles.RABBI].includes(role) ? 'admin' : 'member';
+    return [Roles.ADMIN, Roles.RABBI, Roles.TREASURER].includes(role) ? 'admin' : 'member';
 };
 
 /**

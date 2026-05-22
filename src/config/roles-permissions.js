@@ -17,6 +17,7 @@ const Roles = Object.freeze({
     ADMIN: 'admin',
     RABBI: 'rabbi',
     SOCIAL_CHAIR: 'social_chair',
+    TREASURER: 'treasurer',
     MEMBER: 'member' // Default role for regular users
 });
 
@@ -40,7 +41,12 @@ const Permissions = Object.freeze({
     MANAGE_CONTENT: 'manage_content',
     
     // Donations
-    VIEW_DONATIONS: 'view_donations'
+    VIEW_DONATIONS: 'view_donations',
+
+    // Livestream scheduling — a dedicated permission was introduced instead of
+    // reusing MANAGE_CALENDAR so that streaming access can be granted or revoked
+    // independently of calendar management (see Story 3.6 design decision).
+    MANAGE_STREAMING: 'manage_streaming'
 });
 
 // ============================================================================
@@ -54,19 +60,25 @@ const rolePermissionMap = {
         Permissions.POST_ANNOUNCEMENTS,
         Permissions.MANAGE_CALENDAR,
         Permissions.MANAGE_CONTENT,
-        Permissions.VIEW_DONATIONS
+        Permissions.VIEW_DONATIONS,
+        Permissions.MANAGE_STREAMING  // See Permissions block for rationale
     ],
     [Roles.RABBI]: [
         // FR26: Rabbi can post announcements, manage calendars, reply to messages, view donations
         Permissions.POST_ANNOUNCEMENTS,
         Permissions.MANAGE_CALENDAR,
         Permissions.MANAGE_MESSAGES,
-        Permissions.VIEW_DONATIONS
+        Permissions.VIEW_DONATIONS,
+        Permissions.MANAGE_STREAMING  // See Permissions block for rationale
     ],
     [Roles.SOCIAL_CHAIR]: [
         // FR27: Social Chair (Phase 2) can post announcements and manage public calendar only
         Permissions.POST_ANNOUNCEMENTS,
         Permissions.MANAGE_CALENDAR
+    ],
+    [Roles.TREASURER]: [
+        // Treasurer can view donations
+        Permissions.VIEW_DONATIONS
     ],
     [Roles.MEMBER]: [
         // Regular members have no administrative permissions
