@@ -153,4 +153,19 @@ describe('live-chat client behavior', () => {
 
         expect(document.getElementById('chat-pause-btn')).toBeNull();
     });
+
+    it('tags guest-authored messages with a Guest badge but not authenticated ones', () => {
+        document.body.innerHTML = PANEL('member');
+        loadModule();
+        MockWebSocket.last._open();
+
+        MockWebSocket.last._emit({ type: 'message_approved', data: { id: 501, display_name: 'Rabbi David', message_text: 'hi', status: 'approved', user_id: null, created_at: '2026-06-14T12:00:00Z' } });
+        MockWebSocket.last._emit({ type: 'message_approved', data: { id: 502, display_name: 'Real Member', message_text: 'hello', status: 'approved', user_id: 'u-9', created_at: '2026-06-14T12:01:00Z' } });
+
+        const guestMsg = document.getElementById('msg-501');
+        const authMsg = document.getElementById('msg-502');
+        expect(guestMsg.querySelector('.message-guest-badge')).not.toBeNull();
+        expect(guestMsg.querySelector('.message-guest-badge').textContent).toBe('Guest');
+        expect(authMsg.querySelector('.message-guest-badge')).toBeNull();
+    });
 });
