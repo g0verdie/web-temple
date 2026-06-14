@@ -7,8 +7,9 @@ const emailService = require('../services/emailService');
 
 const verifyCaptcha = async (token) => {
     if (!token) return false;
-    // If no secret is configured (dev mode), accept any non-empty token
-    if (!process.env.CAPTCHA_SECRET) return true;
+    // No secret configured: accept in dev for convenience, but FAIL CLOSED in
+    // production so a missing CAPTCHA_SECRET can't silently disable spam protection.
+    if (!process.env.CAPTCHA_SECRET) return process.env.NODE_ENV !== 'production';
 
     try {
         const response = await axios.post('https://hcaptcha.com/siteverify', new URLSearchParams({

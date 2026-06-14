@@ -94,7 +94,7 @@ Users achieve their core outcomes when:
 | **Visitor messages** | 30-40/month | In-app message system |
 | **Message response time** | 80% replied within 24 hours | Message timestamps |
 | **Casual member retention** | 20-25% visiting monthly | Website analytics |
-| **Site uptime** | 99.5% (excluding 5G outages) | Hosting/monitoring |
+| **Site uptime** | 95% (excluding 5G outages) — per NFR-R1 | Hosting/monitoring |
 
 ### Technical Success Requirements
 
@@ -350,7 +350,7 @@ Ilya manages the technical side. Before the website, messages scattered across e
 The website launches. Ilya logs into the admin dashboard and sees everything unified: messages inbox, donation dashboard with live trends, audit logs of all actions. Within the first week, he handles five visitor messages (flags 1 spam, approves 3, escalates 1 urgent)—in 10 minutes, a task that would have taken an hour scattered across platforms.
 
 **Climax:**
-Month one review. Ilya checks the dashboard: 12 new recurring donors, 150 service views, 40 visitor messages, 99.7% uptime. He realizes: *The website is working. I can see the impact, and it's manageable.*
+Month one review. Ilya checks the dashboard: 12 new recurring donors, 150 service views, 40 visitor messages, uptime comfortably above the 95% target. He realizes: *The website is working. I can see the impact, and it's manageable.*
 
 **Resolution:**
 By month three, Ilya spends <30 min/day on operations. He checks dashboards, handles moderation efficiently, monitors for issues, and plans Phase 2. He feels informed and in control instead of reactive and overwhelmed.
@@ -457,7 +457,7 @@ The eight journeys collectively reveal these critical capability areas:
 - Mobile-responsive across all devices
 - Fast load times (<3 seconds)
 - SSL/HTTPS encryption
-- 99.5% uptime reliability
+- 95% uptime reliability (NFR-R1)
 - YouTube + Facebook simultaneous streaming
 - Live chat infrastructure (concurrent users)
 
@@ -539,7 +539,7 @@ The eight journeys collectively reveal these critical capability areas:
 - Regular backups with recovery testing
 
 **Reliability:**
-- 99.5% uptime target
+- 95% uptime target (NFR-R1)
 - Auto-retry logic for streaming APIs
 - Graceful degradation (stream error vs. site error)
 - Cloud backup recovery capability
@@ -900,7 +900,7 @@ MVP is successful when:
 - ✅ Email notifications deliver within 2 minutes
 - ✅ Site loads in <2 seconds on 5G connection
 - ✅ WCAG AA accessibility validated (keyboard nav, screen reader, captions)
-- ✅ 99.5% uptime during first 2 weeks
+- ✅ 95% uptime during first 2 weeks (NFR-R1)
 
 **Adoption Readiness:**
 - ✅ Board approves public launch (Rabbi comfortable + features working)
@@ -992,7 +992,7 @@ MVP is successful when:
 | **Live service viewers** | 40-60/Friday | ✅ Yes (Facebook Live embedded) |
 | **Live chat concurrent users** | 10-20 (M1) | ✅ Yes (website-based chat) |
 | **Message response time** | 80% within 24h | ✅ Yes (unified inbox) |
-| **Site uptime** | 99.5% | ✅ Yes (reliable self-hosted setup) |
+| **Site uptime** | 95% (NFR-R1) | ✅ Yes (reliable self-hosted setup) |
 
 **All success metrics achievable with MVP scope.**
 
@@ -1645,7 +1645,7 @@ This PRD has been validated by cross-functional expert review (Product, Architec
 ### MVP → Phase 2 Transition
 
 **Readiness Criteria for Phase 2:**
-- ✅ MVP stable (no critical bugs, 99%+ uptime)
+- ✅ MVP stable (no critical bugs, 95%+ uptime per NFR-R1)
 - ✅ Usage data collected (analytics show engagement patterns)
 - ✅ Rabbi feedback gathered (feature requests, pain points)
 - ✅ Success metrics assessed (track toward 6-month targets)
