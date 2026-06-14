@@ -224,6 +224,19 @@ main {
   margin: 0 auto;
 }
 
+/* Logo on a light panel so the dark wordmark stays legible over the navy hero.
+   600px source shown ~280px wide = ~2.1x on Retina (crisp). */
+.hero-logo {
+  display: block;
+  width: min(280px, 78%);
+  height: auto;
+  margin: 0 auto var(--spacing-md);
+  padding: 0.75rem 1.1rem;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+}
+
 .hero-headline {
   font-size: 1.5rem;
   font-weight: 700;
