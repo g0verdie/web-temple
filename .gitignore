@@ -46,3 +46,6 @@ _bmad/
 
 AGENTS.md
 .opencode/
+
+# Compound Engineering machine-local config
+.compound-engineering/*.local.yaml
