@@ -118,6 +118,23 @@ describe('userService.updatePreferences', () => {
         await expect(userService.updatePreferences('user-1', { messages: 'nope' }))
             .rejects.toThrow('Invalid preference value');
     });
+
+    // Story 5.6 / FR34: opting out of announcements must persist and merge so the
+    // announcement fan-out (KTD4 SQL filter) honors it immediately.
+    it('persists announcements:false while preserving other preferences', async () => {
+        db.query
+            .mockResolvedValueOnce({ rows: [{ notification_preferences: { announcements: true, recordings: true } }] })
+            .mockResolvedValueOnce({ rows: [{ id: 'user-1' }] });
+
+        const prefs = await userService.updatePreferences('user-1', { announcements: false });
+
+        expect(prefs.announcements).toBe(false);
+        expect(prefs.recordings).toBe(true);
+        expect(db.query).toHaveBeenCalledWith(
+            'UPDATE users SET notification_preferences = $1, updated_at = NOW() WHERE id = $2 RETURNING id',
+            [expect.objectContaining({ announcements: false, recordings: true }), 'user-1']
+        );
+    });
 });
 
 describe('userService.requestEmailChange', () => {
