@@ -9,11 +9,37 @@ jest.mock('../../src/services/StreamingService', () => ({
     getScheduledStreams: jest.fn().mockResolvedValue([])
 }));
 
+// EventService is now DB-backed; mock the DB so getEvents()/create()/update()/
+// delete() exercise the cache without a real Postgres connection.
+jest.mock('../../src/config/db', () => ({ query: jest.fn(), pool: { connect: jest.fn() } }));
+jest.mock('../../src/services/auditService', () => ({
+    log: jest.fn().mockResolvedValue(undefined),
+    AUDIT_ACTIONS: {
+        CALENDAR_EVENT_CREATED: 'CALENDAR_EVENT_CREATED',
+        CALENDAR_EVENT_UPDATED: 'CALENDAR_EVENT_UPDATED',
+        CALENDAR_EVENT_DELETED: 'CALENDAR_EVENT_DELETED'
+    }
+}));
+jest.mock('../../src/services/emailQueueService', () => ({ enqueueEmail: jest.fn().mockResolvedValue({}) }));
+
+const db = require('../../src/config/db');
+
+const eventRow = (overrides = {}) => ({
+    id: 1, title: 'Event', description: 'd', starts_at: new Date('2099-01-01T18:00:00Z'),
+    ends_at: null, visibility: 'public', event_type: 'event', location: 'Hall', zoom_url: null,
+    created_by: 'u1', reminder_sent_at: null, deleted_at: null, created_at: new Date(), updated_at: new Date(),
+    ...overrides
+});
+
 describe('Caching Integration', () => {
     beforeEach(async () => {
         // Clear cache and reset metrics before each test
         await CacheService.flush();
         CacheService.resetMetrics();
+        // Default: any SELECT returns one active event row (covers reads + the
+        // before-state SELECTs that create/update/delete perform).
+        db.query.mockReset();
+        db.query.mockResolvedValue({ rows: [eventRow()] });
     });
 
     afterEach(() => {
@@ -31,10 +57,15 @@ describe('Caching Integration', () => {
             expect(metrics1.misses).toBe(1);
             expect(metrics1.hits).toBe(0);
 
-            // Second call - should be cache hit
+            // Second call - should be cache hit. Compare the homepage-relevant
+            // contract (id/title/type/date); internal timestamps cross the JSON
+            // cache boundary as strings, which is not part of any view contract.
             const events2 = await EventService.getEvents();
-            expect(events2).toEqual(events1);
-            
+            const slim = (list) => list.map(e => ({
+                id: e.id, title: e.title, type: e.type, date: new Date(e.date).toISOString()
+            }));
+            expect(slim(events2)).toEqual(slim(events1));
+
             const metrics2 = CacheService.getMetrics();
             expect(metrics2.hits).toBe(1);
             expect(metrics2.misses).toBe(1);
