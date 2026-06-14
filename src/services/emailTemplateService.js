@@ -83,7 +83,18 @@ If you did not request this change, you can ignore this email.`
                ${data.torahPortion ? `<p>Torah Portion: ${data.torahPortion}</p>` : ''}
                <p><a href="${data.archiveUrl || '#'}">View Recording</a></p>`,
         text: `Shalom${data.memberName ? ` ${data.memberName}` : ''}!\n\nA new service recording is now available in our archive: ${data.title || 'Service Recording'}\n${data.serviceDate ? `Service Date: ${new Date(data.serviceDate).toDateString()}\n` : ''}${data.torahPortion ? `Torah Portion: ${data.torahPortion}\n` : ''}View Recording: ${data.archiveUrl || '#'}`
-    })
+    }),
+    'announcement-notification': (data = {}) => {
+        const homeUrl = data.homeUrl || process.env.APP_URL || process.env.APP_BASE_URL || 'http://localhost:3000';
+        return {
+            subject: 'New Announcement: ' + (data.title || 'Temple Announcement'),
+            // data.bodyHtml is server-sanitized on write (AnnouncementService, KTD2), safe to embed.
+            html: `<p>Shalom${data.memberName ? ` ${data.memberName}` : ''}!</p>
+               ${data.bodyHtml || ''}
+               <p><a href="${homeUrl}">View on the website</a></p>`,
+            text: `Shalom${data.memberName ? ` ${data.memberName}` : ''}!\n\n${data.bodyText || ''}\n\nView on the website: ${homeUrl}`
+        };
+    }
 
 };
 
