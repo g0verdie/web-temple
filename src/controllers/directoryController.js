@@ -24,6 +24,15 @@ exports.getDirectory = async (req, res) => {
         const search = queryString(req.query.search);
         const result = await MemberDirectoryService.listListedProfiles({ search, page, limit });
 
+        // Activation nudge (R20): only for members not yet listed and not dismissed.
+        let showNudge = false;
+        try {
+            const nudge = await MemberDirectoryService.getNudgeState(req.user.id);
+            showNudge = !!(nudge && nudge.showNudge);
+        } catch (nudgeErr) {
+            showNudge = false; // never block the directory on the nudge lookup
+        }
+
         res.render('layout', {
             title: 'Member Directory',
             bodyView: 'directory/index',
@@ -33,7 +42,9 @@ exports.getDirectory = async (req, res) => {
                 currentPage: result.currentPage,
                 totalPages: result.totalPages,
                 totalCount: result.totalCount,
-                filters: { search }
+                filters: { search },
+                showNudge,
+                csrfToken: req.csrfToken ? req.csrfToken() : null
             }
         });
     } catch (error) {
@@ -62,4 +73,19 @@ exports.getProfile = async (req, res) => {
         console.error('Error loading member profile:', error);
         res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to load this profile.' });
     }
+};
+
+/**
+ * POST /directory/nudge/dismiss — persist that the member dismissed the activation
+ * nudge, then return to the directory.
+ */
+exports.dismissNudge = async (req, res) => {
+    try {
+        if (req.user && req.user.id) {
+            await MemberDirectoryService.dismissNudge(req.user.id);
+        }
+    } catch (error) {
+        console.error('Error dismissing directory nudge:', error);
+    }
+    res.redirect('/directory');
 };

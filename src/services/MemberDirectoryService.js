@@ -364,6 +364,41 @@ const moderateProfile = async (targetUserId, { unlist = false, clearFields = [] 
     return { moderated: true, unlisted: !!unlist, cleared: fieldsToClear };
 };
 
+/**
+ * Whether to show the activation nudge to a member: only when they are not listed
+ * and have not dismissed it (R20). Dismissal lives in users.notification_preferences.
+ */
+const getNudgeState = async (userId) => {
+    const result = await db.query(
+        `SELECT COALESCE(mp.listed, false) AS listed,
+                COALESCE((u.notification_preferences->>'directory_nudge_dismissed')::boolean, false) AS dismissed
+         FROM users u
+         LEFT JOIN member_profiles mp ON mp.user_id = u.id
+         WHERE u.id = $1`,
+        [userId]
+    );
+    if (result.rows.length === 0) {
+        return { listed: false, dismissed: false, showNudge: false };
+    }
+    const { listed, dismissed } = result.rows[0];
+    return { listed, dismissed, showNudge: !listed && !dismissed };
+};
+
+/**
+ * Persist nudge dismissal. Uses a jsonb merge so other notification preferences are
+ * preserved untouched (no read-modify-write race).
+ */
+const dismissNudge = async (userId) => {
+    await db.query(
+        `UPDATE users
+         SET notification_preferences = COALESCE(notification_preferences, '{}'::jsonb) || '{"directory_nudge_dismissed": true}'::jsonb,
+             updated_at = NOW()
+         WHERE id = $1`,
+        [userId]
+    );
+    return true;
+};
+
 module.exports = {
     getMyProfile,
     saveMyProfile,
@@ -372,6 +407,8 @@ module.exports = {
     getProfileForAdmin,
     listAllMembersForAdmin,
     moderateProfile,
+    getNudgeState,
+    dismissNudge,
     // exported for tests / reuse
     MODERATABLE_FIELDS,
     computeInitials

@@ -80,6 +80,34 @@
     padding: 1rem 0;
 }
 
+.directory-nudge {
+    background: #eef6ff;
+    border: 1px solid #b6d4f0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.directory-nudge-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.nudge-dismiss {
+    margin: 0;
+}
+
+.link-button {
+    background: none;
+    border: none;
+    color: #2c3e50;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+}
+
 .pagination {
     display: flex;
     gap: 1rem;

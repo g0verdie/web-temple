@@ -21,6 +21,7 @@ const directoryReadLimiter = rateLimit({
 });
 
 router.get('/', requireAuth, sessionTimeout(), directoryReadLimiter, directoryController.getDirectory);
+router.post('/nudge/dismiss', requireAuth, sessionTimeout(), directoryController.dismissNudge);
 router.get('/:id', requireAuth, sessionTimeout(), directoryReadLimiter, directoryController.getProfile);
 
 module.exports = router;

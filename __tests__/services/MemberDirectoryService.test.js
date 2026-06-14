@@ -198,4 +198,29 @@ describe('MemberDirectoryService', () => {
             expect(db.query).not.toHaveBeenCalled();
         });
     });
+
+    describe('activation nudge (R20)', () => {
+        test('shows when not listed and not dismissed', async () => {
+            db.query.mockResolvedValue({ rows: [{ listed: false, dismissed: false }] });
+            expect(await svc.getNudgeState('u1')).toMatchObject({ showNudge: true });
+        });
+
+        test('hidden when already listed', async () => {
+            db.query.mockResolvedValue({ rows: [{ listed: true, dismissed: false }] });
+            expect(await svc.getNudgeState('u1')).toMatchObject({ showNudge: false });
+        });
+
+        test('hidden when dismissed', async () => {
+            db.query.mockResolvedValue({ rows: [{ listed: false, dismissed: true }] });
+            expect(await svc.getNudgeState('u1')).toMatchObject({ showNudge: false });
+        });
+
+        test('dismissNudge merges the flag into notification_preferences without clobbering', async () => {
+            db.query.mockResolvedValue({ rows: [] });
+            await svc.dismissNudge('u1');
+            const sql = db.query.mock.calls[0][0];
+            expect(sql).toContain('directory_nudge_dismissed');
+            expect(sql).toContain('||'); // jsonb merge, not a full overwrite
+        });
+    });
 });

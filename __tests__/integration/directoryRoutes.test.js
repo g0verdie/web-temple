@@ -97,4 +97,35 @@ describe('Member directory routes', () => {
             expect(res.text).toContain('mailto:ada@x.com');
         });
     });
+
+    describe('activation nudge (R20)', () => {
+        beforeEach(() => {
+            MemberDirectoryService.listListedProfiles.mockResolvedValue({ profiles: [], totalCount: 0, totalPages: 0, currentPage: 1 });
+        });
+
+        it('renders the nudge for a not-listed, not-dismissed member', async () => {
+            MemberDirectoryService.getNudgeState.mockResolvedValue({ listed: false, dismissed: false, showNudge: true });
+            const res = await request(app).get('/directory').set('Cookie', [`auth_token=${memberToken}`]);
+            expect(res.status).toBe(200);
+            expect(res.text).toMatch(/not listed in the member directory yet/);
+        });
+
+        it('hides the nudge when the member is listed or has dismissed it', async () => {
+            MemberDirectoryService.getNudgeState.mockResolvedValue({ listed: true, dismissed: false, showNudge: false });
+            const res = await request(app).get('/directory').set('Cookie', [`auth_token=${memberToken}`]);
+            expect(res.status).toBe(200);
+            expect(res.text).not.toMatch(/not listed in the member directory yet/);
+        });
+
+        it('POST /directory/nudge/dismiss persists dismissal and redirects', async () => {
+            MemberDirectoryService.dismissNudge.mockResolvedValue(true);
+            const res = await request(app)
+                .post('/directory/nudge/dismiss')
+                .set('Cookie', [`auth_token=${memberToken}`])
+                .send({});
+            expect(res.status).toBe(302);
+            expect(res.header.location).toBe('/directory');
+            expect(MemberDirectoryService.dismissNudge).toHaveBeenCalledWith('member-1');
+        });
+    });
 });

@@ -2,6 +2,19 @@
     <h1>Member Directory</h1>
     <p class="subtitle">Connect with fellow members. <a href="/account/directory">Manage your own listing</a>.</p>
 
+    <% if (typeof showNudge !== 'undefined' && showNudge) { %>
+        <div class="directory-nudge" role="status">
+            <p>You're not listed in the member directory yet. Add your listing so other members can find you.</p>
+            <div class="directory-nudge-actions">
+                <a href="/account/directory" class="btn-primary">Add my listing</a>
+                <form method="POST" action="/directory/nudge/dismiss" class="nudge-dismiss">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit" class="link-button">Dismiss</button>
+                </form>
+            </div>
+        </div>
+    <% } %>
+
     <div class="directory-filters">
         <form method="GET" action="/directory" role="search">
             <input type="text" name="search" placeholder="Search by name or interest..." value="<%= filters.search || '' %>" aria-label="Search members by name or interest">
