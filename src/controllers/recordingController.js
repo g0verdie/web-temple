@@ -275,10 +275,13 @@ exports.getRecordingDetail = async (req, res) => {
         const durationValid = durationRaw !== '' && durationRaw !== null && durationRaw !== undefined && Number.isFinite(Number(durationRaw));
         const durationMinutes = durationValid ? Math.floor(Math.max(0, Number(durationRaw)) / 60) : null;
 
+        const ChatService = require('../services/ChatService');
+        const chatMessages = await ChatService.getMessagesForRecording(recording.service_date);
+
         res.render('layout', {
             title: recording.title || 'Recording',
             bodyView: 'recordings/show',
-            stylesheets: ['/css/recordings.css'],
+            stylesheets: ['/css/recordings.css', '/css/live-chat.css'],
             viewData: {
                 recording,
                 captionFormat,
@@ -287,7 +290,8 @@ exports.getRecordingDetail = async (req, res) => {
                 previewUrl,
                 rabbiName,
                 serviceDateText,
-                durationMinutes
+                durationMinutes,
+                chatMessages
             }
         });
     } catch (error) {

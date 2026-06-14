@@ -46,7 +46,10 @@ const Permissions = Object.freeze({
     // Livestream scheduling — a dedicated permission was introduced instead of
     // reusing MANAGE_CALENDAR so that streaming access can be granted or revoked
     // independently of calendar management (see Story 3.6 design decision).
-    MANAGE_STREAMING: 'manage_streaming'
+    MANAGE_STREAMING: 'manage_streaming',
+
+    // Live chat moderation permission for live streams
+    MODERATE_CHAT: 'moderate_chat'
 });
 
 // ============================================================================
@@ -61,7 +64,8 @@ const rolePermissionMap = {
         Permissions.MANAGE_CALENDAR,
         Permissions.MANAGE_CONTENT,
         Permissions.VIEW_DONATIONS,
-        Permissions.MANAGE_STREAMING  // See Permissions block for rationale
+        Permissions.MANAGE_STREAMING,  // See Permissions block for rationale
+        Permissions.MODERATE_CHAT
     ],
     [Roles.RABBI]: [
         // FR26: Rabbi can post announcements, manage calendars, reply to messages, view donations
@@ -69,12 +73,14 @@ const rolePermissionMap = {
         Permissions.MANAGE_CALENDAR,
         Permissions.MANAGE_MESSAGES,
         Permissions.VIEW_DONATIONS,
-        Permissions.MANAGE_STREAMING  // See Permissions block for rationale
+        Permissions.MANAGE_STREAMING,  // See Permissions block for rationale
+        Permissions.MODERATE_CHAT
     ],
     [Roles.SOCIAL_CHAIR]: [
         // FR27: Social Chair (Phase 2) can post announcements and manage public calendar only
         Permissions.POST_ANNOUNCEMENTS,
-        Permissions.MANAGE_CALENDAR
+        Permissions.MANAGE_CALENDAR,
+        Permissions.MODERATE_CHAT
     ],
     [Roles.TREASURER]: [
         // Treasurer can view donations

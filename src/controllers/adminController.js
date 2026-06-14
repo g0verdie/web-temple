@@ -48,13 +48,30 @@ exports.getDashboard = async (req, res) => {
         const latestAttempt = await backupLogService.getLastBackupAttempt();
         const emailQueue = await emailQueueService.getQueueStats();
 
+        const StreamingService = require('../services/StreamingService');
+        const chatSocketServer = require('../services/chatSocketServer');
+
+        let activeStream = null;
+        let activeChatUsers = 0;
+        try {
+            const embedMeta = await StreamingService.getPublicEmbedMetadata();
+            if (embedMeta && embedMeta.status === 'live' && embedMeta.id) {
+                activeStream = embedMeta;
+                activeChatUsers = chatSocketServer.getActiveConnectionCount(embedMeta.id);
+            }
+        } catch (e) {
+            // Ignore stream/chat count retrieval errors gracefully
+        }
+
         res.render('layout', {
             title: 'Admin Dashboard',
             bodyView: 'admin/dashboard',
             viewData: {
                 lastBackup,
                 latestAttempt,
-                emailQueue
+                emailQueue,
+                activeStream,
+                activeChatUsers
             }
         });
     } catch (error) {

@@ -23,4 +23,15 @@ router.post('/email-queue/:id/retry', requireAdminAccess, adminController.retryE
 // Audit Logs Route
 router.get('/audit-logs', requireAdminAccess, adminController.getAuditLogs);
 
+// Chat Moderation Page Route
+const chatController = require('../../controllers/chatController');
+const { Permissions } = require('../../config/roles-permissions');
+const { requirePermission } = require('../../middleware/requireRbac');
+
+router.get('/chat-moderation', [
+    requireAuth,
+    sessionTimeout(),
+    requirePermission(Permissions.MODERATE_CHAT)
+], chatController.getPendingMessagesPage);
+
 module.exports = router;

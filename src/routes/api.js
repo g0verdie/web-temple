@@ -46,6 +46,20 @@ const emailChangeLimiter = rateLimit({
     legacyHeaders: false,
 });
 
+// Rate limiter for the chat REST fallback (10 posts per minute per IP).
+// This is the per-IP abuse gate for the REST path. The WebSocket post path has
+// its own per-connection flood guard (MAX_POSTS_PER_WINDOW in chatSocketServer);
+// the 50-conn cap alone does NOT bound per-socket write rate. Skipped in tests
+// to keep the existing integration suite deterministic.
+const chatPostLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    message: { error: 'Too many chat messages. Please slow down.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: () => process.env.NODE_ENV === 'test'
+});
+
 // Account settings routes
 router.get('/account/settings', requireAuthSession, userController.getAccountSettings);
 router.put('/account/profile', requireAuthSession, userController.updateProfile);
@@ -154,5 +168,32 @@ router.get('/admin/audit-logs', requireSuperAdminAccess, async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
+
+// ============================================================================
+// Live Chat Endpoints
+// ============================================================================
+const chatController = require('../controllers/chatController');
+const { Permissions } = require('../config/roles-permissions');
+const { requirePermission } = require('../middleware/requireRbac');
+
+// GET /api/chat/poll?streamId=<id>&since=<timestamp> - REST fallback to poll messages
+router.get('/chat/poll', chatController.getMessagesPoll);
+
+// POST /api/chat/post - REST fallback to send a message (rate-limited)
+router.post('/chat/post', chatPostLimiter, chatController.postMessage);
+
+// POST /api/chat/message/:id/approve - Approve chat message
+router.post('/chat/message/:id/approve', [
+    requireAuth,
+    sessionTimeout(),
+    requirePermission(Permissions.MODERATE_CHAT)
+], chatController.approveMessage);
+
+// POST /api/chat/message/:id/delete - Delete chat message
+router.post('/chat/message/:id/delete', [
+    requireAuth,
+    sessionTimeout(),
+    requirePermission(Permissions.MODERATE_CHAT)
+], chatController.deleteMessage);
 
 module.exports = router;

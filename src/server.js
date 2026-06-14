@@ -50,7 +50,7 @@ app.use(helmet({
       scriptSrc: ["'self'", "https://js.hcaptcha.com", "https://*.hcaptcha.com"],
       styleSrc: ["'self'", "https://js.hcaptcha.com", "https://*.hcaptcha.com"],
       imgSrc: ["'self'", "data:", "https:", "https://*.hcaptcha.com"],
-      connectSrc: ["'self'", "https://*.hcaptcha.com", "https:"],
+      connectSrc: ["'self'", "ws:", "wss:", "https://*.hcaptcha.com", "https:"],
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'", "https:"],
@@ -214,10 +214,12 @@ app.use((err, req, res, next) => {
 
 // Start server
 if (require.main === module) {
-  app.listen(PORT, HOST, () => {
+  const server = app.listen(PORT, HOST, () => {
     logger.info(`✅ Server running at http://${HOST}:${PORT}`);
     logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
   });
+  const { initChatSocketServer } = require('./services/chatSocketServer');
+  initChatSocketServer(server);
 }
 
 module.exports = app;

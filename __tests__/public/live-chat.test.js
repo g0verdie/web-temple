@@ -1,0 +1,156 @@
+/** @jest-environment jsdom */
+
+// Client-side coverage for the live-chat WebSocket -> polling fallback state
+// machine, manual reconnect, and the moderator pause control. live-chat.js is
+// an IIFE that runs on require and reads #live-chat-panel at eval time, so each
+// test sets up the DOM, then requires the module fresh (jest.resetModules()).
+
+class MockWebSocket {
+    constructor(url) {
+        this.url = url;
+        this.readyState = MockWebSocket.CONNECTING;
+        this.sent = [];
+        this.onopen = null;
+        this.onmessage = null;
+        this.onclose = null;
+        this.onerror = null;
+        MockWebSocket.instances.push(this);
+    }
+    send(data) { this.sent.push(data); }
+    close() { this.readyState = MockWebSocket.CLOSED; }
+
+    // Test helpers
+    static get last() { return MockWebSocket.instances[MockWebSocket.instances.length - 1]; }
+    _open() {
+        this.readyState = MockWebSocket.OPEN;
+        if (this.onopen) this.onopen();
+    }
+    _failClose() {
+        this.readyState = MockWebSocket.CLOSED;
+        if (this.onclose) this.onclose({ wasClean: false });
+    }
+    _emit(obj) {
+        if (this.onmessage) this.onmessage({ data: JSON.stringify(obj) });
+    }
+}
+MockWebSocket.CONNECTING = 0;
+MockWebSocket.OPEN = 1;
+MockWebSocket.CLOSING = 2;
+MockWebSocket.CLOSED = 3;
+
+const PANEL = (role) => `
+    <div id="live-chat-panel"
+         data-stream-id="10"
+         data-logged-in="true"
+         data-current-user-id="u1"
+         data-role="${role}"></div>
+`;
+
+const loadModule = () => {
+    jest.isolateModules(() => {
+        require('../../public/js/live-chat.js');
+    });
+};
+
+// Drive the reconnect loop to exhaustion (3 attempts) so it falls back to polling.
+const exhaustReconnects = () => {
+    // Initial socket failed by caller; then 3 scheduled reconnects each fail.
+    [2000, 5000, 10000].forEach((delay) => {
+        jest.advanceTimersByTime(delay);
+        MockWebSocket.last._failClose();
+    });
+};
+
+describe('live-chat client behavior', () => {
+    beforeEach(() => {
+        jest.resetModules();
+        jest.useFakeTimers();
+        MockWebSocket.instances = [];
+        global.WebSocket = MockWebSocket;
+        global.alert = jest.fn();
+        global.fetch = jest.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({ success: true, data: [] })
+        });
+        document.body.innerHTML = '';
+        window.sessionStorage.clear();
+    });
+
+    afterEach(() => {
+        jest.useRealTimers();
+        jest.clearAllMocks();
+        delete global.WebSocket;
+        delete global.fetch;
+        delete global.alert;
+    });
+
+    it('opens a WebSocket on load for a logged-in viewer', () => {
+        document.body.innerHTML = PANEL('member');
+        loadModule();
+
+        expect(MockWebSocket.instances).toHaveLength(1);
+        expect(MockWebSocket.last.url).toContain('/ws/chat?streamId=10');
+    });
+
+    it('falls back to polling after 3 failed reconnect attempts', () => {
+        document.body.innerHTML = PANEL('member');
+        loadModule();
+
+        // Fail the initial connection, then exhaust the 3 backoff reconnects.
+        MockWebSocket.last._failClose();
+        exhaustReconnects();
+
+        const banner = document.getElementById('chat-slow-banner');
+        expect(banner.style.display).toBe('block');
+        expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/chat/poll?streamId=10'));
+
+        // The 3s poll interval keeps fetching.
+        const callsAfterSwitch = global.fetch.mock.calls.length;
+        jest.advanceTimersByTime(3000);
+        expect(global.fetch.mock.calls.length).toBe(callsAfterSwitch + 1);
+    });
+
+    it('manual reconnect leaves polling mode and reopens a WebSocket', () => {
+        document.body.innerHTML = PANEL('member');
+        loadModule();
+
+        MockWebSocket.last._failClose();
+        exhaustReconnects();
+        expect(document.getElementById('chat-slow-banner').style.display).toBe('block');
+
+        const countBeforeReconnect = MockWebSocket.instances.length;
+        document.getElementById('chat-reconnect-btn').click();
+
+        expect(MockWebSocket.instances.length).toBe(countBeforeReconnect + 1);
+        expect(document.getElementById('chat-slow-banner').style.display).toBe('none');
+    });
+
+    it('renders a moderator pause control and sends pause_chat over the socket', () => {
+        document.body.innerHTML = PANEL('rabbi');
+        loadModule();
+
+        MockWebSocket.last._open();
+
+        const pauseBtn = document.getElementById('chat-pause-btn');
+        expect(pauseBtn).not.toBeNull();
+
+        pauseBtn.click();
+
+        const sentPause = MockWebSocket.last.sent
+            .map((s) => JSON.parse(s))
+            .find((p) => p.type === 'pause_chat');
+        expect(sentPause).toEqual({ type: 'pause_chat', paused: true });
+
+        // Server echoes chat_paused to everyone; the toggle reflects the state.
+        MockWebSocket.last._emit({ type: 'chat_paused', data: { paused: true } });
+        expect(pauseBtn.textContent).toContain('Resume');
+        expect(document.getElementById('chat-message-input').getAttribute('disabled')).toBe('true');
+    });
+
+    it('does not render the pause control for non-moderator viewers', () => {
+        document.body.innerHTML = PANEL('member');
+        loadModule();
+
+        expect(document.getElementById('chat-pause-btn')).toBeNull();
+    });
+});

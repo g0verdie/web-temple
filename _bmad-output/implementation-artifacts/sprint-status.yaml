@@ -74,14 +74,14 @@ development_status:
   3-5-recording-playback-with-accessibility: done
   3-6-authorized-user-stream-scheduling: done
   epic-3-retrospective: optional
-  epic-4: in-progress
-  4-1-post-messages-to-live-chat: backlog
-  4-2-real-time-chat-display-with-websocket: backlog
-  4-3-chat-moderation-controls: backlog
-  4-4-chat-persistence-and-history: backlog
-  4-5-websocket-failure-polling-fallback: backlog
-  4-6-chat-disconnection-reconnection: backlog
-  4-7-chat-capacity-management: backlog
+  epic-4: done
+  4-1-post-messages-to-live-chat: done
+  4-2-real-time-chat-display-with-websocket: done
+  4-3-chat-moderation-controls: done
+  4-4-chat-persistence-and-history: done
+  4-5-websocket-failure-polling-fallback: done
+  4-6-chat-disconnection-reconnection: done
+  4-7-chat-capacity-management: done
   epic-4-retrospective: optional
   epic-5: backlog
   5-1-create-and-post-announcements: backlog

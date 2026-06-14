@@ -5,7 +5,10 @@ const StreamingService = require('../../src/services/StreamingService');
 jest.mock('../../src/services/StreamingService');
 jest.mock('../../src/middleware/requireAuth', () => (req, res, next) => next());
 jest.mock('../../src/middleware/sessionTimeout', () => () => (req, res, next) => next());
-jest.mock('../../src/middleware/requireRbac', () => ({ requireRole: () => (req, res, next) => next() }));
+jest.mock('../../src/middleware/requireRbac', () => ({
+    requireRole: () => (req, res, next) => next(),
+    requirePermission: () => (req, res, next) => next()
+}));
 jest.mock('../../src/services/backupLogService', () => ({}));
 jest.mock('../../src/services/auditService', () => ({}));
 jest.mock('../../src/services/sessionService', () => ({}));

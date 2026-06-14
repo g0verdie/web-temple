@@ -1,0 +1,58 @@
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Chat Moderation Queue</h1>
+        <a href="/admin" class="btn btn-outline-secondary">&larr; Back to Dashboard</a>
+    </div>
+
+    <% if (typeof messages !== 'undefined' && messages && messages.length > 0) { %>
+        <div class="card" id="moderation-card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">Pending Messages (<span id="pending-count"><%= messages.length %></span>)</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="moderation-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Time</th>
+                            <th>Author</th>
+                            <th>Message</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% messages.forEach(function(msg) { %>
+                            <tr id="row-<%= msg.id %>">
+                                <td class="text-muted" style="white-space: nowrap;">
+                                    <%= new Date(msg.created_at).toLocaleTimeString() %>
+                                </td>
+                                <td>
+                                    <strong><%= msg.display_name %></strong>
+                                </td>
+                                <td class="text-wrap" style="max-width: 400px; word-break: break-word;">
+                                    <%= msg.message_text %>
+                                </td>
+                                <td class="text-end" style="white-space: nowrap;">
+                                    <button class="btn btn-sm btn-success me-2 btn-action" data-action="approve" data-id="<%= msg.id %>">
+                                        Approve
+                                    </button>
+                                    <button class="btn btn-sm btn-danger btn-action" data-action="delete" data-id="<%= msg.id %>">
+                                        Delete
+                                    </button>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    <% } else { %>
+        <div class="alert alert-success" id="no-messages-alert">
+            <strong>All caught up!</strong> There are no pending chat messages to moderate.
+        </div>
+    <% } %>
+    <div class="alert alert-success mt-4 d-none" id="all-done-alert">
+        <strong>All caught up!</strong> There are no pending chat messages to moderate.
+    </div>
+</div>
+
+<script src="/js/chat-moderation.js"></script>
