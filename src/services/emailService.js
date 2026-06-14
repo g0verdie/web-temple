@@ -24,7 +24,7 @@ const sendEmail = async (options) => {
         });
 
         const mailOptions = {
-            from: process.env.SMTP_FROM || '"Temple Website" <no-reply@hattiesburgtemple.com>',
+            from: process.env.SMTP_FROM || '"Temple B\'nai Israel" <no-reply@florencetemple.org>',
             ...options
         };
 
