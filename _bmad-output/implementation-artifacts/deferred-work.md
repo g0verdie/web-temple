@@ -19,3 +19,9 @@ issues, the connection-cap TOCTOU, the pause-UI AC, and the test gaps were fixed
 - Reconnect stampede: no jitter on the backoff intervals, and closeAllConnections() is defined but never wired to SIGTERM/SIGINT so a restart produces synchronized reconnects [public/js/live-chat.js:17,184-235; src/services/chatSocketServer.js:312]
 - Dead moderator-badge branch: live-chat.js styles msg.role but no query/column/broadcast ever supplies role — either drop it or denormalize role through the payload [public/js/live-chat.js:410-413]
 - Polishing perf: getApprovedMessagesForStream has no SQL since/LIMIT; the poll filters in JS after a full-history SELECT [src/services/ChatService.js:182-189; src/controllers/chatController.js:96-104] — fine at MVP scale
+
+## Deferred from: member-directory Tier-2 code review (Opus 4.8, 2026-06-14)
+Accepted P3 residuals (the UUID-404 and moderation-attribution findings were fixed in this pass):
+
+- Concurrent-write race: a just-dismissed activation nudge can reappear once if a member updates notification preferences in the same instant, because updatePreferences does a read-modify-write overwrite while dismissNudge uses an atomic jsonb merge [src/services/userService.js updatePreferences]. Cosmetic; fix would switch updatePreferences to a jsonb `||` merge of changed keys.
+- Key-rotation re-save data loss: after an ENCRYPTION_KEY rotation, getMyProfile returns '' for undecryptable phone/household; saving any field then overwrites the (still-recoverable-with-old-key) ciphertext with NULL [src/services/MemberDirectoryService.js getMyProfile/saveMyProfile]. Only reachable during the documented key-rotation ops procedure (docs/SECURITY_ENCRYPTION.md §9); fix would distinguish decrypt-failure from empty and skip overwriting *_encrypted when unreadable.

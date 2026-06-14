@@ -174,9 +174,11 @@ const adminPagesRoutes = require('./routes/admin/pages');
 const adminRecordingsRoutes = require('./routes/admin/recordings');
 const adminStreamingRoutes = require('./routes/admin/streaming');
 const adminDashboardRoutes = require('./routes/admin/dashboard');
+const adminDirectoryRoutes = require('./routes/admin/directory');
 const pagesRoutes = require('./routes/pages');
 const apiRoutes = require('./routes/api');
 const recordingsRoutes = require('./routes/recordings');
+const directoryRoutes = require('./routes/directory');
 
 app.use('/', homeRoutes);
 app.use('/about', aboutRoutes);
@@ -186,8 +188,10 @@ app.use('/admin', adminDashboardRoutes);
 app.use('/admin/pages', adminPagesRoutes);
 app.use('/admin/recordings', adminRecordingsRoutes);
 app.use('/admin/streaming', adminStreamingRoutes);
+app.use('/admin/directory', adminDirectoryRoutes);
 app.use('/api', apiRoutes);
 app.use('/archive', recordingsRoutes);
+app.use('/directory', directoryRoutes);
 
 // 404 handler
 app.use((req, res) => {

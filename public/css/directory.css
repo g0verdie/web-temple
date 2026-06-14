@@ -1,0 +1,122 @@
+.directory-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.directory-filters form {
+    display: flex;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.directory-filters input[type="text"] {
+    flex: 1;
+    padding: 0.5rem;
+}
+
+.member-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.member-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+}
+
+.member-card-link {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    text-decoration: none;
+    color: inherit;
+}
+
+.member-card-link:hover,
+.member-card-link:focus {
+    background: #f5f5f5;
+}
+
+.avatar-initials {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #2c3e50;
+    color: #fff;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.member-details h2 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.member-interests {
+    margin: 0.25rem 0 0;
+    color: #555;
+}
+
+.member-profile-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.member-section {
+    margin-bottom: 1.25rem;
+}
+
+.directory-empty {
+    color: #555;
+    padding: 1rem 0;
+}
+
+.directory-nudge {
+    background: #eef6ff;
+    border: 1px solid #b6d4f0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.directory-nudge-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.nudge-dismiss {
+    margin: 0;
+}
+
+.link-button {
+    background: none;
+    border: none;
+    color: #2c3e50;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+}
+
+.pagination {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+@media (max-width: 600px) {
+    .directory-filters form {
+        flex-direction: column;
+    }
+}

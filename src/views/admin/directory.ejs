@@ -1,0 +1,62 @@
+<div class="directory-container">
+    <h1>Member Directory — Admin</h1>
+    <p class="subtitle">All members, listed or not. Moderate a profile by unlisting it or clearing offending free text.</p>
+
+    <div class="directory-filters">
+        <form method="GET" action="/admin/directory" role="search">
+            <input type="text" name="search" value="<%= filters.search || '' %>" placeholder="Search by name, email, or interest..." aria-label="Search members">
+            <button type="submit">Search</button>
+        </form>
+    </div>
+
+    <% if (members && members.length > 0) { %>
+        <table class="admin-member-table">
+            <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Listed</th>
+                    <th scope="col">Moderation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% members.forEach(member => { %>
+                    <tr>
+                        <td><%= member.first_name %> <%= member.last_name %></td>
+                        <td><%= member.email %></td>
+                        <td><%= member.listed ? 'Yes' : 'No' %></td>
+                        <td>
+                            <% if (member.has_profile) { %>
+                                <form method="POST" action="/admin/directory/moderate" class="moderate-form">
+                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                                    <input type="hidden" name="user_id" value="<%= member.user_id %>">
+                                    <label class="checkbox-row"><input type="checkbox" name="unlist" <%= member.listed ? '' : 'disabled' %>> Unlist</label>
+                                    <label class="checkbox-row"><input type="checkbox" name="clearFields" value="bio"> Clear bio</label>
+                                    <label class="checkbox-row"><input type="checkbox" name="clearFields" value="interests"> Clear interests</label>
+                                    <label class="checkbox-row"><input type="checkbox" name="clearFields" value="household_encrypted"> Clear household</label>
+                                    <button type="submit">Apply</button>
+                                </form>
+                            <% } else { %>
+                                <span class="muted">No directory profile</span>
+                            <% } %>
+                        </td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    <% } else { %>
+        <p class="directory-empty">No members found.</p>
+    <% } %>
+
+    <% if (totalPages > 1) { %>
+        <nav class="pagination" aria-label="Member pages">
+            <% if (currentPage > 1) { %>
+                <a href="/admin/directory?page=<%= currentPage - 1 %>&search=<%= encodeURIComponent(filters.search || '') %>" rel="prev">Previous</a>
+            <% } %>
+            <span>Page <%= currentPage %> of <%= totalPages %></span>
+            <% if (currentPage < totalPages) { %>
+                <a href="/admin/directory?page=<%= currentPage + 1 %>&search=<%= encodeURIComponent(filters.search || '') %>" rel="next">Next</a>
+            <% } %>
+        </nav>
+    <% } %>
+</div>

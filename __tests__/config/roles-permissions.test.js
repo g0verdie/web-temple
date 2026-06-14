@@ -137,6 +137,20 @@ describe('Roles & Permissions Configuration', () => {
         });
     });
 
+    describe('MANAGE_DIRECTORY permission (member directory)', () => {
+        it('is defined', () => {
+            expect(Permissions.MANAGE_DIRECTORY).toBe('manage_directory');
+        });
+
+        it('is granted to ADMIN and RABBI only', () => {
+            expect(hasPermission({ role: Roles.ADMIN }, Permissions.MANAGE_DIRECTORY)).toBe(true);
+            expect(hasPermission({ role: Roles.RABBI }, Permissions.MANAGE_DIRECTORY)).toBe(true);
+            expect(hasPermission({ role: Roles.MEMBER }, Permissions.MANAGE_DIRECTORY)).toBe(false);
+            expect(hasPermission({ role: Roles.SOCIAL_CHAIR }, Permissions.MANAGE_DIRECTORY)).toBe(false);
+            expect(hasPermission({ role: Roles.TREASURER }, Permissions.MANAGE_DIRECTORY)).toBe(false);
+        });
+    });
+
     describe('Role to Permission Mapping Completeness', () => {
         it('should have role mapping for all roles', () => {
             const roles = [Roles.ADMIN, Roles.RABBI, Roles.SOCIAL_CHAIR, Roles.MEMBER];

@@ -3,6 +3,7 @@ const router = express.Router();
 const requireAuth = require('../middleware/requireAuth');
 const sessionTimeout = require('../middleware/sessionTimeout');
 const userService = require('../services/userService');
+const MemberDirectoryService = require('../services/MemberDirectoryService');
 
 /**
  * GET /register
@@ -89,6 +90,28 @@ router.get('/account/confirm-email', (req, res) => {
         viewData: { token: req.query.token || '' },
         stylesheets: ['/css/account.css']
     });
+});
+
+/**
+ * GET /account/directory
+ * Display the member's own directory-listing edit page
+ */
+router.get('/account/directory', requireAuth, sessionTimeout(), async (req, res) => {
+    try {
+        const profile = await MemberDirectoryService.getMyProfile(req.user.id);
+        res.render('layout', {
+            title: 'My Directory Listing - Temple B\'nai Israel',
+            bodyView: 'account/directory-listing',
+            viewData: { profile },
+            stylesheets: ['/css/account.css']
+        });
+    } catch (error) {
+        console.error('Error loading directory listing page:', error);
+        res.status(500).render('error', {
+            title: '500 - Server Error',
+            message: 'Unable to load your directory listing.'
+        });
+    }
 });
 
 module.exports = router;

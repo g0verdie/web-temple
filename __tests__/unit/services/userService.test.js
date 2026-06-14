@@ -59,7 +59,8 @@ describe('userService.getAccountSettings', () => {
             announcements: true,
             calendar_events: true,
             messages: true,
-            recordings: true
+            recordings: true,
+            directory_nudge_dismissed: false
         });
     });
 
@@ -106,10 +107,10 @@ describe('userService.updatePreferences', () => {
 
         const prefs = await userService.updatePreferences('user-1', { messages: false });
 
-        expect(prefs).toEqual({ announcements: true, calendar_events: true, messages: false, recordings: true });
+        expect(prefs).toEqual({ announcements: true, calendar_events: true, messages: false, recordings: true, directory_nudge_dismissed: false });
         expect(db.query).toHaveBeenCalledWith(
             'UPDATE users SET notification_preferences = $1, updated_at = NOW() WHERE id = $2 RETURNING id',
-            [{ announcements: true, calendar_events: true, messages: false, recordings: true }, 'user-1']
+            [{ announcements: true, calendar_events: true, messages: false, recordings: true, directory_nudge_dismissed: false }, 'user-1']
         );
     });
 
