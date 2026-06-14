@@ -68,6 +68,10 @@ router.post('/account/password', requireAuthSession, userController.changePasswo
 router.post('/account/email-change', requireAuthSession, emailChangeLimiter, userController.requestEmailChange);
 router.post('/account/email-change/confirm', userController.confirmEmailChange);
 
+// Member directory: a member's own listing (self-service)
+router.get('/account/directory', requireAuthSession, userController.getDirectoryListing);
+router.put('/account/directory', requireAuthSession, userController.updateDirectoryListing);
+
 // POST /api/donations
 router.post('/donations', donationController.createDonation);
 

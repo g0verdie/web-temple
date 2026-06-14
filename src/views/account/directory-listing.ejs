@@ -1,0 +1,65 @@
+<div class="container account-settings">
+    <h1>My Directory Listing</h1>
+    <p class="subtitle">Choose what to share with other temple members. You are not listed unless you opt in, and you control which contact details appear.</p>
+
+    <section class="settings-section" aria-labelledby="directory-heading">
+        <h2 id="directory-heading">Profile &amp; Visibility</h2>
+        <form id="directoryForm" class="settings-form" data-initial-listed="<%= profile.listed ? 'true' : 'false' %>" novalidate>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+            <div class="form-row">
+                <label for="phone">Phone</label>
+                <input type="tel" id="phone" name="phone" value="<%= profile.phone || '' %>" autocomplete="tel" maxlength="32">
+            </div>
+
+            <div class="form-row">
+                <label for="household">Household / Family</label>
+                <textarea id="household" name="household" rows="2" maxlength="200" aria-describedby="household-hint"><%= profile.household || '' %></textarea>
+                <p class="hint" id="household-hint">Please don't include details about anyone who hasn't agreed to be listed (for example, children).</p>
+            </div>
+
+            <div class="form-row">
+                <label for="bio">About Me</label>
+                <textarea id="bio" name="bio" rows="4" maxlength="500"><%= profile.bio || '' %></textarea>
+            </div>
+
+            <div class="form-row">
+                <label for="interests">Committees / Interests</label>
+                <input type="text" id="interests" name="interests" value="<%= profile.interests || '' %>" maxlength="200" aria-describedby="interests-hint">
+                <p class="hint" id="interests-hint">Comma-separated. Other members can search by these.</p>
+            </div>
+
+            <fieldset class="settings-section" aria-labelledby="visibility-heading">
+                <legend id="visibility-heading"><h2>What others can see</h2></legend>
+                <p class="hint">Your name and the items above are shown when you're listed. Choose which contact details to reveal:</p>
+                <label class="checkbox-row">
+                    <input type="checkbox" name="show_phone" <%= profile.show_phone ? 'checked' : '' %>>
+                    Show my phone
+                </label>
+                <label class="checkbox-row">
+                    <input type="checkbox" name="show_email" <%= profile.show_email ? 'checked' : '' %>>
+                    Show my email (<%= profile.email %>)
+                </label>
+                <label class="checkbox-row">
+                    <input type="checkbox" name="show_household" <%= profile.show_household ? 'checked' : '' %>>
+                    Show my household / family
+                </label>
+                <label class="checkbox-row">
+                    <input type="checkbox" name="household_consent" <%= profile.show_household ? 'checked' : '' %>>
+                    I confirm I'm not sharing details about anyone who hasn't consented.
+                </label>
+            </fieldset>
+
+            <label class="checkbox-row directory-optin">
+                <input type="checkbox" id="listed" name="listed" <%= profile.listed ? 'checked' : '' %>>
+                <strong>List me in the member directory</strong>
+            </label>
+            <p class="hint">When on, the details above become visible to other logged-in members. Turn it off any time to leave the directory; your information is kept but hidden.</p>
+
+            <button type="submit" class="btn-primary">Save Listing</button>
+            <div class="form-message" id="directoryMessage" role="alert"></div>
+        </form>
+    </section>
+</div>
+
+<script src="/js/directory-listing.js" defer></script>

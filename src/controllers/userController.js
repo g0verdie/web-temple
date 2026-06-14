@@ -1,5 +1,6 @@
 const userService = require('../services/userService');
 const authService = require('../services/authService');
+const MemberDirectoryService = require('../services/MemberDirectoryService');
 
 const completeOnboarding = async (req, res) => {
     try {
@@ -134,6 +135,43 @@ const confirmEmailChange = async (req, res) => {
     }
 };
 
+const getDirectoryListing = async (req, res) => {
+    try {
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ success: false, message: 'Unauthorized: User not found in request' });
+        }
+        const profile = await MemberDirectoryService.getMyProfile(req.user.id);
+        res.json({ success: true, profile });
+    } catch (error) {
+        console.error('Error loading directory listing:', error);
+        if (error.message === 'User not found') {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+};
+
+const updateDirectoryListing = async (req, res) => {
+    try {
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ success: false, message: 'Unauthorized: User not found in request' });
+        }
+        const listing = await MemberDirectoryService.saveMyProfile(req.user.id, req.body || {});
+        res.json({ success: true, message: 'Directory listing saved', listing });
+    } catch (error) {
+        console.error('Error updating directory listing:', error);
+        if (error.message === 'User not found') {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        // Validation/consent errors are client-correctable (400); anything else is a server error (500).
+        const clientError = /must be|consent|required|invalid/i.test(error.message || '');
+        return res.status(clientError ? 400 : 500).json({
+            success: false,
+            message: clientError ? error.message : 'Internal Server Error'
+        });
+    }
+};
+
 module.exports = {
     completeOnboarding,
     getAccountSettings,
@@ -141,5 +179,7 @@ module.exports = {
     updatePreferences,
     changePassword,
     requestEmailChange,
-    confirmEmailChange
+    confirmEmailChange,
+    getDirectoryListing,
+    updateDirectoryListing
 };
