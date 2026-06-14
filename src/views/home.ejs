@@ -141,6 +141,40 @@
   <% } %>
 </section>
 
+<!-- Announcements (Epic 5) -->
+<section class="announcements-section" role="region" aria-labelledby="announcements-heading">
+  <h3 id="announcements-heading" class="section-title">Announcements</h3>
+
+  <% const announcementList = (typeof announcements !== 'undefined' && announcements) ? announcements : []; %>
+  <% if (announcementList.length > 0) { %>
+    <ul class="announcements-list" role="list">
+      <% announcementList.forEach((announcement) => { %>
+        <li class="announcement-card <%= announcement.isFeatured ? 'announcement-card--featured' : '' %>" role="listitem">
+          <h4 class="announcement-card__title">
+            <%= announcement.title %>
+            <% if (announcement.isFeatured) { %><span class="announcement-badge">Featured</span><% } %>
+          </h4>
+          <p class="announcement-card__meta">
+            <time datetime="<%= new Date(announcement.published_at).toISOString() %>">
+              <%= new Date(announcement.published_at).toLocaleDateString() %>
+            </time>
+            <% if (announcement.wasEdited) { %>
+              <span class="announcement-updated">&middot; Updated: <%= new Date(announcement.updated_at).toLocaleDateString() %></span>
+            <% } %>
+          </p>
+          <details class="announcement-details">
+            <summary>Read announcement</summary>
+            <!-- body_html is server-sanitized on write (AnnouncementService KTD2); safe to render raw. -->
+            <div class="announcement-card__body"><%- announcement.body_html %></div>
+          </details>
+        </li>
+      <% }) %>
+    </ul>
+  <% } else { %>
+    <p class="no-announcements">No announcements at this time. Check back soon!</p>
+  <% } %>
+</section>
+
 <!-- Client-side logic for countdown timer and stream parsing -->
 <script src="/js/stream-status.js"></script>
 <% if (stream && stream.status === 'live' && stream.embedUrl && stream.id) { %>

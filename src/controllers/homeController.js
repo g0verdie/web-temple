@@ -1,5 +1,6 @@
 const EventService = require('../services/EventService');
 const StreamingService = require('../services/StreamingService');
+const AnnouncementService = require('../services/AnnouncementService');
 
 function getTimeUntilService(serviceDate) {
   const now = new Date();
@@ -54,10 +55,11 @@ exports.getHomepage = async (req, res) => {
       message: 'The streaming provider is currently unavailable. Please watch directly on Facebook.'
     };
 
-    const [nextService, events, rawStream] = await Promise.all([
+    const [nextService, events, rawStream, announcements] = await Promise.all([
       EventService.getNextService(),
       EventService.getUpcomingEvents(3),
-      StreamingService.getPublicEmbedMetadata().catch(() => defaultErrorState)
+      StreamingService.getPublicEmbedMetadata().catch(() => defaultErrorState),
+      AnnouncementService.getHomepageAnnouncements(5).catch(() => [])
     ]);
 
     let countdown = null;
@@ -75,6 +77,7 @@ exports.getHomepage = async (req, res) => {
     res.render('layout', {
       title: 'Temple B\'nai Israel - Welcome Home',
       bodyView: 'home',
+      stylesheets: ['/css/announcements.css'],
       viewData: {
         mission: {
           headline: 'Welcome to Temple B\'nai Israel',
@@ -87,6 +90,7 @@ exports.getHomepage = async (req, res) => {
         nextService,
         countdown,
         events: formattedEvents,
+        announcements,
         stream,
         formatEventDate
       }
