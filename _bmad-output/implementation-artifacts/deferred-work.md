@@ -25,3 +25,12 @@ Accepted P3 residuals (the UUID-404 and moderation-attribution findings were fix
 
 - Concurrent-write race: a just-dismissed activation nudge can reappear once if a member updates notification preferences in the same instant, because updatePreferences does a read-modify-write overwrite while dismissNudge uses an atomic jsonb merge [src/services/userService.js updatePreferences]. Cosmetic; fix would switch updatePreferences to a jsonb `||` merge of changed keys.
 - Key-rotation re-save data loss: after an ENCRYPTION_KEY rotation, getMyProfile returns '' for undecryptable phone/household; saving any field then overwrites the (still-recoverable-with-old-key) ciphertext with NULL [src/services/MemberDirectoryService.js getMyProfile/saveMyProfile]. Only reachable during the documented key-rotation ops procedure (docs/SECURITY_ENCRYPTION.md §9); fix would distinguish decrypt-failure from empty and skip overwriting *_encrypted when unreadable.
+
+## Deferred from: donations (Epic 8) mock-MVP build + 3-persona code review (Opus 4.8, 2026-06-14)
+Accepted residuals (the P0/P1 integrity + dashboard-correctness findings were fixed in the build):
+
+- Mock checkout intentionally trusts the client-supplied demo outcome — acceptable for a no-money Board demo and bounded by the ownership cookie, the per-IP rate limiter, and idempotent finalize. MUST be replaced by provider-authoritative capture (verified PayPal callback) before real payments go live [src/services/payments/MockPaymentProvider.js].
+- MRR has no active/cancelled subscription lifecycle (the mock has no recurring-charge scheduler), so MRR reflects recurring *intents*, not realized revenue. Add a subscription status/cancelled_at lifecycle with live PayPal subscriptions [src/services/DonationService.js getDashboardMetrics].
+- The 3-strike failure counter degrades silently if Redis is unavailable (CacheService swallows errors → count stays 0 → alert never fires). The per-IP rate limiter is the primary abuse guard; a DB-count fallback for the alert is the follow-up [src/controllers/donationController.js].
+- Major-donation alert (Story 8.7) currently includes amount + date but not donor name or transaction id — minor spec gap [src/controllers/donationController.js sendReceiptAndAlerts].
+- donor_email_hash deterministic column for SQL-side donor dedup/counting (app-side decrypt+dedupe is fine at congregation scale).
