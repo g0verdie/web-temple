@@ -186,6 +186,26 @@ const getDashboardMetrics = async () => {
     };
 };
 
+/**
+ * Month-to-date completed-donation total (cents). Decrypts ONLY this month's rows
+ * (amounts are non-deterministically encrypted, so SQL SUM is impossible — bounding
+ * the row set keeps the polled dashboard tile cheap as the table grows). Month
+ * boundary computed in JS to match the local zone node-pg parses created_at into.
+ */
+const getMtdTotalCents = async () => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const { rows } = await db.query(
+        "SELECT encrypted_amount_cents FROM donations WHERE status = 'completed' AND created_at >= $1",
+        [startOfMonth]
+    );
+    let total = 0;
+    for (const r of rows) {
+        total += Number(safeDecrypt(r.encrypted_amount_cents)) || 0;
+    }
+    return total;
+};
+
 /** Filterable, paginated list for the dashboard. Decrypts per row (KTD6). */
 const listDonations = async ({ status = 'completed', donationType, isAnonymous, startDate, endDate, page = 1, limit = 20 } = {}) => {
     const where = ['status = $1'];
@@ -254,6 +274,7 @@ module.exports = {
     recordFailure,
     isMajor,
     getDashboardMetrics,
+    getMtdTotalCents,
     listDonations,
     toCsv,
     validateAmount,

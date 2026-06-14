@@ -43,6 +43,9 @@
             <li><a href="/archive" <%=activePath==='/archive' ? 'aria-current="page"' : '' %>>Archive</a></li>
             <li><a href="/directory" <%=activePath==='/directory' ? 'aria-current="page"' : '' %>>Directory</a></li>
             <li><a href="/account/settings" <%=activePath==='/account/settings' ? 'aria-current="page"' : '' %>>Account</a></li>
+            <% if (user.role === 'admin' || user.role === 'rabbi') { %>
+            <li><a href="/admin" <%=activePath==='/admin' ? 'aria-current="page"' : '' %>>Admin</a></li>
+            <% } %>
             <% } %>
           </ul>
       </div>

@@ -2,6 +2,11 @@ const adminController = require('../../src/controllers/adminController');
 const backupLogService = require('../../src/services/backupLogService');
 const auditService = require('../../src/services/auditService');
 const emailQueueService = require('../../src/services/emailQueueService');
+const DonationService = require('../../src/services/DonationService');
+const userService = require('../../src/services/userService');
+const messageService = require('../../src/services/messageService');
+const ChatService = require('../../src/services/ChatService');
+const EventService = require('../../src/services/EventService');
 
 jest.mock('../../src/services/backupLogService', () => ({
     getLastSuccessfulBackup: jest.fn(),
@@ -18,6 +23,12 @@ jest.mock('../../src/services/emailQueueService', () => ({
     retryFailedJob: jest.fn()
 }));
 
+jest.mock('../../src/services/DonationService', () => ({ getMtdTotalCents: jest.fn() }));
+jest.mock('../../src/services/userService', () => ({ getNewMemberCountThisMonth: jest.fn() }));
+jest.mock('../../src/services/messageService', () => ({ getNewMessageCount: jest.fn() }));
+jest.mock('../../src/services/ChatService', () => ({ getPendingMessageCount: jest.fn() }));
+jest.mock('../../src/services/EventService', () => ({ getUpcomingEvents: jest.fn() }));
+
 describe('Admin Controller - Backup Status', () => {
     let req, res;
 
@@ -28,6 +39,12 @@ describe('Admin Controller - Backup Status', () => {
             status: jest.fn().mockReturnThis()
         };
         jest.clearAllMocks();
+        // Safe defaults for the live-metric services so getDashboard renders.
+        DonationService.getMtdTotalCents.mockResolvedValue(0);
+        userService.getNewMemberCountThisMonth.mockResolvedValue(0);
+        messageService.getNewMessageCount.mockResolvedValue(0);
+        ChatService.getPendingMessageCount.mockResolvedValue(0);
+        EventService.getUpcomingEvents.mockResolvedValue([]);
     });
 
     test('should render dashboard with last successful backup', async () => {
@@ -199,6 +216,66 @@ describe('Admin Controller - Backup Status', () => {
 
         expect(completedRes.render).toHaveBeenCalledWith('layout', expect.objectContaining({
             bodyView: 'admin/dashboard'
+        }));
+    });
+
+    test('dashboard viewData includes the key metrics and priorities (Story 9.1/9.3)', async () => {
+        backupLogService.getLastSuccessfulBackup.mockResolvedValue({ timestamp: '2026-06-01T00:00:00Z', status: 'SUCCESS', size_bytes: 2048 });
+        backupLogService.getLastBackupAttempt.mockResolvedValue({ timestamp: '2026-06-01T00:00:00Z', status: 'SUCCESS' });
+        emailQueueService.getQueueStats.mockResolvedValue({ counts: { failed: 0 }, failed: [] });
+        DonationService.getMtdTotalCents.mockResolvedValue(12345);
+        userService.getNewMemberCountThisMonth.mockResolvedValue(4);
+        messageService.getNewMessageCount.mockResolvedValue(3);
+        ChatService.getPendingMessageCount.mockResolvedValue(2);
+
+        await adminController.getDashboard(req, res);
+
+        expect(res.render).toHaveBeenCalledWith('layout', expect.objectContaining({
+            viewData: expect.objectContaining({
+                metrics: expect.objectContaining({
+                    newMembersThisMonth: 4,
+                    donationsMtdCents: 12345,
+                    pendingMessages: 3,
+                    pendingChat: 2
+                }),
+                priorities: expect.objectContaining({ pendingChat: 2, pendingMessages: 3 })
+            })
+        }));
+    });
+
+    test('a failing metric query degrades to a default without 500-ing the dashboard', async () => {
+        backupLogService.getLastSuccessfulBackup.mockResolvedValue(null);
+        backupLogService.getLastBackupAttempt.mockResolvedValue(null);
+        emailQueueService.getQueueStats.mockResolvedValue({ counts: {}, failed: [] });
+        DonationService.getMtdTotalCents.mockRejectedValue(new Error('db down'));
+        userService.getNewMemberCountThisMonth.mockRejectedValue(new Error('db down'));
+
+        await adminController.getDashboard(req, res);
+
+        expect(res.status).not.toHaveBeenCalledWith(500);
+        expect(res.render).toHaveBeenCalledWith('layout', expect.objectContaining({
+            viewData: expect.objectContaining({
+                metrics: expect.objectContaining({ donationsMtdCents: 0, newMembersThisMonth: 0 })
+            })
+        }));
+    });
+
+    test('getDashboardMetricsJson returns the live metric shape', async () => {
+        const jsonRes = { json: jest.fn(), status: jest.fn().mockReturnThis() };
+        DonationService.getMtdTotalCents.mockResolvedValue(500);
+        userService.getNewMemberCountThisMonth.mockResolvedValue(1);
+        messageService.getNewMessageCount.mockResolvedValue(0);
+        ChatService.getPendingMessageCount.mockResolvedValue(5);
+        backupLogService.getLastSuccessfulBackup.mockResolvedValue({ timestamp: '2026-06-01T00:00:00Z' });
+
+        await adminController.getDashboardMetricsJson({}, jsonRes);
+
+        expect(jsonRes.json).toHaveBeenCalledWith(expect.objectContaining({
+            newMembersThisMonth: 1,
+            donationsMtdCents: 500,
+            pendingChat: 5,
+            pendingMessages: 0,
+            lastBackupAt: '2026-06-01T00:00:00Z'
         }));
     });
 });

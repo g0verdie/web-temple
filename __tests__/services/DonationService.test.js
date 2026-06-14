@@ -93,6 +93,27 @@ describe('DonationService', () => {
         });
     });
 
+    describe('getMtdTotalCents', () => {
+        test('sums decrypted amounts for this-month completed donations and bounds the query to the month', async () => {
+            db.query.mockResolvedValue({ rows: [
+                { encrypted_amount_cents: encrypt('1800') },
+                { encrypted_amount_cents: encrypt('3600') }
+            ] });
+            const total = await svc.getMtdTotalCents();
+            expect(total).toBe(1800 + 3600);
+            const [sql, params] = db.query.mock.calls[0];
+            expect(sql).toContain("status = 'completed'");
+            expect(sql).toContain('created_at >= $1'); // only this month's rows are decrypted
+            expect(params[0]).toBeInstanceOf(Date);
+            expect(params[0].getDate()).toBe(1);
+        });
+
+        test('returns 0 when there are no donations this month', async () => {
+            db.query.mockResolvedValue({ rows: [] });
+            expect(await svc.getMtdTotalCents()).toBe(0);
+        });
+    });
+
     describe('listDonations + toCsv', () => {
         test('lists with anonymous masking and exports CSV', async () => {
             mockClient.query

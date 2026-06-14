@@ -287,11 +287,29 @@ const confirmEmailChange = async (token) => {
     return true;
 };
 
+/**
+ * Count of members who registered since the start of the current month
+ * (dashboard "new members this month" metric, FR61).
+ */
+const getNewMemberCountThisMonth = async () => {
+    // Compute the month boundary in JS (local zone) and pass it as a param, so the
+    // naive TIMESTAMP `created_at` isn't mis-bucketed by session-tz coercion at the
+    // month edge (mirrors DonationService's boundary handling).
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const result = await db.query(
+        'SELECT COUNT(*)::int AS count FROM users WHERE created_at >= $1',
+        [startOfMonth]
+    );
+    return result.rows[0] ? result.rows[0].count : 0;
+};
+
 module.exports = {
     completeOnboarding,
     getAccountSettings,
     updateProfile,
     updatePreferences,
     requestEmailChange,
-    confirmEmailChange
+    confirmEmailChange,
+    getNewMemberCountThisMonth
 };
