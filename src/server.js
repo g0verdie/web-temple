@@ -208,6 +208,13 @@ app.use('/archive', recordingsRoutes);
 app.use('/directory', directoryRoutes);
 app.use('/donations', donationRoutes);
 
+// Lightweight liveness probe for external uptime monitoring (FR67) — fast 200,
+// no DB/render, so it reflects "the web process is up" without false negatives
+// from downstream services.
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', uptime: process.uptime() });
+});
+
 // 404 handler
 app.use((req, res) => {
   logger.warn(`404 - Not Found - ${req.originalUrl} - ${req.ip}`);

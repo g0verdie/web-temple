@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Temple B'nai Israel">
+  <rect width="64" height="64" rx="10" fill="#1f3a5f"/>
+  <g fill="none" stroke="#e8c46a" stroke-width="3" stroke-linejoin="round">
+    <polygon points="32,12 46,37 18,37"/>
+    <polygon points="32,52 18,27 46,27"/>
+  </g>
+</svg>
