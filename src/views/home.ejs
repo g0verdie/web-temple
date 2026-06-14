@@ -19,25 +19,35 @@
   </div>
 
   <% if (stream && stream.status === 'live' && stream.embedUrl) { %>
-    <div class="stream-card">
-      <div class="stream-player-frame">
-        <iframe
-          src="<%= stream.embedUrl %>"
-          title="<%= stream.iframeTitle %>"
-          allow="autoplay; fullscreen; picture-in-picture"
-          allowfullscreen
-          loading="eager"
-          referrerpolicy="no-referrer">
-        </iframe>
+    <link rel="stylesheet" href="/css/live-chat.css">
+    <div class="stream-container-layout">
+      <div class="stream-card">
+        <div class="stream-player-frame">
+          <iframe
+            src="<%= stream.embedUrl %>"
+            title="<%= stream.iframeTitle %>"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowfullscreen
+            loading="eager"
+            referrerpolicy="no-referrer">
+          </iframe>
+        </div>
+        <div class="stream-details">
+          <p class="stream-title"><%= stream.title %></p>
+          <% if (stream.message) { %>
+            <p class="stream-helper"><%= stream.message %></p>
+          <% } %>
+          <% if (stream.watchUrl) { %>
+            <a href="<%= stream.watchUrl %>" class="stream-link">Watch on Facebook</a>
+          <% } %>
+        </div>
       </div>
-      <div class="stream-details">
-        <p class="stream-title"><%= stream.title %></p>
-        <% if (stream.message) { %>
-          <p class="stream-helper"><%= stream.message %></p>
-        <% } %>
-        <% if (stream.watchUrl) { %>
-          <a href="<%= stream.watchUrl %>" class="stream-link">Watch on Facebook</a>
-        <% } %>
+
+      <!-- Live Chat Panel -->
+      <div id="live-chat-panel" 
+           data-stream-id="<%= stream.id %>" 
+           data-logged-in="<%= typeof user !== 'undefined' && user ? 'true' : 'false' %>"
+           data-current-user-id="<%= typeof user !== 'undefined' && user ? user.id : '' %>">
       </div>
     </div>
   <% } else { %>
@@ -129,3 +139,6 @@
 
 <!-- Client-side logic for countdown timer and stream parsing -->
 <script src="/js/stream-status.js"></script>
+<% if (stream && stream.status === 'live' && stream.embedUrl) { %>
+<script src="/js/live-chat.js"></script>
+<% } %>

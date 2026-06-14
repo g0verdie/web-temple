@@ -130,6 +130,7 @@ class StreamingService {
                     const activeStream = activeResult.rows[0];
                     if (isAllowedProviderUrl(activeStream.facebook_live_url)) {
                         metadata = {
+                            id: activeStream.id,
                             status: 'live',
                             statusLabel: 'LIVE NOW',
                             title: activeStream.title || DEFAULT_TITLE,

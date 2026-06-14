@@ -118,6 +118,36 @@
             </div>
         </div>
 
+        <!-- Live Chat Moderation Card -->
+        <% if (hasPermission(Permissions.MODERATE_CHAT)) { %>
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Live Chat Moderation</h5>
+                </div>
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <% if (typeof activeStream !== 'undefined' && activeStream) { %>
+                            <div class="alert alert-success">
+                                <strong>Stream is LIVE</strong><br>
+                                Title: <%= activeStream.title %><br>
+                                Connected Chat Users: <strong><%= activeChatUsers %></strong>
+                            </div>
+                        <% } else { %>
+                            <div class="alert alert-light">
+                                No active stream is currently broadcasting.
+                            </div>
+                        <% } %>
+                    </div>
+                    <div>
+                        <hr>
+                        <a href="/admin/chat-moderation" class="btn btn-primary w-100">Open Moderation Queue</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <% } %>
+
         <!-- Rabbi Tools Card Component (Only visible to Rabbi role) -->
         <% if (user && user.role==='rabbi' ) { %>
             <div class="col-md-12 mb-4">

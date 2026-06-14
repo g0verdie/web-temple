@@ -155,4 +155,31 @@ router.get('/admin/audit-logs', requireSuperAdminAccess, async (req, res) => {
     }
 });
 
+// ============================================================================
+// Live Chat Endpoints
+// ============================================================================
+const chatController = require('../controllers/chatController');
+const { Permissions } = require('../config/roles-permissions');
+const { requirePermission } = require('../middleware/requireRbac');
+
+// GET /api/chat/poll?streamId=<id>&since=<timestamp> - REST fallback to poll messages
+router.get('/chat/poll', chatController.getMessagesPoll);
+
+// POST /api/chat/post - REST fallback to send a message
+router.post('/chat/post', chatController.postMessage);
+
+// POST /api/chat/message/:id/approve - Approve chat message
+router.post('/chat/message/:id/approve', [
+    requireAuth,
+    sessionTimeout(),
+    requirePermission(Permissions.MODERATE_CHAT)
+], chatController.approveMessage);
+
+// POST /api/chat/message/:id/delete - Delete chat message
+router.post('/chat/message/:id/delete', [
+    requireAuth,
+    sessionTimeout(),
+    requirePermission(Permissions.MODERATE_CHAT)
+], chatController.deleteMessage);
+
 module.exports = router;

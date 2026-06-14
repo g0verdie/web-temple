@@ -107,6 +107,31 @@
                 <p><%= recording.description %></p>
             </section>
         <% } %>
+
+        <!-- Historical Chat Logs -->
+        <details class="historical-chat-panel" open>
+            <summary class="historical-chat-header" style="cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0;">Archived Chat History</h3>
+                <span class="a11y-toggle-btn" role="presentation">Toggle Feed</span>
+            </summary>
+            <div class="historical-chat-messages">
+                <% if (typeof chatMessages !== 'undefined' && chatMessages && chatMessages.length > 0) { %>
+                    <% chatMessages.forEach(function(msg) { %>
+                        <div class="chat-message <%= (typeof user !== 'undefined' && user && String(msg.user_id) === String(user.id)) ? 'self' : '' %>">
+                            <div class="message-meta">
+                                <span class="message-author"><%= msg.display_name %></span>
+                                <span class="message-time">
+                                    <%= new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %>
+                                </span>
+                            </div>
+                            <div class="message-text"><%= msg.message_text %></div>
+                        </div>
+                    <% }); %>
+                <% } else { %>
+                    <p style="text-align: center; color: #6b7280; font-size: 0.9rem; padding: 1.5rem 0; margin: 0;">No chat messages were recorded for this service.</p>
+                <% } %>
+            </div>
+        </details>
     <% } else { %>
         <div class="recording-unavailable" role="alert">
             <h2>Playback unavailable</h2>

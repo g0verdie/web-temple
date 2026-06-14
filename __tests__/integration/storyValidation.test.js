@@ -150,10 +150,10 @@ describe('Story 2.4: Final Validation - All Acceptance Criteria', () => {
             expect(chairPerms).not.toContain(Permissions.VIEW_METRICS);
         });
 
-        it('SOCIAL_CHAIR has exactly 2 permissions', () => {
+        it('SOCIAL_CHAIR has exactly 3 permissions', () => {
             const { getRolePermissions } = require('../../src/config/roles-permissions');
             const chairPerms = getRolePermissions(Roles.SOCIAL_CHAIR);
-            expect(chairPerms.length).toBe(2);
+            expect(chairPerms.length).toBe(3);
         });
     });
 
