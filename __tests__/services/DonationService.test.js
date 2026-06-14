@@ -104,4 +104,21 @@ describe('DonationService', () => {
             expect(csv).toContain('Anonymous');
         });
     });
+
+    describe('getById', () => {
+        test('returns decrypted amount + checkout token from metadata', async () => {
+            db.query.mockResolvedValue({ rows: [{
+                id: 'd1', status: 'pending', donation_type: 'one-time', recurring_frequency: null,
+                is_anonymous: false, encrypted_amount_cents: encrypt('3600'),
+                encrypted_donor_email: encrypt('a@b.com'), metadata: { checkoutToken: 'tok' }
+            }] });
+            const d = await svc.getById('d1');
+            expect(d).toMatchObject({ status: 'pending', amountCents: 3600, checkoutToken: 'tok', donorEmail: 'a@b.com' });
+        });
+
+        test('returns null for an unknown id', async () => {
+            db.query.mockResolvedValue({ rows: [] });
+            expect(await svc.getById('nope')).toBeNull();
+        });
+    });
 });

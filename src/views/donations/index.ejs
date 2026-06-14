@@ -1,0 +1,42 @@
+<div class="donations-container">
+    <h1>Support Temple B'nai Israel</h1>
+    <p class="subtitle">Your generosity sustains our community. Donations are tax-deductible.</p>
+
+    <form id="donationForm" method="POST" action="/donations/checkout" class="donation-form" novalidate>
+        <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' && csrfToken ? csrfToken : '' %>">
+
+        <fieldset>
+            <legend>Choose an amount</legend>
+            <div class="amount-levels" role="group" aria-label="Suggested donation amounts">
+                <label class="amount-level"><input type="radio" name="amount_preset" value="1800" checked> $18 <span>Chai</span></label>
+                <label class="amount-level"><input type="radio" name="amount_preset" value="3600"> $36 <span>Double Chai</span></label>
+                <label class="amount-level"><input type="radio" name="amount_preset" value="10000"> $100 <span>Major Donor</span></label>
+                <label class="amount-level"><input type="radio" name="amount_preset" value="custom"> Custom</label>
+            </div>
+            <div class="form-row">
+                <label for="custom_amount">Custom amount (USD)</label>
+                <input type="number" id="custom_amount" name="custom_amount" min="1" step="1" inputmode="decimal" disabled>
+            </div>
+            <input type="hidden" name="amount_cents" id="amount_cents" value="1800">
+        </fieldset>
+
+        <fieldset>
+            <legend>Frequency</legend>
+            <label class="radio-row"><input type="radio" name="donation_type" value="one-time" checked> One-time</label>
+            <label class="radio-row"><input type="radio" name="donation_type" value="recurring"> Monthly (recurring)</label>
+        </fieldset>
+
+        <fieldset>
+            <legend>Your details</legend>
+            <label class="checkbox-row"><input type="checkbox" name="is_anonymous" id="is_anonymous"> Give anonymously</label>
+            <div class="form-row" id="donor_email_row">
+                <label for="donor_email">Email (for your receipt)</label>
+                <input type="email" id="donor_email" name="donor_email" autocomplete="email">
+            </div>
+        </fieldset>
+
+        <button type="submit" class="btn-primary">Donate Now</button>
+    </form>
+</div>
+
+<script src="/js/donations.js" defer></script>

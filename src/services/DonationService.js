@@ -43,22 +43,47 @@ const safeDecrypt = (value) => {
 const isMajor = (amountCents) => Number(amountCents) > MAJOR_THRESHOLD_CENTS;
 
 /** Create a PENDING donation before the (mock) checkout. */
-const createPending = async ({ amountCents, donationType, recurringFrequency = null, isAnonymous = false, donorEmail = null, currency = 'USD' }) => {
+const createPending = async ({ amountCents, donationType, recurringFrequency = null, isAnonymous = false, donorEmail = null, currency = 'USD', checkoutToken = null }) => {
     const amount = validateAmount(amountCents);
     if (!VALID_TYPES.has(donationType)) throw new Error('Invalid donation type');
     if (!VALID_CURRENCIES.has(currency)) throw new Error('Invalid currency');
     const recurring = donationType === 'recurring' ? (recurringFrequency || 'monthly') : null;
     const encryptedAmount = encrypt(String(amount));
     const encryptedEmail = (!isAnonymous && donorEmail) ? encrypt(String(donorEmail)) : null;
+    // checkoutToken binds the pending row to its creator's cookie (KTD9 ownership).
+    const metadata = checkoutToken ? { checkoutToken } : null;
 
     const result = await db.query(
         `INSERT INTO donations
-            (encrypted_amount_cents, encrypted_donor_email, currency, donation_type, recurring_frequency, is_anonymous, status)
-         VALUES ($1, $2, $3, $4, $5, $6, 'pending')
+            (encrypted_amount_cents, encrypted_donor_email, currency, donation_type, recurring_frequency, is_anonymous, status, metadata)
+         VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7)
          RETURNING id, created_at`,
-        [encryptedAmount, encryptedEmail, currency, donationType, recurring, !!isAnonymous]
+        [encryptedAmount, encryptedEmail, currency, donationType, recurring, !!isAnonymous, metadata]
     );
     return result.rows[0];
+};
+
+/** Look up a checkout's state for the page + completion verification (KTD9). */
+const getById = async (id) => {
+    const { rows } = await db.query(
+        `SELECT id, status, donation_type, recurring_frequency, is_anonymous,
+                encrypted_amount_cents, encrypted_donor_email, metadata
+         FROM donations WHERE id = $1`,
+        [id]
+    );
+    if (rows.length === 0) return null;
+    const r = rows[0];
+    const meta = typeof r.metadata === 'string' ? JSON.parse(r.metadata || '{}') : (r.metadata || {});
+    return {
+        id: r.id,
+        status: r.status,
+        donationType: r.donation_type,
+        recurringFrequency: r.recurring_frequency,
+        isAnonymous: r.is_anonymous,
+        amountCents: Number(safeDecrypt(r.encrypted_amount_cents)) || 0,
+        donorEmail: safeDecrypt(r.encrypted_donor_email),
+        checkoutToken: meta.checkoutToken || null
+    };
 };
 
 /** Idempotently finalize a pending donation. Returns null if already finalized/not found. */
@@ -212,6 +237,7 @@ const toCsv = (donations) => {
 
 module.exports = {
     createPending,
+    getById,
     finalize,
     recordFailure,
     isMajor,

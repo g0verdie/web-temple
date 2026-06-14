@@ -179,6 +179,7 @@ const pagesRoutes = require('./routes/pages');
 const apiRoutes = require('./routes/api');
 const recordingsRoutes = require('./routes/recordings');
 const directoryRoutes = require('./routes/directory');
+const donationRoutes = require('./routes/donations');
 
 app.use('/', homeRoutes);
 app.use('/about', aboutRoutes);
@@ -192,6 +193,7 @@ app.use('/admin/directory', adminDirectoryRoutes);
 app.use('/api', apiRoutes);
 app.use('/archive', recordingsRoutes);
 app.use('/directory', directoryRoutes);
+app.use('/donations', donationRoutes);
 
 // 404 handler
 app.use((req, res) => {

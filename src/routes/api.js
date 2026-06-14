@@ -8,7 +8,6 @@ const { Roles } = require('../config/roles-permissions');
 const backupLogService = require('../services/backupLogService');
 const auditService = require('../services/auditService');
 const sessionService = require('../services/sessionService');
-const donationController = require('../controllers/donationController');
 const userController = require('../controllers/userController');
 const authRoutes = require('./auth');
 const StreamingService = require('../services/StreamingService');
@@ -71,9 +70,6 @@ router.post('/account/email-change/confirm', userController.confirmEmailChange);
 // Member directory: a member's own listing (self-service)
 router.get('/account/directory', requireAuthSession, userController.getDirectoryListing);
 router.put('/account/directory', requireAuthSession, userController.updateDirectoryListing);
-
-// POST /api/donations
-router.post('/donations', donationController.createDonation);
 
 // PUT /api/users/onboarding/complete
 router.put('/users/onboarding/complete', requireAuthSession, userController.completeOnboarding);

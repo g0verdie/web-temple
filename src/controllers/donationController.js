@@ -1,92 +1,167 @@
-const db = require('../config/db');
-const { encrypt } = require('../utils/encryptionHelper');
-const { logAudit, AUDIT_ACTIONS } = require('../services/auditService');
+const crypto = require('crypto');
 const logger = require('../utils/logger');
+const DonationService = require('../services/DonationService');
+const { getProvider } = require('../services/payments');
+const receiptPdfService = require('../services/receiptPdfService');
+const { enqueueEmail } = require('../services/emailQueueService');
+const { logAudit, AUDIT_ACTIONS } = require('../services/auditService');
 
-const VALID_DONATION_TYPES = new Set(['one-time', 'recurring']);
-const MAX_DONATION_AMOUNT = 1000000000; // $10,000,000.00
+const DEMO_OUTCOMES = new Set(['success', 'failure', 'cancel']);
+const str = (v) => (typeof v === 'string' ? v : '');
 
-const createDonation = async (req, res) => {
-    const {
-        amount_cents,
-        donor_email,
-        donation_type,
-        currency = 'USD',
-        recurring_frequency = null,
-        is_anonymous = false,
-        payment_method = null,
-        payment_id = null,
-        metadata = null
-    } = req.body || {};
+// GET /donations — public donations page.
+exports.getDonationsPage = (req, res) => {
+    res.render('layout', {
+        title: "Donate - Temple B'nai Israel",
+        bodyView: 'donations/index',
+        stylesheets: ['/css/donations.css'],
+        viewData: { csrfToken: req.csrfToken ? req.csrfToken() : null }
+    });
+};
 
-    if (amount_cents === undefined || amount_cents === null || !donation_type) {
-        return res.status(400).json({ error: 'amount_cents and donation_type are required' });
-    }
-
-    const amountNumber = Number(amount_cents);
-    if (!Number.isFinite(amountNumber) || amountNumber <= 0 || !Number.isInteger(amountNumber)) {
-        return res.status(400).json({ error: 'amount_cents must be a positive integer' });
-    }
-
-    if (amountNumber > MAX_DONATION_AMOUNT) {
-        return res.status(400).json({ error: 'amount_cents exceeds maximum limit' });
-    }
-
-    if (!VALID_DONATION_TYPES.has(donation_type)) {
-        return res.status(400).json({ error: 'donation_type must be one-time or recurring' });
-    }
-
+// POST /donations/checkout — create a PENDING donation + start the (mock) checkout.
+exports.startCheckout = async (req, res) => {
     try {
-        const encryptedAmount = encrypt(String(amountNumber));
-        const encryptedEmail = donor_email ? encrypt(String(donor_email)) : null;
+        const body = req.body || {};
+        const amountCents = parseInt(body.amount_cents, 10);
+        const donationType = body.donation_type === 'recurring' ? 'recurring' : 'one-time';
+        const isAnonymous = body.is_anonymous === 'on' || body.is_anonymous === 'true' || body.is_anonymous === true;
+        const donorEmail = isAnonymous ? null : (str(body.donor_email).trim() || null);
 
-        const result = await db.query(
-            `INSERT INTO donations (
-                encrypted_amount_cents,
-                encrypted_donor_email,
-                currency,
-                donation_type,
-                recurring_frequency,
-                is_anonymous,
-                payment_method,
-                payment_id,
-                metadata,
-                status
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'completed')
-            RETURNING id, status, created_at`,
-            [
-                encryptedAmount,
-                encryptedEmail,
-                currency,
-                donation_type,
-                recurring_frequency,
-                is_anonymous,
-                payment_method,
-                payment_id,
-                metadata
-            ]
-        );
+        const checkoutToken = crypto.randomBytes(16).toString('hex');
+        let pending;
+        try {
+            pending = await DonationService.createPending({ amountCents, donationType, isAnonymous, donorEmail, checkoutToken });
+        } catch (validationErr) {
+            return res.status(400).render('error', { title: '400 - Invalid Donation', message: validationErr.message });
+        }
 
-        const donation = result.rows[0];
+        await getProvider().createCheckout({ donationId: pending.id, amountCents, donationType, isAnonymous });
 
-        logAudit({
-            action: AUDIT_ACTIONS.DONATION_RECEIVED,
-            entity_type: 'donation',
-            entity_id: donation.id,
-            description: `Donation received (${currency} ${amountNumber})`,
-            ip_address: req.ip
-        }).catch(err => logger.error('Audit log error:', err));
-
-        return res.status(201).json({
-            success: true,
-            data: donation
-        });
+        // Bind this checkout to the creator (cookieParser has no secret here, so an opaque token is used).
+        res.cookie(`dc_${pending.id}`, checkoutToken, { httpOnly: true, sameSite: 'lax', maxAge: 30 * 60 * 1000 });
+        return res.redirect(`/donations/checkout/${pending.id}`);
     } catch (error) {
-        logger.error('Error creating donation:', error);
-        return res.status(500).json({ error: 'Server error' });
+        logger.error('Error starting donation checkout:', error);
+        return res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to start your donation.' });
     }
 };
 
-module.exports = {
-    createDonation
+// GET /donations/checkout/:id — the simulated (DEMO) checkout step.
+exports.getCheckout = async (req, res) => {
+    try {
+        const donation = await DonationService.getById(req.params.id);
+        if (!donation || donation.status !== 'pending') {
+            return res.status(404).render('404', { title: '404 - Page Not Found' });
+        }
+        return res.render('layout', {
+            title: 'Complete your donation',
+            bodyView: 'donations/checkout',
+            stylesheets: ['/css/donations.css'],
+            viewData: {
+                donation: { id: donation.id, amountCents: donation.amountCents, donationType: donation.donationType },
+                csrfToken: req.csrfToken ? req.csrfToken() : null
+            }
+        });
+    } catch (error) {
+        logger.error('Error loading donation checkout:', error);
+        return res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to load checkout.' });
+    }
+};
+
+// POST /donations/checkout/:id/complete — resolve the (mock) checkout.
+exports.completeCheckout = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const donation = await DonationService.getById(id);
+        if (!donation) return res.status(404).render('404', { title: '404 - Page Not Found' });
+
+        // Ownership: only the device that started the checkout (holds the cookie) may complete it.
+        const cookieToken = req.cookies ? req.cookies[`dc_${id}`] : null;
+        if (!donation.checkoutToken || cookieToken !== donation.checkoutToken) {
+            return res.status(403).render('error', { title: '403 - Forbidden', message: 'This checkout can only be completed from the device that started it.' });
+        }
+        if (donation.status !== 'pending') {
+            return res.redirect('/donations/thank-you'); // already resolved — idempotent
+        }
+
+        const outcome = (req.body && DEMO_OUTCOMES.has(req.body.outcome)) ? req.body.outcome : 'failure';
+        const result = await getProvider().capture(id, { outcome });
+
+        if (result.status === 'cancelled') {
+            return res.redirect('/donations');
+        }
+
+        if (result.status === 'completed') {
+            const finalized = await DonationService.finalize(id, { transactionId: result.transactionId });
+            res.clearCookie(`dc_${id}`);
+            if (finalized) {
+                // Side-effects run once (finalize is idempotent).
+                await sendReceiptAndAlerts(finalized).catch((err) => logger.error('Donation side-effects error:', err));
+            }
+            return res.redirect('/donations/thank-you');
+        }
+
+        // failure
+        await DonationService.recordFailure({
+            amountCents: donation.amountCents,
+            donationType: donation.donationType,
+            isAnonymous: donation.isAnonymous,
+            errorCode: result.errorCode
+        });
+        // (U8 adds the server-side 3-strike admin alert here.)
+        return res.status(402).render('layout', {
+            title: 'Payment could not be completed',
+            bodyView: 'donations/failed',
+            stylesheets: ['/css/donations.css'],
+            viewData: { donationId: id }
+        });
+    } catch (error) {
+        logger.error('Error completing donation checkout:', error);
+        return res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to complete your donation.' });
+    }
+};
+
+// GET /donations/thank-you
+exports.thankYou = (req, res) => {
+    res.render('layout', {
+        title: 'Thank you',
+        bodyView: 'donations/thank-you',
+        stylesheets: ['/css/donations.css'],
+        viewData: {}
+    });
+};
+
+// On a completed donation: queue the PDF receipt (named donors only) + a major-donation alert.
+const sendReceiptAndAlerts = async (finalized) => {
+    const amountUsd = `$${(finalized.amountCents / 100).toFixed(2)}`;
+    const receiptId = `RCPT-${String(finalized.id).slice(0, 8)}`;
+    const date = new Date().toISOString().slice(0, 10);
+
+    if (!finalized.isAnonymous && finalized.donorEmail) {
+        const pdf = await receiptPdfService.generate({
+            amountCents: finalized.amountCents, date,
+            donorName: finalized.donorEmail, receiptId, isAnonymous: false
+        });
+        await enqueueEmail({
+            to: finalized.donorEmail,
+            template: 'receipt',
+            data: { amount: amountUsd, receiptId },
+            attachments: [{ filename: 'tax-receipt.pdf', content: pdf }]
+        });
+        logAudit({ action: AUDIT_ACTIONS.TAX_RECEIPT_SENT, entity_type: 'donation', entity_id: finalized.id, description: `Receipt sent for donation ${finalized.id}` })
+            .catch((err) => logger.error('Audit log error:', err));
+    }
+
+    if (!finalized.isAnonymous && DonationService.isMajor(finalized.amountCents)) {
+        const rabbiEmail = process.env.RABBI_EMAIL || process.env.ADMIN_EMAIL || process.env.CONTACT_EMAIL;
+        if (rabbiEmail) {
+            await enqueueEmail({
+                to: rabbiEmail,
+                subject: `Major Donation Received: ${amountUsd}`,
+                html: `<p>A major donation of <strong>${amountUsd}</strong> was received on ${date}.</p>`,
+                text: `A major donation of ${amountUsd} was received on ${date}.`
+            });
+        }
+    }
 };
