@@ -31,7 +31,7 @@
                                     </td>
                                     <td>
                                         <% if (recording.publishState === 'unpublished') { %>
-                                            <button class="btn btn-sm btn-primary" data-toggle="modal" data-target="#editRecordingModal" onclick="loadRecording('<%= JSON.stringify(recording).replace(/'/g, '&quot;') %>')">
+                                            <button class="btn btn-sm btn-primary js-edit-recording" data-toggle="modal" data-target="#editRecordingModal" data-recording="<%= JSON.stringify(recording) %>">
                                                 Edit & Publish
                                             </button>
                                         <% } else { %>
@@ -108,110 +108,10 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="publishRecording()">Publish Recording</button>
+                <button type="button" class="btn btn-primary" id="btn-publish-recording">Publish Recording</button>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    let currentRecording = null;
-
-    function loadRecording(recordingData) {
-        currentRecording = recordingData;
-        document.getElementById('recordingProvider').value = recordingData.providerName;
-        document.getElementById('recordingId').value = recordingData.providerRecordingId;
-        document.getElementById('recordingProviderVideoUrl').value = recordingData.providerVideoUrl || '';
-        document.getElementById('recordingPreviewUrl').value = recordingData.previewUrl || '';
-        document.getElementById('recordingTitle').value = recordingData.title || '';
-        document.getElementById('recordingServiceDate').value = new Date(recordingData.serviceDate).toISOString().slice(0, 16);
-        document.getElementById('recordingTorahPortion').value = recordingData.torahPortion || '';
-        document.getElementById('recordingDuration').value = recordingData.durationSeconds || '';
-        document.getElementById('recordingDescription').value = recordingData.description || '';
-
-        // Load preview if available
-        if (recordingData.previewUrl) {
-            document.getElementById('recordingPreview').innerHTML = `<iframe src="${recordingData.previewUrl}" width="100%" height="300" frameborder="0" allow="autoplay"></iframe>`;
-        }
-    }
-
-    async function publishRecording() {
-        const form = document.getElementById('publishRecordingForm');
-        const formData = new FormData(form);
-
-        const payload = {
-            providerVideoUrl: formData.get('providerVideoUrl'),
-            previewUrl: formData.get('previewUrl'),
-            title: formData.get('title'),
-            serviceDate: new Date(formData.get('serviceDate')).toISOString(),
-            torahPortion: formData.get('torahPortion') || null,
-            durationSeconds: parseInt(formData.get('durationSeconds'), 10),
-            description: formData.get('description') || null
-        };
-
-        try {
-            const response = await fetch(`/admin/recordings/${formData.get('provider')}/${formData.get('recordingId')}/publish`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                alert('Error publishing recording: ' + (data.error || 'Unknown error'));
-                return;
-            }
-
-            alert('Recording published successfully! Members will receive notification emails.');
-            $('#editRecordingModal').modal('hide');
-            location.reload();
-        } catch (error) {
-            console.error('Error publishing recording:', error);
-            alert('Error publishing recording: ' + error.message);
-        }
-    }
-
-    // Auto-save draft every 30 seconds
-    let autosaveInterval = setInterval(() => {
-        if (!currentRecording) return;
-        const form = document.getElementById('publishRecordingForm');
-        
-        // Stop saving if the modal is hidden
-        if (!$('#editRecordingModal').hasClass('show')) {
-            currentRecording = null;
-            return;
-        }
-
-        const formData = new FormData(form);
-
-        const payload = {
-            providerName: formData.get('provider'),
-            providerRecordingId: formData.get('recordingId'),
-            providerVideoUrl: formData.get('providerVideoUrl'),
-            previewUrl: formData.get('previewUrl'),
-            title: formData.get('title'),
-            serviceDate: new Date(formData.get('serviceDate')).toISOString(),
-            torahPortion: formData.get('torahPortion'),
-            durationSeconds: parseInt(formData.get('durationSeconds'), 10) || 0,
-            description: formData.get('description')
-        };
-
-        fetch('/admin/recordings/drafts', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
-            },
-            body: JSON.stringify(payload)
-        }).catch(err => console.error('Draft autosave failed:', err)); // Non-blocking
-    }, 30000);
-
-    // Clear currentRecording when modal is closed to stop pending autosaves
-    $('#editRecordingModal').on('hidden.bs.modal', function () {
-        currentRecording = null;
-    });
-</script>
+<script src="/js/admin-recordings.js"></script>
