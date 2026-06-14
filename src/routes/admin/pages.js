@@ -40,6 +40,7 @@ router.get('/:slug', requirePageManagementAccess, async (req, res, next) => {
     res.render('layout', {
       title: `Edit ${page.title}`,
       bodyView: 'admin/pages/edit',
+      stylesheets: ['/vendor/quill.snow.css', '/css/page-editor.css'],
       viewData: { page, versions, slug },
     });
   } catch (error) {
