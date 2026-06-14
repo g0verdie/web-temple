@@ -1,0 +1,66 @@
+<div class="container announcements-admin" data-csrf="<%= typeof csrfToken !== 'undefined' && csrfToken ? csrfToken : '' %>">
+    <div class="announcements-admin__header">
+        <h1>Announcements</h1>
+        <a href="/admin/announcements/new" class="btn btn-primary">New Announcement</a>
+    </div>
+
+    <div id="announcementsStatus" class="form-message" role="status" aria-live="polite"></div>
+
+    <section aria-labelledby="active-announcements-heading">
+        <h2 id="active-announcements-heading">Published</h2>
+        <% if (active && active.length > 0) { %>
+            <ul class="announcement-admin-list" role="list">
+                <% active.forEach((a) => { %>
+                    <li class="announcement-admin-item" data-id="<%= a.id %>">
+                        <div class="announcement-admin-item__main">
+                            <h3 class="announcement-admin-item__title">
+                                <%= a.title %>
+                                <% if (a.isFeatured) { %><span class="announcement-badge">Featured</span><% } %>
+                            </h3>
+                            <p class="announcement-admin-item__meta">
+                                <time datetime="<%= new Date(a.published_at).toISOString() %>"><%= new Date(a.published_at).toLocaleDateString() %></time>
+                            </p>
+                        </div>
+                        <div class="announcement-admin-item__actions">
+                            <a class="btn btn-sm btn-outline-primary" href="/admin/announcements/<%= a.id %>/edit">Edit</a>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-action="feature" data-id="<%= a.id %>" data-featured="<%= a.isFeatured ? 'true' : 'false' %>">
+                                <%= a.isFeatured ? 'Unfeature' : 'Feature' %>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" data-action="delete" data-id="<%= a.id %>" data-title="<%= a.title %>">Delete</button>
+                        </div>
+                    </li>
+                <% }) %>
+            </ul>
+        <% } else { %>
+            <p class="announcement-empty">No published announcements yet.</p>
+        <% } %>
+    </section>
+
+    <% if (archived && archived.length > 0) { %>
+        <section aria-labelledby="archived-announcements-heading">
+            <details>
+                <summary id="archived-announcements-heading">Archive (<%= archived.length %>)</summary>
+                <ul class="announcement-admin-list" role="list">
+                    <% archived.forEach((a) => { %>
+                        <li class="announcement-admin-item" data-id="<%= a.id %>">
+                            <div class="announcement-admin-item__main">
+                                <h3 class="announcement-admin-item__title"><%= a.title %></h3>
+                                <p class="announcement-admin-item__meta">
+                                    Archived
+                                    <% if (a.deleted_at) { %>
+                                        <time datetime="<%= new Date(a.deleted_at).toISOString() %>"><%= new Date(a.deleted_at).toLocaleDateString() %></time>
+                                    <% } %>
+                                </p>
+                            </div>
+                            <div class="announcement-admin-item__actions">
+                                <button type="button" class="btn btn-sm btn-outline-primary" data-action="restore" data-id="<%= a.id %>">Restore</button>
+                            </div>
+                        </li>
+                    <% }) %>
+                </ul>
+            </details>
+        </section>
+    <% } %>
+</div>
+
+<script src="/js/admin-announcements.js" defer></script>

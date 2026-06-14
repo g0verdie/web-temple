@@ -244,8 +244,9 @@ describe('Story 2.6: Rabbi Onboarding Tour - Full Integration', () => {
                 .set('Cookie', `auth_token=${loginToken}`);
 
             expect(res.status).toBe(200);
-            // Verify our placeholder buttons use anchor tags which are keyboard-focusable
-            expect(res.text).toContain('<a href="javascript:void(0)" id="tour-announcements"');
+            // The announcements tool is a real, keyboard-focusable anchor (Epic 5 wired
+            // the placeholder to /admin/announcements).
+            expect(res.text).toContain('<a href="/admin/announcements" id="tour-announcements"');
         });
     });
 
