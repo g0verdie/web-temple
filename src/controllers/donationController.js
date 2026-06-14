@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const validator = require('validator');
 const logger = require('../utils/logger');
 const DonationService = require('../services/DonationService');
 const { getProvider } = require('../services/payments');
@@ -30,6 +31,15 @@ exports.startCheckout = async (req, res) => {
         const donationType = body.donation_type === 'recurring' ? 'recurring' : 'one-time';
         const isAnonymous = body.is_anonymous === 'on' || body.is_anonymous === 'true' || body.is_anonymous === true;
         const donorEmail = isAnonymous ? null : (str(body.donor_email).trim() || null);
+
+        // A non-anonymous donation must carry a valid email (receipt destination + correct
+        // donor counting); otherwise the donor would be miscounted as anonymous.
+        if (!isAnonymous && (!donorEmail || !validator.isEmail(donorEmail))) {
+            return res.status(400).render('error', {
+                title: '400 - Invalid Donation',
+                message: 'A valid email is required for a non-anonymous donation, or choose to give anonymously.'
+            });
+        }
 
         const checkoutToken = crypto.randomBytes(16).toString('hex');
         let pending;
@@ -117,7 +127,7 @@ exports.completeCheckout = async (req, res) => {
             const failKey = `donation:fail:${id}`;
             const count = (Number(await CacheService.get(failKey)) || 0) + 1;
             await CacheService.set(failKey, count, 3600);
-            if (count >= MAX_FAILURES_BEFORE_ALERT) {
+            if (count === MAX_FAILURES_BEFORE_ALERT) { // fire exactly once at the threshold
                 const adminEmail = process.env.ADMIN_EMAIL || process.env.CONTACT_EMAIL;
                 if (adminEmail) {
                     await enqueueEmail({
@@ -168,7 +178,8 @@ const sendReceiptAndAlerts = async (finalized) => {
             to: finalized.donorEmail,
             template: 'receipt',
             data: { amount: amountUsd, receiptId },
-            attachments: [{ filename: 'tax-receipt.pdf', content: pdf }]
+            // base64 so the Buffer survives bull's JSON serialization of the job (nodemailer decodes it).
+            attachments: [{ filename: 'tax-receipt.pdf', content: pdf.toString('base64'), encoding: 'base64' }]
         });
         logAudit({ action: AUDIT_ACTIONS.TAX_RECEIPT_SENT, entity_type: 'donation', entity_id: finalized.id, description: `Receipt sent for donation ${finalized.id}` })
             .catch((err) => logger.error('Audit log error:', err));

@@ -5,7 +5,8 @@
         <div class="metric"><span class="metric-label">All-time</span><span class="metric-value">$<%= (metrics.totalAllTimeCents / 100).toFixed(2) %></span></div>
         <div class="metric"><span class="metric-label">Year to date</span><span class="metric-value">$<%= (metrics.totalYtdCents / 100).toFixed(2) %></span></div>
         <div class="metric"><span class="metric-label">Month to date</span><span class="metric-value">$<%= (metrics.totalMtdCents / 100).toFixed(2) %></span></div>
-        <div class="metric"><span class="metric-label">Unique donors</span><span class="metric-value"><%= metrics.donorCount %></span></div>
+        <div class="metric"><span class="metric-label">Identified donors</span><span class="metric-value"><%= metrics.identifiedDonorCount %></span></div>
+        <div class="metric"><span class="metric-label">Anonymous gifts</span><span class="metric-value"><%= metrics.anonymousGiftCount %></span></div>
         <div class="metric"><span class="metric-label">Recurring donors</span><span class="metric-value"><%= metrics.recurringDonorCount %></span></div>
         <div class="metric"><span class="metric-label">Monthly recurring</span><span class="metric-value">$<%= (metrics.monthlyRecurringRevenueCents / 100).toFixed(2) %></span></div>
     </div>

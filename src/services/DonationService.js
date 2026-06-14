@@ -140,16 +140,20 @@ const recordFailure = async ({ amountCents, donationType = 'one-time', isAnonymo
 const getDashboardMetrics = async () => {
     const { rows } = await db.query(
         `SELECT encrypted_amount_cents, encrypted_donor_email, donation_type, is_anonymous, created_at
-         FROM donations WHERE status = 'completed'`
+         FROM donations WHERE status = 'completed' ORDER BY created_at ASC`
     );
     const now = new Date();
-    const startOfMonth = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
-    const startOfYear = Date.UTC(now.getUTCFullYear(), 0, 1);
+    // Boundaries in the same (local) zone node-pg parses the naive created_at into,
+    // so a boundary donation isn't mis-bucketed in non-UTC deployments.
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const startOfYear = new Date(now.getFullYear(), 0, 1).getTime();
 
-    let allTime = 0, ytd = 0, mtd = 0, anonymousDonorCount = 0;
+    let allTime = 0, ytd = 0, mtd = 0;
+    let anonymousGiftCount = 0;
     const identifiedDonors = new Set();
-    const recurringByDonor = new Map(); // donor key → latest recurring amount (dedupe per donor)
-    let anonymousRecurring = 0;
+    const recurringByDonor = new Map(); // identified donor → recurring amount (ORDER BY makes the last write newest)
+    let anonymousRecurringCount = 0;
+    let anonymousRecurringCents = 0;
 
     for (const r of rows) {
         const amt = Number(safeDecrypt(r.encrypted_amount_cents)) || 0;
@@ -158,23 +162,26 @@ const getDashboardMetrics = async () => {
         if (created >= startOfYear) ytd += amt;
         if (created >= startOfMonth) mtd += amt;
 
+        // Unique-donor count is identified donors only; anonymous gifts can't be deduped,
+        // so they're reported separately rather than inflating the donor count.
         const email = r.is_anonymous ? null : safeDecrypt(r.encrypted_donor_email);
         if (email) identifiedDonors.add(email.toLowerCase());
-        else anonymousDonorCount += 1;
+        else anonymousGiftCount += 1;
 
         if (r.donation_type === 'recurring') {
-            if (email) recurringByDonor.set(email.toLowerCase(), amt); // latest per donor
-            else anonymousRecurring += amt;
+            if (email) recurringByDonor.set(email.toLowerCase(), amt);
+            else { anonymousRecurringCount += 1; anonymousRecurringCents += amt; }
         }
     }
 
-    const mrr = Array.from(recurringByDonor.values()).reduce((s, v) => s + v, 0) + anonymousRecurring;
+    const mrr = Array.from(recurringByDonor.values()).reduce((s, v) => s + v, 0) + anonymousRecurringCents;
     return {
         totalAllTimeCents: allTime,
         totalYtdCents: ytd,
         totalMtdCents: mtd,
-        donorCount: identifiedDonors.size + anonymousDonorCount,
-        recurringDonorCount: recurringByDonor.size + (anonymousRecurring > 0 ? 1 : 0),
+        identifiedDonorCount: identifiedDonors.size,
+        anonymousGiftCount,
+        recurringDonorCount: recurringByDonor.size + anonymousRecurringCount,
         monthlyRecurringRevenueCents: mrr
     };
 };
@@ -222,7 +229,12 @@ const listDonations = async ({ status = 'completed', donationType, isAnonymous, 
 /** CSV for accounting export. */
 const toCsv = (donations) => {
     const header = 'id,date,amount_usd,donor,type,recurring_frequency,status';
-    const escape = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+    const escape = (v) => {
+        let s = String(v == null ? '' : v);
+        // Neutralize spreadsheet formula injection (e.g. a donor email like "=HYPERLINK(...)").
+        if (/^[=+\-@]/.test(s)) s = `'${s}`;
+        return `"${s.replace(/"/g, '""')}"`;
+    };
     const lines = donations.map((d) => [
         d.id,
         new Date(d.createdAt).toISOString(),

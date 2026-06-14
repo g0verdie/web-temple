@@ -31,7 +31,7 @@ describe('Admin donation dashboard', () => {
         });
         DonationService.getDashboardMetrics.mockResolvedValue({
             totalAllTimeCents: 54000, totalYtdCents: 54000, totalMtdCents: 3600,
-            donorCount: 3, recurringDonorCount: 1, monthlyRecurringRevenueCents: 3600
+            identifiedDonorCount: 3, anonymousGiftCount: 1, recurringDonorCount: 1, monthlyRecurringRevenueCents: 3600
         });
         DonationService.listDonations.mockResolvedValue({
             donations: [{ id: 'd1', amountCents: 3600, donor: 'Anonymous', donationType: 'one-time', recurringFrequency: null, createdAt: new Date('2026-06-14') }],

@@ -27,7 +27,7 @@ describe('Donation dashboard accessibility (WCAG AA)', () => {
     afterEach(() => jest.clearAllMocks());
     beforeEach(() => {
         db.query.mockResolvedValue({ rows: [{ id: 'treasurer-1', token_version: 1, role: 'treasurer', email: 't@x.com' }] });
-        DonationService.getDashboardMetrics.mockResolvedValue({ totalAllTimeCents: 54000, totalYtdCents: 54000, totalMtdCents: 3600, donorCount: 3, recurringDonorCount: 1, monthlyRecurringRevenueCents: 3600 });
+        DonationService.getDashboardMetrics.mockResolvedValue({ totalAllTimeCents: 54000, totalYtdCents: 54000, totalMtdCents: 3600, identifiedDonorCount: 3, anonymousGiftCount: 1, recurringDonorCount: 1, monthlyRecurringRevenueCents: 3600 });
         DonationService.listDonations.mockResolvedValue({ donations: [{ id: 'd1', amountCents: 3600, donor: 'Anonymous', donationType: 'one-time', recurringFrequency: null, createdAt: new Date('2026-06-14') }], totalCount: 1, totalPages: 1, currentPage: 1 });
     });
 

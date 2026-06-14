@@ -86,7 +86,9 @@ describe('DonationService', () => {
             ] });
             const m = await svc.getDashboardMetrics();
             expect(m.totalAllTimeCents).toBe(1800 + 3600 + 5000);
-            expect(m.donorCount).toBe(2); // a@b.com (deduped) + 1 anonymous
+            expect(m.identifiedDonorCount).toBe(1); // a@b.com deduped
+            expect(m.anonymousGiftCount).toBe(1);   // anonymous gift counted separately, not as a "donor"
+            expect(m.recurringDonorCount).toBe(1);
             expect(m.monthlyRecurringRevenueCents).toBe(3600);
         });
     });
