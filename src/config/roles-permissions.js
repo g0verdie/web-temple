@@ -49,7 +49,11 @@ const Permissions = Object.freeze({
     MANAGE_STREAMING: 'manage_streaming',
 
     // Live chat moderation permission for live streams
-    MODERATE_CHAT: 'moderate_chat'
+    MODERATE_CHAT: 'moderate_chat',
+
+    // Member directory admin view + moderation — a dedicated permission so it can be
+    // delegated without granting broad admin (see member-directory plan KTD7).
+    MANAGE_DIRECTORY: 'manage_directory'
 });
 
 // ============================================================================
@@ -65,7 +69,8 @@ const rolePermissionMap = {
         Permissions.MANAGE_CONTENT,
         Permissions.VIEW_DONATIONS,
         Permissions.MANAGE_STREAMING,  // See Permissions block for rationale
-        Permissions.MODERATE_CHAT
+        Permissions.MODERATE_CHAT,
+        Permissions.MANAGE_DIRECTORY
     ],
     [Roles.RABBI]: [
         // FR26: Rabbi can post announcements, manage calendars, reply to messages, view donations
@@ -74,7 +79,8 @@ const rolePermissionMap = {
         Permissions.MANAGE_MESSAGES,
         Permissions.VIEW_DONATIONS,
         Permissions.MANAGE_STREAMING,  // See Permissions block for rationale
-        Permissions.MODERATE_CHAT
+        Permissions.MODERATE_CHAT,
+        Permissions.MANAGE_DIRECTORY
     ],
     [Roles.SOCIAL_CHAIR]: [
         // FR27: Social Chair (Phase 2) can post announcements and manage public calendar only
