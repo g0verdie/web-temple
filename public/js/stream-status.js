@@ -2,7 +2,7 @@
     'use strict';
 
     const ALLOWED_STATUSES = new Set(['live', 'upcoming', 'offline', 'error']);
-    const DEFAULT_FALLBACK_URL = 'https://www.facebook.com/TempleBnaiIsrael';
+    const DEFAULT_FALLBACK_URL = 'https://www.facebook.com/share/18jfSPTgMw/';
     const CLIENT_REFRESH_ERROR_STATE = {
         status: 'error',
         statusLabel: 'Stream Error',

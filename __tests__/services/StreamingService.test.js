@@ -79,7 +79,7 @@ describe('StreamingService', () => {
 
         expect(stream.status).toBe('error');
         expect(stream.statusLabel).toBe('Stream Error');
-        expect(stream.fallbackUrl).toBe('https://www.facebook.com/TempleBnaiIsrael');
+        expect(stream.fallbackUrl).toBe('https://www.facebook.com/share/18jfSPTgMw/');
     });
 
     it('accepts subdomains of facebook.com as valid providers', async () => {
@@ -135,7 +135,7 @@ describe('StreamingService', () => {
 
         expect(stream.status).toBe('error');
         expect(stream.statusLabel).toBe('Stream Error');
-        expect(stream.fallbackUrl).toBe('https://www.facebook.com/TempleBnaiIsrael'); // Assume default fallback URL
+        expect(stream.fallbackUrl).toBe('https://www.facebook.com/share/18jfSPTgMw/'); // Assume default fallback URL
         expect(stream.message).toBe('The streaming provider is currently unavailable. Please watch directly on Facebook.');
     });
 });

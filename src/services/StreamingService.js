@@ -6,7 +6,7 @@ const logger = require('../utils/logger');
 const CACHE_KEY = 'stream:public-embed';
 const CACHE_TTL_SECONDS = 30;
 const DEFAULT_TITLE = "Temple B'nai Israel Live Service";
-const DEFAULT_FALLBACK_URL = "https://www.facebook.com/TempleBnaiIsrael";
+const DEFAULT_FALLBACK_URL = "https://www.facebook.com/share/18jfSPTgMw/";
 
 const parseBoolean = (value) => typeof value === 'string' && value.toLowerCase() === 'true';
 

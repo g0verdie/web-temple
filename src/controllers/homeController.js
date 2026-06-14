@@ -51,7 +51,7 @@ exports.getHomepage = async (req, res) => {
   try {
     const defaultErrorState = {
       status: 'error',
-      fallbackUrl: 'https://www.facebook.com/TempleBnaiIsrael',
+      fallbackUrl: 'https://www.facebook.com/share/18jfSPTgMw/',
       message: 'The streaming provider is currently unavailable. Please watch directly on Facebook.'
     };
 
