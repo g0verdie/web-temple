@@ -1,4 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Onboarding-complete flag is carried on a data-* attribute (CSP-safe; replaces
+    // the former inline <script> that set window.USER_ONBOARDING_COMPLETE).
+    const onboardingFlagEl = document.getElementById('replay-tour-btn');
+    window.USER_ONBOARDING_COMPLETE = onboardingFlagEl?.dataset.onboardingComplete === 'true';
+
     if (!window.driver) {
         console.warn('driver.js library not loaded - onboarding tour unavailable');
         // Gracefully degrade: notify users but don't break the page

@@ -274,7 +274,7 @@
                 <div class="card">
                     <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Rabbi Tools</h5>
-                        <button id="replay-tour-btn" class="btn btn-sm btn-light">Replay Tour</button>
+                        <button id="replay-tour-btn" class="btn btn-sm btn-light" data-onboarding-complete="<%= user.onboarding_complete || false %>">Replay Tour</button>
                     </div>
                     <div class="card-body">
                         <a href="/admin/announcements" id="tour-announcements" class="btn btn-primary me-2 mb-2">Post Announcement</a>
@@ -282,16 +282,9 @@
                         <span id="tour-messages" class="btn btn-secondary disabled me-2 mb-2" aria-disabled="true" title="Message inbox is coming soon">Message Inbox (coming soon)</span>
                     </div>
                 </div>
-                <!-- Include driver.js for the onboarding tour -->
-                <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"
-                    integrity="sha384-yPK823YWGKpXfBT8wLqUXmrB5ejcI7sgGBIary/01UavNc1bD92AOUBCBzjXQS/s"
-                    crossorigin="anonymous"></script>
-                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"
-                    integrity="sha384-bovbcpDBo0pTIhd7ws6ebPh1PG31ubAHcX2pv8Tcu5EtFHNl5FBciYFtS/e2SN66"
-                    crossorigin="anonymous" />
-                <script>
-                    window.USER_ONBOARDING_COMPLETE = <%= user.onboarding_complete || false %>;
-                </script>
+                <!-- driver.js for the onboarding tour — vendored, served from 'self' (CSP-safe) -->
+                <link rel="stylesheet" href="/vendor/driver.css">
+                <script src="/vendor/driver.js"></script>
                 <script src="/js/adminTour.js"></script>
             </div>
             <% } %>
