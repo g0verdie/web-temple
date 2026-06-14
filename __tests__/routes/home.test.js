@@ -116,7 +116,7 @@ describe('Homepage Route Integration Tests', () => {
     it('should render error state correctly', async () => {
       StreamingService.getPublicEmbedMetadata.mockResolvedValue({
         status: 'error',
-        fallbackUrl: 'https://www.facebook.com/TempleBnaiIsrael',
+        fallbackUrl: 'https://www.facebook.com/share/18jfSPTgMw/',
         message: 'The streaming provider is currently unavailable. Please watch directly on Facebook.'
       });
 
