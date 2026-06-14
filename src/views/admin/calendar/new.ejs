@@ -1,0 +1,34 @@
+<div class="calendar-admin-container">
+  <div class="calendar-admin-header">
+    <h2>New Event</h2>
+    <a href="/admin/calendar" class="btn btn-secondary">&larr; Back to Calendar</a>
+  </div>
+
+  <% if (typeof errors !== 'undefined' && errors && errors.general) { %>
+    <div class="alert alert-danger" role="alert"><%= errors.general %></div>
+  <% } %>
+
+  <div class="calendar-form-layout">
+    <div class="card">
+      <form action="/admin/calendar" method="POST" class="calendar-form" id="calendar-event-form" data-autosave-url="">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <%- include('_form', { data: typeof data !== 'undefined' ? data : {} }) %>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Create Event</button>
+          <a href="/admin/calendar" class="btn btn-secondary">Cancel</a>
+        </div>
+        <p class="autosave-status" id="autosave-status" role="status" aria-live="polite"></p>
+      </form>
+    </div>
+
+    <aside class="card calendar-preview" aria-label="Event preview">
+      <h3 class="card-title">Preview</h3>
+      <div class="event-preview" id="event-preview">
+        <h4 class="event-title" id="preview-title">Your event title</h4>
+        <p class="event-description" id="preview-description">Your description will appear here.</p>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script src="/js/calendar-admin.js"></script>

@@ -1,0 +1,75 @@
+<%
+  // Format a Date or ISO/datetime-local string into the value="" form for
+  // <input type="datetime-local"> (YYYY-MM-DDTHH:MM in UTC). Tolerates missing input.
+  const toLocalInput = (value) => {
+    if (!value) return '';
+    const d = value instanceof Date ? value : new Date(value);
+    if (isNaN(d.getTime())) return typeof value === 'string' ? value : '';
+    return d.toISOString().slice(0, 16);
+  };
+  const startsValue = toLocalInput(data.starts_at || data.date);
+  const endsValue = toLocalInput(data.ends_at || data.endsAt);
+  const visibilityValue = data.visibility || 'public';
+  const typeValue = data.event_type || data.type || 'event';
+%>
+
+  <div class="form-group">
+    <label for="title">Title *</label>
+    <input type="text" id="title" name="title" class="form-control"
+      value="<%= data.title || '' %>" required aria-required="true" aria-describedby="title-help"
+      data-preview-source="title">
+    <span class="help-text" id="title-help">A short, descriptive event name.</span>
+  </div>
+
+  <div class="form-group">
+    <label for="starts_at">Start Date &amp; Time *</label>
+    <input type="datetime-local" id="starts_at" name="starts_at" class="form-control"
+      value="<%= startsValue %>" required aria-required="true" aria-describedby="starts-help">
+    <span class="help-text" id="starts-help">When the event begins.</span>
+  </div>
+
+  <div class="form-group">
+    <label for="ends_at">End Date &amp; Time (optional)</label>
+    <input type="datetime-local" id="ends_at" name="ends_at" class="form-control"
+      value="<%= endsValue %>" aria-describedby="ends-help">
+    <span class="help-text" id="ends-help">Leave blank to default to one hour after the start.</span>
+  </div>
+
+  <div class="form-group">
+    <label for="visibility">Visibility *</label>
+    <select id="visibility" name="visibility" class="form-control" aria-describedby="visibility-help">
+      <option value="public" <%= visibilityValue === 'public' ? 'selected' : '' %>>Public (everyone)</option>
+      <option value="members" <%= visibilityValue === 'members' ? 'selected' : '' %>>Members only (logged-in)</option>
+    </select>
+    <span class="help-text" id="visibility-help">Members-only events are hidden from the public calendar.</span>
+  </div>
+
+  <div class="form-group">
+    <label for="event_type">Event Type *</label>
+    <select id="event_type" name="event_type" class="form-control" aria-describedby="type-help">
+      <option value="event" <%= typeValue === 'event' ? 'selected' : '' %>>Event</option>
+      <option value="service" <%= typeValue === 'service' ? 'selected' : '' %>>Service</option>
+    </select>
+    <span class="help-text" id="type-help">Services drive the homepage "Next Service" countdown.</span>
+  </div>
+
+  <div class="form-group">
+    <label for="location">Location (optional)</label>
+    <input type="text" id="location" name="location" class="form-control"
+      value="<%= data.location || '' %>" aria-describedby="location-help">
+    <span class="help-text" id="location-help">Physical location, e.g. Main Sanctuary.</span>
+  </div>
+
+  <div class="form-group">
+    <label for="zoom_url">Zoom / Meeting Link (optional)</label>
+    <input type="url" id="zoom_url" name="zoom_url" class="form-control"
+      value="<%= data.zoom_url || data.zoomUrl || '' %>" aria-describedby="zoom-help">
+    <span class="help-text" id="zoom-help">A meeting link for online attendance.</span>
+  </div>
+
+  <div class="form-group">
+    <label for="description">Description (optional)</label>
+    <textarea id="description" name="description" class="form-control" rows="4"
+      aria-describedby="description-help" data-preview-source="description"><%= data.description || '' %></textarea>
+    <span class="help-text" id="description-help">Details shown to members on the calendar.</span>
+  </div>

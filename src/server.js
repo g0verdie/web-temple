@@ -8,6 +8,7 @@ const logger = require('./utils/logger');
 const metricsService = require('./services/metricsService');
 const requestIdMiddleware = require('./middleware/requestIdMiddleware');
 const { startEmailQueueWorker } = require('./workers/emailQueueWorker');
+const { startReminderWorker } = require('./workers/reminderWorker');
 
 const cookieParser = require('cookie-parser');
 const csurf = require('csurf');
@@ -28,6 +29,10 @@ if (process.env.NODE_ENV !== 'test') {
 
 if (process.env.NODE_ENV !== 'test' && process.env.EMAIL_WORKER_ENABLED !== 'false') {
   startEmailQueueWorker();
+}
+
+if (process.env.NODE_ENV !== 'test' && process.env.REMINDER_WORKER_ENABLED !== 'false') {
+  startReminderWorker();
 }
 
 // Request ID middleware - must be first
@@ -173,6 +178,7 @@ const contactRoutes = require('./routes/contact');
 const adminPagesRoutes = require('./routes/admin/pages');
 const adminRecordingsRoutes = require('./routes/admin/recordings');
 const adminStreamingRoutes = require('./routes/admin/streaming');
+const adminCalendarRoutes = require('./routes/admin/calendar');
 const adminDashboardRoutes = require('./routes/admin/dashboard');
 const adminDirectoryRoutes = require('./routes/admin/directory');
 const adminDonationRoutes = require('./routes/admin/donations');
@@ -180,17 +186,20 @@ const adminAnnouncementsRoutes = require('./routes/admin/announcements');
 const pagesRoutes = require('./routes/pages');
 const apiRoutes = require('./routes/api');
 const recordingsRoutes = require('./routes/recordings');
+const calendarRoutes = require('./routes/calendar');
 const directoryRoutes = require('./routes/directory');
 const donationRoutes = require('./routes/donations');
 
 app.use('/', homeRoutes);
 app.use('/about', aboutRoutes);
 app.use('/contact', contactRoutes);
+app.use('/calendar', calendarRoutes);
 app.use('/', pagesRoutes);
 app.use('/admin', adminDashboardRoutes);
 app.use('/admin/pages', adminPagesRoutes);
 app.use('/admin/recordings', adminRecordingsRoutes);
 app.use('/admin/streaming', adminStreamingRoutes);
+app.use('/admin/calendar', adminCalendarRoutes);
 app.use('/admin/directory', adminDirectoryRoutes);
 app.use('/admin/donations', adminDonationRoutes);
 app.use('/admin/announcements', adminAnnouncementsRoutes);

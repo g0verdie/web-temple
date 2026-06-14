@@ -1,0 +1,210 @@
+/* Calendar feature styles (admin management + public/members page). */
+
+.calendar-admin-container,
+.calendar-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+.calendar-admin-header,
+.calendar-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.calendar-admin-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.card-title {
+  margin-top: 0;
+}
+
+/* Tables */
+.table-responsive {
+  overflow-x: auto;
+}
+
+.calendar-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.calendar-table th,
+.calendar-table td {
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #ededed;
+  vertical-align: top;
+}
+
+.calendar-table th {
+  font-weight: 600;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.action-buttons form {
+  display: inline;
+  margin: 0;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  background: #eef;
+  color: #334;
+}
+
+.badge-public { background: #e6f4ea; color: #1e7e34; }
+.badge-members { background: #fff3cd; color: #856404; }
+
+/* Forms */
+.calendar-form-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.form-group {
+  margin-bottom: 1.1rem;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.help-text {
+  display: block;
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.autosave-status {
+  font-size: 0.85rem;
+  color: #666;
+  min-height: 1.2em;
+}
+
+.event-preview {
+  position: sticky;
+  top: 1rem;
+}
+
+/* Public calendar */
+.calendar-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.calendar-current-month {
+  font-weight: 600;
+}
+
+.calendar-members-prompt {
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.calendar-events-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.event-card {
+  background: #fff;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+}
+
+.event-card--past {
+  opacity: 0.85;
+}
+
+.event-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.event-card .event-title {
+  margin: 0 0 0.25rem;
+}
+
+.event-date {
+  color: #555;
+  margin: 0.25rem 0;
+}
+
+.no-events {
+  color: #666;
+}
+
+/* Responsive: stack the form/preview and shrink the header on narrow screens */
+@media (max-width: 768px) {
+  .calendar-form-layout {
+    grid-template-columns: 1fr;
+  }
+  .event-preview {
+    position: static;
+  }
+}
+
+@media (max-width: 480px) {
+  .calendar-admin-header,
+  .calendar-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

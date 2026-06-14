@@ -1,0 +1,64 @@
+<div class="calendar-admin-container">
+  <div class="calendar-admin-header">
+    <h2>Calendar Management</h2>
+    <div class="calendar-admin-actions">
+      <a href="/admin/calendar/new" class="btn btn-primary">+ New Event</a>
+      <a href="/admin/calendar/archive" class="btn btn-secondary">View Archive</a>
+    </div>
+  </div>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="alert alert-success" role="alert"><%= success %></div>
+  <% } %>
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-danger" role="alert"><%= error %></div>
+  <% } %>
+
+  <div class="card">
+    <h3 class="card-title">Active Events</h3>
+
+    <% if (events && events.length > 0) { %>
+      <div class="table-responsive">
+        <table class="calendar-table">
+          <thead>
+            <tr>
+              <th scope="col">Title</th>
+              <th scope="col">When</th>
+              <th scope="col">Visibility</th>
+              <th scope="col">Type</th>
+              <th scope="col">Location</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% events.forEach(function(event) { %>
+              <tr>
+                <td><strong><%= event.title %></strong></td>
+                <td>
+                  <%= event.date ? new Date(event.date).toLocaleString('en-US', {
+                    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+                    hour: 'numeric', minute: '2-digit'
+                  }) : '' %>
+                </td>
+                <td><span class="badge badge-<%= event.visibility %>"><%= event.visibility %></span></td>
+                <td><%= event.type %></td>
+                <td><%= event.location || '—' %></td>
+                <td class="action-buttons">
+                  <a href="/admin/calendar/<%= event.id %>/edit" class="btn btn-secondary btn-sm btn-outline">Edit</a>
+                  <form action="/admin/calendar/<%= event.id %>/delete" method="POST" class="js-confirm-delete" data-confirm="Delete event &quot;<%= event.title %>&quot;? It can be restored from the archive.">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %>
+      <p class="no-events">No active events. Click "+ New Event" to create one.</p>
+    <% } %>
+  </div>
+</div>
+
+<script src="/js/calendar-admin.js"></script>

@@ -10,20 +10,41 @@ jest.mock('../../src/services/StreamingService', () => ({
     getScheduledStreams: jest.fn().mockResolvedValue([])
 }));
 
-// AnnouncementService is now Postgres-backed (Epic 5). Mock the DB layer so the
-// cache hit/miss behavior can be exercised without a real Postgres (CI has none).
-// EventService is in-memory and never touches db, so this mock is inert for it.
-jest.mock('../../src/config/db');
+// EventService is DB-backed (Epic 6) and AnnouncementService is Postgres-backed
+// (Epic 5); mock the DB so both exercise the cache without a real Postgres (CI has none).
+jest.mock('../../src/config/db', () => ({ query: jest.fn(), pool: { connect: jest.fn() } }));
+jest.mock('../../src/services/auditService', () => ({
+    log: jest.fn().mockResolvedValue(undefined),
+    logAudit: jest.fn().mockResolvedValue(undefined),
+    AUDIT_ACTIONS: {
+        CALENDAR_EVENT_CREATED: 'CALENDAR_EVENT_CREATED',
+        CALENDAR_EVENT_UPDATED: 'CALENDAR_EVENT_UPDATED',
+        CALENDAR_EVENT_DELETED: 'CALENDAR_EVENT_DELETED',
+        ANNOUNCEMENT_CREATED: 'ANNOUNCEMENT_CREATED',
+        ANNOUNCEMENT_UPDATED: 'ANNOUNCEMENT_UPDATED',
+        ANNOUNCEMENT_DELETED: 'ANNOUNCEMENT_DELETED',
+        ANNOUNCEMENT_FEATURED: 'ANNOUNCEMENT_FEATURED'
+    }
+}));
+jest.mock('../../src/services/emailQueueService', () => ({ enqueueEmail: jest.fn().mockResolvedValue({}) }));
+
+const eventRow = (overrides = {}) => ({
+    id: 1, title: 'Event', description: 'd', starts_at: new Date('2099-01-01T18:00:00Z'),
+    ends_at: null, visibility: 'public', event_type: 'event', location: 'Hall', zoom_url: null,
+    created_by: 'u1', reminder_sent_at: null, deleted_at: null, created_at: new Date(), updated_at: new Date(),
+    ...overrides
+});
 
 describe('Caching Integration', () => {
     beforeEach(async () => {
         // Clear cache and reset metrics before each test
         await CacheService.flush();
         CacheService.resetMetrics();
-        // Default DB stub so AnnouncementService reads resolve without real Postgres.
-        if (db.query && db.query.mockResolvedValue) {
-            db.query.mockResolvedValue({ rows: [] });
-        }
+        // Default: any SELECT returns one active event row (covers EventService reads
+        // + the before-state SELECTs create/update/delete perform). The AnnouncementService
+        // describe block overrides this in its own beforeEach.
+        db.query.mockReset();
+        db.query.mockResolvedValue({ rows: [eventRow()] });
     });
 
     afterEach(() => {
@@ -41,10 +62,15 @@ describe('Caching Integration', () => {
             expect(metrics1.misses).toBe(1);
             expect(metrics1.hits).toBe(0);
 
-            // Second call - should be cache hit
+            // Second call - should be cache hit. Compare the homepage-relevant
+            // contract (id/title/type/date); internal timestamps cross the JSON
+            // cache boundary as strings, which is not part of any view contract.
             const events2 = await EventService.getEvents();
-            expect(events2).toEqual(events1);
-            
+            const slim = (list) => list.map(e => ({
+                id: e.id, title: e.title, type: e.type, date: new Date(e.date).toISOString()
+            }));
+            expect(slim(events2)).toEqual(slim(events1));
+
             const metrics2 = CacheService.getMetrics();
             expect(metrics2.hits).toBe(1);
             expect(metrics2.misses).toBe(1);
