@@ -1,3 +1,22 @@
+// Format an event date/time for calendar emails. Tolerates Date or string input
+// and degrades gracefully when the value is missing or unparseable.
+const formatEventDateTime = (value) => {
+    if (!value) return '';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleString('en-US', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        hour: 'numeric', minute: '2-digit'
+    });
+};
+
+const formatEventTime = (value) => {
+    if (!value) return '';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });
+};
+
 const buildUnsubscribeLink = (token) => {
     const baseUrl = process.env.APP_BASE_URL || 'http://localhost:3000';
     const url = new URL('/unsubscribe', baseUrl);
@@ -83,6 +102,51 @@ If you did not request this change, you can ignore this email.`
                ${data.torahPortion ? `<p>Torah Portion: ${data.torahPortion}</p>` : ''}
                <p><a href="${data.archiveUrl || '#'}">View Recording</a></p>`,
         text: `Shalom${data.memberName ? ` ${data.memberName}` : ''}!\n\nA new service recording is now available in our archive: ${data.title || 'Service Recording'}\n${data.serviceDate ? `Service Date: ${new Date(data.serviceDate).toDateString()}\n` : ''}${data.torahPortion ? `Torah Portion: ${data.torahPortion}\n` : ''}View Recording: ${data.archiveUrl || '#'}`
+    }),
+    'new-event': (data = {}) => ({
+        subject: `New Temple Event: ${data.title || 'Event'}`,
+        html: `<p>Shalom${data.memberName ? ` ${data.memberName}` : ''}!</p>
+               <p>A new event has been added to the temple calendar: <strong>${data.title || 'Event'}</strong></p>
+               ${data.date ? `<p>When: ${formatEventDateTime(data.date)}</p>` : ''}
+               ${data.location ? `<p>Where: ${data.location}</p>` : ''}
+               ${data.zoomUrl ? `<p>Join online: <a href="${data.zoomUrl}">${data.zoomUrl}</a></p>` : ''}
+               ${data.description ? `<p>${data.description}</p>` : ''}
+               <p>An "Add to Calendar" file is attached.</p>
+               <p><a href="${data.calendarUrl || '#'}">View the calendar</a></p>`,
+        text: `Shalom${data.memberName ? ` ${data.memberName}` : ''}!\n\nA new event has been added to the temple calendar: ${data.title || 'Event'}\n${data.date ? `When: ${formatEventDateTime(data.date)}\n` : ''}${data.location ? `Where: ${data.location}\n` : ''}${data.zoomUrl ? `Join online: ${data.zoomUrl}\n` : ''}${data.description ? `\n${data.description}\n` : ''}\nAn "Add to Calendar" file is attached.\nView the calendar: ${data.calendarUrl || '#'}`
+    }),
+    'event-updated': (data = {}) => ({
+        subject: `Event Updated: ${data.title || 'Event'}`,
+        html: `<p>Shalom${data.memberName ? ` ${data.memberName}` : ''}!</p>
+               <p>An event on the temple calendar has been updated: <strong>${data.title || 'Event'}</strong></p>
+               ${data.date ? `<p>When: ${formatEventDateTime(data.date)}</p>` : ''}
+               ${data.location ? `<p>Where: ${data.location}</p>` : ''}
+               ${data.zoomUrl ? `<p>Join online: <a href="${data.zoomUrl}">${data.zoomUrl}</a></p>` : ''}
+               ${data.description ? `<p>${data.description}</p>` : ''}
+               <p>An updated "Add to Calendar" file is attached.</p>
+               <p><a href="${data.calendarUrl || '#'}">View the calendar</a></p>`,
+        text: `Shalom${data.memberName ? ` ${data.memberName}` : ''}!\n\nAn event on the temple calendar has been updated: ${data.title || 'Event'}\n${data.date ? `When: ${formatEventDateTime(data.date)}\n` : ''}${data.location ? `Where: ${data.location}\n` : ''}${data.zoomUrl ? `Join online: ${data.zoomUrl}\n` : ''}${data.description ? `\n${data.description}\n` : ''}\nAn updated "Add to Calendar" file is attached.\nView the calendar: ${data.calendarUrl || '#'}`
+    }),
+    'event-canceled': (data = {}) => ({
+        subject: `Event Canceled: ${data.title || 'Event'}`,
+        html: `<p>Shalom${data.memberName ? ` ${data.memberName}` : ''}.</p>
+               <p>The following event has been canceled: <strong>${data.title || 'Event'}</strong></p>
+               ${data.date ? `<p>Originally scheduled for: ${formatEventDateTime(data.date)}</p>` : ''}
+               <p>We apologize for any inconvenience.</p>
+               <p><a href="${data.calendarUrl || '#'}">View the calendar</a></p>`,
+        text: `Shalom${data.memberName ? ` ${data.memberName}` : ''}.\n\nThe following event has been canceled: ${data.title || 'Event'}\n${data.date ? `Originally scheduled for: ${formatEventDateTime(data.date)}\n` : ''}\nWe apologize for any inconvenience.\nView the calendar: ${data.calendarUrl || '#'}`
+    }),
+    'event-reminder': (data = {}) => ({
+        subject: `Reminder: ${data.title || 'Event'} tomorrow at ${formatEventTime(data.date)}`,
+        html: `<p>Shalom${data.memberName ? ` ${data.memberName}` : ''}!</p>
+               <p>This event starts in 24 hours: <strong>${data.title || 'Event'}</strong></p>
+               ${data.date ? `<p>When: ${formatEventDateTime(data.date)}</p>` : ''}
+               ${data.location ? `<p>Where: ${data.location}</p>` : ''}
+               ${data.zoomUrl ? `<p>Join online: <a href="${data.zoomUrl}">${data.zoomUrl}</a></p>` : ''}
+               ${data.description ? `<p>${data.description}</p>` : ''}
+               <p>An "Add to Calendar" file is attached.</p>
+               <p><a href="${data.calendarUrl || '#'}">View the calendar</a></p>`,
+        text: `Shalom${data.memberName ? ` ${data.memberName}` : ''}!\n\nThis event starts in 24 hours: ${data.title || 'Event'}\n${data.date ? `When: ${formatEventDateTime(data.date)}\n` : ''}${data.location ? `Where: ${data.location}\n` : ''}${data.zoomUrl ? `Join online: ${data.zoomUrl}\n` : ''}${data.description ? `\n${data.description}\n` : ''}\nAn "Add to Calendar" file is attached.\nView the calendar: ${data.calendarUrl || '#'}`
     })
 
 };
