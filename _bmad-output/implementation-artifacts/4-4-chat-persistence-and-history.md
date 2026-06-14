@@ -1,6 +1,6 @@
 # Story 4.4: Chat Persistence and History
 
-Status: review
+Status: done
 
 <!-- Retrospective story. -->
 

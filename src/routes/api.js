@@ -47,9 +47,10 @@ const emailChangeLimiter = rateLimit({
 });
 
 // Rate limiter for the chat REST fallback (10 posts per minute per IP).
-// The WebSocket path is gated by the 50-conn cap; REST has no such cap so
-// per-IP throttling is the abuse gate. Skipped in tests to keep the
-// existing integration suite deterministic.
+// This is the per-IP abuse gate for the REST path. The WebSocket post path has
+// its own per-connection flood guard (MAX_POSTS_PER_WINDOW in chatSocketServer);
+// the 50-conn cap alone does NOT bound per-socket write rate. Skipped in tests
+// to keep the existing integration suite deterministic.
 const chatPostLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 10,

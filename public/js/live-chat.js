@@ -10,8 +10,11 @@
 
     const streamId = parseInt(chatPanel.getAttribute('data-stream-id'), 10);
     const isLoggedIn = chatPanel.getAttribute('data-logged-in') === 'true';
+    const role = chatPanel.getAttribute('data-role') || 'guest';
+    const isModerator = ['admin', 'rabbi', 'social_chair'].includes(role);
 
     let socket = null;
+    let isChatPaused = false;
     let reconnectAttempts = 0;
     const maxReconnectAttempts = 3;
     const reconnectIntervals = [2000, 5000, 10000]; // 2s, 5s, 10s
@@ -85,6 +88,11 @@
                 <span>Screen Reader Announcements:</span>
                 <button class="a11y-toggle-btn" id="chat-a11y-toggle" aria-pressed="false">Active (Polite)</button>
             </div>
+            ${isModerator ? `
+            <div class="chat-mod-bar">
+                <span>Moderator:</span>
+                <button class="a11y-toggle-btn" id="chat-pause-btn" aria-pressed="false">Pause Chat</button>
+            </div>` : ''}
             <div class="slow-connection-banner" id="chat-slow-banner" style="display: none;">
                 Slow connection. Using polling fallback. 
                 <button class="a11y-toggle-btn" id="chat-reconnect-btn">Try Reconnect</button>
@@ -119,6 +127,10 @@
         document.getElementById('chat-message-form').addEventListener('submit', handleSendMessage);
         document.getElementById('chat-a11y-toggle').addEventListener('click', toggleA11yAnnouncements);
         document.getElementById('chat-reconnect-btn').addEventListener('click', manualReconnect);
+        const pauseBtn = document.getElementById('chat-pause-btn');
+        if (pauseBtn) {
+            pauseBtn.addEventListener('click', handlePauseToggle);
+        }
         document.getElementById('chat-message-input').addEventListener('input', (e) => {
             sessionStorage.setItem('chat_unsent_input', e.target.value);
         });
@@ -258,7 +270,19 @@
         }
     }
 
+    // Moderator-only: toggle the stream's chat pause state. The server rejects
+    // this for non-moderator roles, and broadcasts chat_paused back to every
+    // client (including us), which drives the UI update via handleChatPaused.
+    function handlePauseToggle() {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: 'pause_chat', paused: !isChatPaused }));
+        } else {
+            alert('Reconnect to the live chat to pause or resume it.');
+        }
+    }
+
     function handleChatPaused(isPaused) {
+        isChatPaused = isPaused;
         const input = document.getElementById('chat-message-input');
         const btn = document.getElementById('chat-send-btn');
         if (input && btn) {
@@ -271,6 +295,12 @@
                 btn.removeAttribute('disabled');
                 input.placeholder = 'Type a message...';
             }
+        }
+        // Keep the moderator's own toggle label/state in sync with the broadcast.
+        const pauseBtn = document.getElementById('chat-pause-btn');
+        if (pauseBtn) {
+            pauseBtn.textContent = isPaused ? 'Resume Chat' : 'Pause Chat';
+            pauseBtn.setAttribute('aria-pressed', isPaused ? 'true' : 'false');
         }
     }
 

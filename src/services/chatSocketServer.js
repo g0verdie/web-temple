@@ -12,8 +12,25 @@ const logger = require('../utils/logger');
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'test' ? 'test-jwt-secret' : null);
 const MAX_CONCURRENT_CONNECTIONS = 50;
 
+// Per-connection flood guard for post_message. The connection cap limits the
+// number of sockets, NOT the per-socket write rate, so without this one accepted
+// socket could insert unbounded rows into chat_messages (and the audit log).
+// Anti-flood, not human throttling: a lively chatter won't approach 20 posts /
+// 10s, but a flood loop will.
+const MAX_POSTS_PER_WINDOW = 20;
+const POST_WINDOW_MS = 10000;
+
+// How long a raw upgrade socket may sit half-open during the async auth/DB
+// window before we reclaim it.
+const UPGRADE_AUTH_TIMEOUT_MS = 10000;
+
 // Keep track of active WebSocket connections: streamId -> Set of ws clients
 const connections = {};
+
+// In-flight upgrade reservations: streamId -> count of sockets that have passed
+// the capacity check but are not yet in `connections` (the async auth/DB window).
+// Counted against the cap so concurrent upgrades cannot collectively exceed it.
+const reservedCounts = {};
 
 // Helper to parse cookies from header
 const parseCookies = (cookieHeader) => {
@@ -104,6 +121,20 @@ const initChatSocketServer = (server) => {
                 const message = JSON.parse(messageBuffer.toString());
 
                 if (message.type === 'post_message') {
+                    // Per-connection flood guard: a single socket can otherwise
+                    // flood chat_messages and the audit log (the 50-conn cap
+                    // limits socket count, not per-socket write rate).
+                    const nowTs = Date.now();
+                    wsClient._postTimes = (wsClient._postTimes || []).filter((t) => nowTs - t < POST_WINDOW_MS);
+                    if (wsClient._postTimes.length >= MAX_POSTS_PER_WINDOW) {
+                        wsClient.send(JSON.stringify({
+                            type: 'error',
+                            message: 'You are sending messages too quickly. Please slow down.'
+                        }));
+                        return;
+                    }
+                    wsClient._postTimes.push(nowTs);
+
                     const { text } = message;
                     const { createMessage } = require('./ChatService');
 
@@ -195,75 +226,125 @@ const initChatSocketServer = (server) => {
         const parsedUrl = url.parse(request.url, true);
         const pathname = parsedUrl.pathname;
 
-        if (pathname === '/ws/chat') {
-            const query = parsedUrl.query;
-            const streamId = parseInt(query.streamId, 10);
+        if (pathname !== '/ws/chat') {
+            // Drop unknown upgrade paths so half-open sockets don't accumulate.
+            socket.destroy();
+            return;
+        }
 
-            if (!streamId || isNaN(streamId)) {
+        const query = parsedUrl.query;
+        const streamId = parseInt(query.streamId, 10);
+
+        if (!streamId || isNaN(streamId)) {
+            socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
+            socket.destroy();
+            return;
+        }
+
+        // Capacity check counts live connections AND in-flight reservations.
+        // We reserve a slot synchronously below (before the async auth/DB
+        // window), so concurrent upgrades can't all read an under-cap count and
+        // then each add a socket — the TOCTOU that previously let the cap be
+        // exceeded by N simultaneous handshakes.
+        const activeCount = getActiveConnectionCount(streamId);
+        const reserved = reservedCounts[streamId] || 0;
+        if (activeCount + reserved >= MAX_CONCURRENT_CONNECTIONS) {
+            socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\n');
+            socket.destroy();
+            return;
+        }
+
+        // Authentication — all synchronous. There is no `await` between the
+        // capacity check above and the reservation below, so check-and-reserve
+        // is atomic on the single-threaded event loop.
+        let userId = null;
+        let role = 'guest';
+
+        const cookies = parseCookies(request.headers ? request.headers.cookie : null);
+        const token = cookies.auth_token || query.auth_token;
+
+        if (token && JWT_SECRET) {
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET);
+                userId = decoded.user_id;
+                role = decoded.role;
+            } catch (err) {
+                // Ignore token and treat as guest
+            }
+        }
+
+        if (!userId) {
+            const guestName = query.guestName;
+            if (!guestName || typeof guestName !== 'string' || guestName.trim() === '') {
+                socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+                socket.destroy();
+                return;
+            }
+            if (guestName.length > 50) {
                 socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
                 socket.destroy();
                 return;
             }
+        }
 
-            // Check connection limit
-            const activeCount = getActiveConnectionCount(streamId);
-            if (activeCount >= MAX_CONCURRENT_CONNECTIONS) {
-                socket.write('HTTP/1.1 503 Service Unavailable\r\n\r\n');
-                socket.destroy();
-                return;
+        // Reserve the slot before entering the async window, and arrange to
+        // release it on every exit path (successful upgrade, error, timeout).
+        reservedCounts[streamId] = (reservedCounts[streamId] || 0) + 1;
+        let released = false;
+        let authTimeout = null;
+        const releaseReservation = () => {
+            if (released) return;
+            released = true;
+            const n = (reservedCounts[streamId] || 1) - 1;
+            if (n <= 0) {
+                delete reservedCounts[streamId];
+            } else {
+                reservedCounts[streamId] = n;
             }
+        };
 
-            // Perform authentication
-            let userId = null;
-            let role = 'guest';
+        // A raw socket with no 'error' listener throws on a client RST; with no
+        // process-level uncaughtException handler that would crash the process.
+        // Attach a handler for the auth/DB window before we await anything.
+        const onSocketError = () => {
+            if (authTimeout) clearTimeout(authTimeout);
+            releaseReservation();
+            socket.destroy();
+        };
+        socket.on('error', onSocketError);
 
-            const cookies = parseCookies(request.headers ? request.headers.cookie : null);
-            const token = cookies.auth_token || query.auth_token;
+        // Reclaim sockets that never finish the handshake (e.g. a stalled DB
+        // lookup) so half-open sockets don't accumulate.
+        authTimeout = setTimeout(() => {
+            socket.removeListener('error', onSocketError);
+            releaseReservation();
+            socket.destroy();
+        }, UPGRADE_AUTH_TIMEOUT_MS);
 
-            if (token && JWT_SECRET) {
-                try {
-                    const decoded = jwt.verify(token, JWT_SECRET);
-                    userId = decoded.user_id;
-                    role = decoded.role;
-                } catch (err) {
-                    // Ignore token and treat as guest
-                }
-            }
-
-            if (!userId) {
-                const guestName = query.guestName;
-                if (!guestName || typeof guestName !== 'string' || guestName.trim() === '') {
-                    socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-                    socket.destroy();
-                    return;
-                }
-                if (guestName.length > 50) {
-                    socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
-                    socket.destroy();
-                    return;
-                }
-            }
-
-            resolveUserDisplayName(userId, query.guestName)
-                .then((displayName) => {
-                    wss.handleUpgrade(request, socket, head, (wsClient) => {
-                        wss.emit('connection', wsClient, request, {
-                            streamId,
-                            userId,
-                            displayName,
-                            role
-                        });
+        resolveUserDisplayName(userId, query.guestName)
+            .then((displayName) => {
+                clearTimeout(authTimeout);
+                wss.handleUpgrade(request, socket, head, (wsClient) => {
+                    socket.removeListener('error', onSocketError);
+                    releaseReservation();
+                    wss.emit('connection', wsClient, request, {
+                        streamId,
+                        userId,
+                        displayName,
+                        role
                     });
-                })
-                .catch((err) => {
-                    logger.error(`WS Upgrade resolve error: ${err.message}`);
+                });
+            })
+            .catch((err) => {
+                clearTimeout(authTimeout);
+                socket.removeListener('error', onSocketError);
+                releaseReservation();
+                logger.error(`WS Upgrade resolve error: ${err.message}`);
+                if (!socket.destroyed) {
                     socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
                     socket.destroy();
-                });
-        } else {
-            // Drop unknown upgrade paths so half-open sockets don't accumulate.
-            socket.destroy();
-        }
+                }
+            });
     });
 
     return wss;
@@ -317,6 +398,9 @@ const closeAllConnections = () => {
             }
         });
         delete connections[streamId];
+    });
+    Object.keys(reservedCounts).forEach((streamId) => {
+        delete reservedCounts[streamId];
     });
 };
 

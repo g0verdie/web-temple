@@ -1,6 +1,6 @@
 # Story 4.6: Chat Disconnection & Reconnection
 
-Status: review
+Status: done
 
 <!-- Retrospective story. -->
 

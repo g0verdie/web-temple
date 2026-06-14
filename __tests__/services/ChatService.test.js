@@ -10,7 +10,8 @@ describe('ChatService', () => {
     beforeAll(() => {
         auditService.AUDIT_ACTIONS = {
             CHAT_MESSAGE_APPROVED: 'CHAT_MESSAGE_APPROVED',
-            CHAT_MESSAGE_DELETED: 'CHAT_MESSAGE_DELETED'
+            CHAT_MESSAGE_DELETED: 'CHAT_MESSAGE_DELETED',
+            CHAT_MESSAGE_AUTO_FILTERED: 'CHAT_MESSAGE_AUTO_FILTERED'
         };
         ChatService = require('../../src/services/ChatService');
     });
@@ -107,6 +108,53 @@ describe('ChatService', () => {
                 [10, null, 'Spammer', 'Visit free-gifts.xyz to win!', 'deleted']
             );
             expect(result.status).toBe('deleted');
+        });
+
+        it('writes a CHAT_MESSAGE_AUTO_FILTERED audit entry when a message is auto-filtered as spam', async () => {
+            const mockMsg = { id: 7, stream_id: 10, display_name: 'Spammer', message_text: 'VISIT scam.xyz NOW', status: 'deleted' };
+            db.query.mockResolvedValueOnce({ rows: [mockMsg] });
+
+            await ChatService.createMessage({
+                streamId: 10,
+                userId: 'guest-uuid',
+                displayName: 'Spammer',
+                messageText: 'VISIT scam.xyz NOW'
+            });
+
+            expect(auditService.log).toHaveBeenCalledWith(expect.objectContaining({
+                user_id: 'guest-uuid',
+                action: 'CHAT_MESSAGE_AUTO_FILTERED',
+                entity_type: 'chat_message',
+                entity_id: '7',
+                description: expect.stringContaining('Auto-filtered as spam')
+            }));
+        });
+
+        it('does not write an audit entry for a clean (pending) message', async () => {
+            const mockMsg = { id: 8, stream_id: 10, display_name: 'David', message_text: 'Shalom everyone', status: 'pending' };
+            db.query.mockResolvedValueOnce({ rows: [mockMsg] });
+
+            await ChatService.createMessage({
+                streamId: 10,
+                displayName: 'David',
+                messageText: 'Shalom everyone'
+            });
+
+            expect(auditService.log).not.toHaveBeenCalled();
+        });
+
+        it('swallows an audit-write failure and still returns the auto-filtered message', async () => {
+            const mockMsg = { id: 9, stream_id: 10, display_name: 'Spammer', message_text: 'VISIT scam.xyz NOW', status: 'deleted' };
+            db.query.mockResolvedValueOnce({ rows: [mockMsg] });
+            auditService.log.mockRejectedValueOnce(new Error('audit down'));
+
+            const result = await ChatService.createMessage({
+                streamId: 10,
+                displayName: 'Spammer',
+                messageText: 'VISIT scam.xyz NOW'
+            });
+
+            expect(result).toEqual(mockMsg);
         });
     });
 
@@ -205,6 +253,15 @@ describe('ChatService', () => {
                 expect.stringContaining('FROM scheduled_streams'),
                 [new Date(serviceDate)]
             );
+            // Guard the prior review's TZ-drift fix: both sides must cast to
+            // ::timestamptz (not plain ::timestamp), the window must be ±6h, and
+            // the closest match must be selected by ABS(EXTRACT(EPOCH ...)).
+            const streamQuery = db.query.mock.calls[0][0];
+            expect(streamQuery).toContain('::timestamptz');
+            expect(streamQuery).not.toMatch(/\$1::timestamp\b(?!tz)/);
+            expect(streamQuery).toContain("INTERVAL '6 hours'");
+            expect(streamQuery).toMatch(/ORDER BY ABS\(EXTRACT\(EPOCH/);
+
             expect(db.query).toHaveBeenNthCalledWith(2,
                 expect.stringContaining("WHERE stream_id = $1 AND status = 'approved'"),
                 [42]

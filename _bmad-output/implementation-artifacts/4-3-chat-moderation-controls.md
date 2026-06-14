@@ -1,6 +1,6 @@
 # Story 4.3: Chat Moderation Controls
 
-Status: review
+Status: done
 
 <!-- Retrospective story. -->
 
@@ -66,3 +66,4 @@ so that I can keep the live chat safe and on-topic during services.
 
 - The "pause chat" feature ships as broadcast-only (no DB persistence of paused state). Latecomers won't see the paused state until the next pause packet — accepted tradeoff per MVP scope.
 - Social Chair role gets MODERATE_CHAT in this story; the role itself has no other powers yet (per the Epic 3.6 review decision to keep TREASURER additions narrowly scoped).
+- Epic 4 review (Opus 4.8, 2026-06-14): AC6 was unreachable end-to-end — the server `pause_chat` handler and client receiver existed but nothing could trigger a pause. Added a moderator-only Pause/Resume control to the chat panel (`public/js/live-chat.js`, gated on `data-role` now emitted by `home.ejs`) that sends `pause_chat` over the WS; client test in `__tests__/public/live-chat.test.js`. AC6 now MEET.

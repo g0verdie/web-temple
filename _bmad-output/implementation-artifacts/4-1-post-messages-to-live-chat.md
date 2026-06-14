@@ -1,6 +1,6 @@
 # Story 4.1: Post Messages to Live Chat
 
-Status: review
+Status: done
 
 <!-- Retrospective story: code authored prior to story drafting; AC verified against shipped implementation. -->
 

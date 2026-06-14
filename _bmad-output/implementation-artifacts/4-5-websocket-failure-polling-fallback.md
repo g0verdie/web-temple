@@ -1,6 +1,6 @@
 # Story 4.5: WebSocket Failure & Polling Fallback
 
-Status: review
+Status: done
 
 <!-- Retrospective story. -->
 

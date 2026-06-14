@@ -1,6 +1,6 @@
 # Story 4.2: Real-Time Chat Display with WebSocket
 
-Status: review
+Status: done
 
 <!-- Retrospective story. -->
 

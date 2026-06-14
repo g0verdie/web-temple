@@ -1,6 +1,6 @@
 # Story 4.7: Chat Capacity Management
 
-Status: review
+Status: done
 
 <!-- Retrospective story. -->
 
@@ -63,3 +63,4 @@ so that a viral moment or a malicious flood can't exhaust server resources durin
 
 - 50-conn cap exceeds the PRD's 20-concurrent MVP target with headroom for the Month 6 30-50 target without code change.
 - The 1000-conn growth scenario in the PRD requires the redirect-to-Facebook overflow behavior — punted to Phase 2 unless flagged otherwise.
+- Epic 4 review (Opus 4.8, 2026-06-14): fixed a TOCTOU race where the cap was read before the async auth/DB round-trip but the socket was added after, so concurrent handshakes could exceed 50. Now a per-stream reservation is taken synchronously at the capacity check (counted against the cap) and released on every exit path; `chatSocketServer.js`. Also hardened the raw upgrade socket with an `error`/timeout handler during the auth window (a client RST previously risked an unhandled exception). The over-cap redirect (NFR-Sc1, above) remains deferred.
