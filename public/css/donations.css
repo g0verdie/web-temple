@@ -97,3 +97,54 @@
         align-items: stretch;
     }
 }
+
+/* Admin donation dashboard */
+.admin-donations { max-width: 900px; }
+
+.donation-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+    margin: 1rem 0;
+}
+
+.metric {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.metric-label { color: #666; font-size: 0.85rem; }
+.metric-value { font-size: 1.25rem; font-weight: bold; }
+
+.donation-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin: 1rem 0;
+}
+
+.admin-donation-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-donation-table th,
+.admin-donation-table td {
+    text-align: left;
+    padding: 0.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+.donations-empty { color: #555; padding: 1rem 0; }
+
+.donations-pagination {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-top: 1rem;
+}
