@@ -10,6 +10,15 @@ jest.mock('../../src/services/auditService', () => ({
     AUDIT_ACTIONS: { TAX_RECEIPT_SENT: 'TAX_RECEIPT_SENT' }
 }));
 jest.mock('../../src/utils/logger', () => ({ error: jest.fn(), info: jest.fn(), warn: jest.fn() }));
+jest.mock('../../src/services/CacheService', () => {
+    const store = {};
+    return {
+        get: jest.fn(async (k) => (k in store ? store[k] : null)),
+        set: jest.fn(async (k, v) => { store[k] = v; }),
+        del: jest.fn(async () => {}),
+        invalidatePattern: jest.fn(async () => {})
+    };
+});
 
 const app = require('../../src/server');
 const DonationService = require('../../src/services/DonationService');
@@ -115,6 +124,29 @@ describe('Donation routes (public, mock provider)', () => {
         expect(res.text).toMatch(/Retry Payment/);
         expect(DonationService.recordFailure).toHaveBeenCalled();
         expect(enqueueEmail).not.toHaveBeenCalled();
+    });
+
+    test('alerts the admin after 3 failed attempts (server-side counter)', async () => {
+        process.env.ADMIN_EMAIL = 'admin@temple.org';
+        const failId = 'don-fail-3strike';
+        DonationService.getById.mockResolvedValue({ id: failId, status: 'pending', amountCents: 3600, isAnonymous: false, donationType: 'one-time', checkoutToken: TOKEN });
+        capture.mockResolvedValue({ status: 'failed', errorCode: 'MOCK_DECLINED' });
+        DonationService.recordFailure.mockResolvedValue({ id: 'f' });
+
+        const post = () => request(app)
+            .post(`/donations/checkout/${failId}/complete`)
+            .set('Cookie', [`dc_${failId}=${TOKEN}`])
+            .type('form')
+            .send({ outcome: 'failure' });
+
+        await post();
+        await post();
+        expect(enqueueEmail).not.toHaveBeenCalled(); // below the threshold
+        await post();
+        expect(enqueueEmail).toHaveBeenCalledWith(expect.objectContaining({
+            to: 'admin@temple.org',
+            subject: expect.stringMatching(/Repeated donation failures/)
+        }));
     });
 
     test('anonymous success does not enqueue a donor receipt email', async () => {

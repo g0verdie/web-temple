@@ -5,6 +5,9 @@ const { getProvider } = require('../services/payments');
 const receiptPdfService = require('../services/receiptPdfService');
 const { enqueueEmail } = require('../services/emailQueueService');
 const { logAudit, AUDIT_ACTIONS } = require('../services/auditService');
+const CacheService = require('../services/CacheService');
+
+const MAX_FAILURES_BEFORE_ALERT = 3;
 
 const DEMO_OUTCOMES = new Set(['success', 'failure', 'cancel']);
 const str = (v) => (typeof v === 'string' ? v : '');
@@ -109,7 +112,25 @@ exports.completeCheckout = async (req, res) => {
             isAnonymous: donation.isAnonymous,
             errorCode: result.errorCode
         });
-        // (U8 adds the server-side 3-strike admin alert here.)
+        // Server-side 3-strike counter (Redis-backed so it can't be reset by clearing a cookie — KTD9/U8).
+        try {
+            const failKey = `donation:fail:${id}`;
+            const count = (Number(await CacheService.get(failKey)) || 0) + 1;
+            await CacheService.set(failKey, count, 3600);
+            if (count >= MAX_FAILURES_BEFORE_ALERT) {
+                const adminEmail = process.env.ADMIN_EMAIL || process.env.CONTACT_EMAIL;
+                if (adminEmail) {
+                    await enqueueEmail({
+                        to: adminEmail,
+                        subject: 'Repeated donation failures',
+                        html: `<p>${count} failed donation attempts on checkout ${id} (amount $${(donation.amountCents / 100).toFixed(2)}).</p>`,
+                        text: `${count} failed donation attempts on checkout ${id} (amount $${(donation.amountCents / 100).toFixed(2)}).`
+                    });
+                }
+            }
+        } catch (counterErr) {
+            logger.error('Donation failure-counter error:', counterErr);
+        }
         return res.status(402).render('layout', {
             title: 'Payment could not be completed',
             bodyView: 'donations/failed',
