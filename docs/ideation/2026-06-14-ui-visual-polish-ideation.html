@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ideation: UI Visual Polish — web-temple</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+  <style>
+    :root {
+      --navy: #1a365d;
+      --navy-deep: #12283f;
+      --gold: #c8a040;
+      --gold-dark: #8a6d24;
+      --cream: #faf7f0;
+      --sand: #f0ebe0;
+      --ink: #2a2f3a;
+      --muted: #5a6678;
+      --border: #e6ded0;
+      --white: #ffffff;
+      --good: #2f7d56;
+      --warn: #9a6a18;
+      --serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+      --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --radius: 10px;
+      --shadow: 0 1px 2px rgba(18,40,63,.06), 0 6px 22px rgba(18,40,63,.08);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      font-size: 16px;
+      line-height: 1.65;
+      color: var(--ink);
+      background: var(--cream);
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 60rem; margin-inline: auto; padding: 0 1.5rem 5rem; }
+    .prose { max-width: 70ch; }
+
+    h1, h2, h3 { font-family: var(--serif); color: var(--navy); line-height: 1.15; font-weight: 600; }
+    h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); margin: 0 0 .3rem; letter-spacing: .2px; }
+    h2 { font-size: clamp(1.5rem, 3vw, 2rem); margin: 2.8rem 0 1rem; padding-bottom: .4rem; border-bottom: 2px solid var(--border); }
+    h3 { font-size: 1.3rem; margin: 0 0 .2rem; }
+    a { color: var(--navy); text-decoration-color: var(--gold); text-underline-offset: 3px; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .86em; background: var(--sand); padding: .08em .4em; border-radius: 4px; color: var(--navy-deep); }
+
+    /* Masthead */
+    .masthead { padding: 3rem 0 1.6rem; border-bottom: 3px double var(--gold); margin-bottom: .5rem; }
+    .eyebrow { font-family: var(--sans); text-transform: uppercase; letter-spacing: .18em; font-size: .72rem; font-weight: 600; color: var(--gold-dark); margin: 0 0 .8rem; }
+    .meta { display: flex; flex-wrap: wrap; gap: .5rem .9rem; margin-top: 1.1rem; font-size: .85rem; color: var(--muted); }
+    .meta b { color: var(--navy); font-weight: 600; font-family: var(--sans); }
+
+    /* Stats strip */
+    .stats { display: flex; flex-wrap: wrap; gap: .8rem; margin: 1.6rem 0 .4rem; }
+    .stat { flex: 1 1 8rem; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: .8rem 1rem; box-shadow: var(--shadow); }
+    .stat .n { font-family: var(--serif); font-size: 1.9rem; font-weight: 700; color: var(--navy); line-height: 1; }
+    .stat .l { font-size: .74rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-top: .3rem; }
+
+    section { margin-top: .5rem; }
+    .lead { font-size: 1.04rem; }
+
+    /* Grounding callout */
+    .ground { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.2rem 1.4rem; box-shadow: var(--shadow); }
+    .ground ul { margin: .4rem 0 0; padding-left: 1.1rem; }
+    .ground li { margin: .35rem 0; }
+
+    /* Axes */
+    .axes { list-style: none; padding: 0; margin: 0; display: grid; gap: .6rem; }
+    .axes li { background: var(--white); border: 1px solid var(--border); border-left: 4px solid var(--gold); border-radius: 8px; padding: .7rem 1rem; }
+    .axes .ax { font-weight: 600; color: var(--navy); }
+
+    /* Jump list */
+    .jump { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.3rem; box-shadow: var(--shadow); }
+    .jump ol { margin: .3rem 0 0; padding-left: 1.3rem; }
+    .jump li { margin: .25rem 0; }
+    .jump a { font-weight: 500; }
+
+    /* Idea cards */
+    article.idea { background: var(--white); border: 1px solid var(--border); border-top: 3px solid var(--gold); border-radius: var(--radius); padding: 1.4rem 1.5rem 1.6rem; margin: 1.1rem 0; box-shadow: var(--shadow); }
+    .idea .head { display: flex; align-items: baseline; gap: .7rem; flex-wrap: wrap; }
+    .rank { font-family: var(--serif); font-weight: 700; color: var(--gold-dark); font-size: 1.5rem; line-height: 1; }
+    .chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: .7rem 0 1rem; }
+    .chip { font-size: .72rem; font-weight: 600; letter-spacing: .03em; padding: .22em .7em; border-radius: 999px; border: 1px solid var(--border); background: var(--sand); color: var(--navy-deep); }
+    .chip.axis { background: #eef3f8; border-color: #d4e0ec; color: var(--navy); }
+    .chip.hi { background: #e7f1ea; border-color: #c3ddcc; color: var(--good); }
+    .chip.med { background: #fbf2dd; border-color: #ecd9a8; color: var(--warn); }
+    .idea dl { margin: 1rem 0 0; }
+    .idea dt { font-size: .72rem; text-transform: uppercase; letter-spacing: .1em; color: var(--gold-dark); font-weight: 700; margin-top: .9rem; }
+    .idea dd { margin: .2rem 0 0; }
+    .idea dd.basis { font-size: .94rem; color: var(--muted); }
+    .idea dd.basis b { color: var(--navy); }
+
+    /* Mock visuals */
+    .viz { margin: 1.1rem 0 .2rem; border: 1px dashed var(--border); border-radius: 8px; padding: 1rem; background: linear-gradient(0deg, var(--sand), var(--white)); }
+    .viz .cap { font-size: .74rem; color: var(--muted); text-align: center; margin-top: .6rem; font-style: italic; }
+    .swatches { display: flex; gap: .5rem; align-items: center; justify-content: center; flex-wrap: wrap; }
+    .sw { width: 64px; height: 48px; border-radius: 6px; border: 1px solid rgba(0,0,0,.12); display: flex; align-items: flex-end; justify-content: center; font-size: .62rem; color: #fff; padding-bottom: 2px; text-shadow: 0 1px 1px rgba(0,0,0,.4); }
+    .arrow { font-size: 1.4rem; color: var(--muted); }
+    .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; }
+    @media (max-width: 560px) { .twocol { grid-template-columns: 1fr; } }
+    .panel { border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+    .panel .tag { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; padding: .25rem .6rem; background: var(--navy-deep); color: #fff; }
+    .hero-before { height: 110px; background: linear-gradient(135deg, #1a365d, #2c5282); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .hero-after { height: 110px; position: relative; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background-image: linear-gradient(0deg, rgba(18,40,63,.85), rgba(18,40,63,.15)), repeating-linear-gradient(45deg, #6b7a52 0 10px, #5d6d49 10px 20px); }
+    .hero-before .hh, .hero-after .hh { font-family: var(--serif); font-size: 1.1rem; font-weight: 700; }
+    .hero-before .hs, .hero-after .hs { font-size: .7rem; opacity: .9; }
+    .bands > div { padding: .45rem .8rem; font-size: .76rem; color: var(--ink); }
+    .b-cream { background: var(--cream); }
+    .b-sand { background: var(--sand); }
+    .b-navy { background: var(--navy); color: #fff; }
+    .specimen { background: var(--white); border-radius: 8px; padding: 1rem 1.2rem; }
+    .specimen .sh { font-family: var(--serif); font-weight: 700; color: var(--navy); font-size: 1.6rem; }
+    .specimen .sb { font-family: var(--sans); font-size: .9rem; color: var(--ink); }
+    .card-flat { background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,.05); padding: .9rem; }
+    .card-rich { background: #fff; border: 1px solid var(--border); border-top: 3px solid var(--gold); border-radius: 10px; box-shadow: var(--shadow); padding: .9rem; }
+    .card-flat .ct, .card-rich .ct { font-family: var(--serif); font-weight: 600; color: var(--navy); }
+    .card-flat .cm, .card-rich .cm { font-size: .74rem; color: var(--muted); }
+
+    /* Rejection table */
+    table { border-collapse: collapse; width: 100%; font-size: .92rem; margin-top: .6rem; }
+    th, td { text-align: left; padding: .6rem .7rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { font-family: var(--sans); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--gold-dark); }
+    td.idea-name { font-weight: 600; color: var(--navy); white-space: nowrap; }
+    @media (max-width: 560px) { td.idea-name { white-space: normal; } }
+
+    footer.composition-signal { margin-top: 3rem; padding-top: 1.2rem; border-top: 1px solid var(--border); font-size: .8rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Compound Engineering · Ideation</p>
+    <h1>Making the web-temple UI Prettier</h1>
+    <p class="lead prose">Seven ranked, evidence-grounded directions for lifting the public site from "functional and flat" to warm, reverent, and polished — all buildable in vanilla CSS / EJS within the strict CSP and the verified accessibility budget. florencetemple.org was used as an inspiration reference (a floor to clear, not a ceiling).</p>
+    <div class="meta">
+      <span><b>Date</b> <time datetime="2026-06-14">2026-06-14</time></span>
+      <span><b>Topic</b> ui-visual-polish</span>
+      <span><b>Focus</b> prettier public UI, florencetemple.org inspiration</span>
+      <span><b>Mode</b> repo-grounded</span>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="n">7</div><div class="l">Ranked ideas</div></div>
+      <div class="stat"><div class="n">23</div><div class="l">Raw candidates</div></div>
+      <div class="stat"><div class="n">5</div><div class="l">Axes covered</div></div>
+      <div class="stat"><div class="n">1</div><div class="l">Latent bug found</div></div>
+    </div>
+  </header>
+
+  <section>
+    <h2>Codebase Context</h2>
+    <div class="ground prose">
+      <p style="margin-top:0"><b>Stack &amp; delivery.</b> Express 4 + EJS server-rendered MPA — no bundler, no framework, no TypeScript (intentional). Styling is plain CSS: <code>public/css/main.css</code> (global, ~630 lines, holds the <code>:root</code> token block) plus ~13 per-page stylesheets injected via a <code>stylesheets[]</code> array in <code>src/views/layout.ejs</code>.</p>
+      <p><b>Hard constraints any idea must respect.</b></p>
+      <ul>
+        <li><b>Strict CSP</b> — <code>styleSrc</code>/<code>scriptSrc</code>/<code>fontSrc</code> are <code>'self'</code> (+ hCaptcha). No inline <code>&lt;style&gt;</code>, no <code>style=</code>, no third-party CSS/font CDNs. A Jest guard (<code>__tests__/security/cspViewCompliance.test.js</code>) fails the build on any inline style/script. ⇒ <b>web fonts must be self-hosted</b> in <code>public/fonts/</code>; all styling ships as external CSS from <code>'self'</code>.</li>
+        <li><b>Accessibility budget</b> (jest-axe in CI) — keep WCAG AA (text ≥4.5:1, non-text ≥3:1), the 3px gold focus ring + 2px offset, 44px touch targets, and color+non-color error cues. Any new palette must re-clear these.</li>
+        <li><b>Ratified direction</b> — "Modern Reverence" (deep navy + warm gold + soft neutrals; serif headings, sans body; airy 8px spacing; calm motion). Documented in <code>ux-design-specification.md</code> but largely <b>unbuilt</b>. Tailwind / Bootstrap / MUI were explicitly rejected.</li>
+      </ul>
+      <p><b>Current state (the floor we're lifting).</b></p>
+      <ul>
+        <li><b>Color drift.</b> <code>main.css</code> ships <code>--color-accent: #d69e2e</code>, but <code>--color-gold</code> is <i>referenced</i> in <code>contact.css</code> (and others) and <b>never defined in <code>:root</code></b> — so those references silently fall back to a hardcoded <code>#c9a961</code>. At least three different golds ship in CSS (<code>#d69e2e</code>, <code>#c9a961</code>, <code>#b8860b</code>), and the docs name still others (<code>#daa520</code>, <code>#d4a574</code>). The high-contrast block darkens primaries but not the accent. No dark mode.</li>
+        <li><b>Typography.</b> System sans stack everywhere; no web fonts and <code>public/fonts/</code> doesn't exist; heading sizes are stepped across three breakpoints (no <code>clamp()</code>); text is measured by pixel boxes, not <code>ch</code>. The documented serif-heading direction was never built.</li>
+        <li><b>Imagery &amp; identity.</b> The homepage hero is <b>text only</b> over a flat blue gradient. The <i>only</i> image asset in the repo is <code>favicon.svg</code> (a Star of David in brand colors). No community photos, no icon set, no header logo.</li>
+        <li><b>Components &amp; motion.</b> Flat cards (mixed 6/8px radii, light shadows); sections are mostly flat (one alt-band already exists on the countdown section). Several public interactive surfaces — donation amount buttons (<code>.amount-level</code>), <code>.btn-link</code>, public <code>.event-card</code> — have no hover/focus feedback. A global <code>prefers-reduced-motion</code> block already exists in <code>main.css</code>.</li>
+      </ul>
+      <p style="margin-bottom:0"><b>Reference (florencetemple.org).</b> Functional but dated — an architectural hero (the building, not people), sans-serif with no type personality, a utilitarian photo-grid, a cool/institutional palette with gold not deployed, unstyled forms, no section rhythm. Worth keeping: generous whitespace and prominent service-times / donate / contact.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Topic Axes</h2>
+    <ul class="axes">
+      <li><span class="ax">A1 — Color system &amp; design tokens.</span> Palette, the gold-drift consolidation, warm base, contrast, dark mode.</li>
+      <li><span class="ax">A2 — Typography.</span> Self-hosted web fonts, serif/sans pairing, fluid scale, hierarchy, measure.</li>
+      <li><span class="ax">A3 — Imagery &amp; cultural identity.</span> Hero treatment, community photography, Jewish motifs, logo/branding.</li>
+      <li><span class="ax">A4 — Components &amp; layout rhythm.</span> Cards, buttons, nav, footer, section dividers/alternation.</li>
+      <li><span class="ax">A5 — Motion &amp; micro-interactions.</span> Hover/focus feedback, transitions, reduced-motion coverage.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Ranked Ideas</h2>
+    <div class="jump">
+      <p style="margin:0; font-weight:600; color:var(--navy)">Jump to an idea</p>
+      <ol>
+        <li><a href="#idea1">Consolidate the gold accent into one defined token</a> · A1</li>
+        <li><a href="#idea2">Self-host a serif/sans "Modern Reverence" type system</a> · A2</li>
+        <li><a href="#idea3">A photo-ready sanctuary hero with a navy scrim</a> · A3</li>
+        <li><a href="#idea4">A warm cream canvas with deliberate section rhythm</a> · A1/A4</li>
+        <li><a href="#idea5">A unified card system with a gold top-rule</a> · A4</li>
+        <li><a href="#idea6">Fluid clamp() type scale + a 65ch reading measure</a> · A2</li>
+        <li><a href="#idea7">Restore interactive feedback on the "dead" surfaces</a> · A5</li>
+      </ol>
+    </div>
+
+    <!-- IDEA 1 -->
+    <article class="idea" id="idea1">
+      <div class="head"><span class="rank">1.</span><h3>Consolidate the gold accent into one defined token</h3></div>
+      <div class="chips"><span class="chip axis">A1 · Color &amp; tokens</span><span class="chip hi">Confidence High (95%)</span><span class="chip">Complexity Low</span><span class="chip">Foundational</span></div>
+      <div class="viz">
+        <div class="swatches">
+          <div class="sw" style="background:#d69e2e">#d69e2e</div>
+          <div class="sw" style="background:#c9a961">#c9a961</div>
+          <div class="sw" style="background:#b8860b">#b8860b</div>
+          <div class="sw" style="background:#daa520">#daa520</div>
+          <span class="arrow">→</span>
+          <div class="sw" style="background:#c8a040; outline:2px solid var(--navy); outline-offset:2px">one gold</div>
+        </div>
+        <div class="cap">Today: a different gold per file (and one referenced-but-undefined). After: a single <code>--color-gold</code> every page inherits.</div>
+      </div>
+      <dl>
+        <dt>Description</dt>
+        <dd>Define <code>--color-gold</code> (and a paired <code>--color-gold-dark</code> for AA text) once in the <code>main.css</code> <code>:root</code>, alias <code>--color-accent</code> to it, then mechanically replace the scattered hardcoded golds across the per-page stylesheets with <code>var(--color-gold)</code>. Add the missing darkened-gold line to the <code>prefers-contrast: high</code> block so the accent is governed in high-contrast mode too. The canonical hex is a one-time design call (review on cream before committing).</dd>
+        <dt>Basis</dt>
+        <dd class="basis"><b>direct:</b> <code>contact.css</code> uses <code>color: var(--color-gold, #c9a961)</code> while <code>main.css :root</code> defines only <code>--color-accent: #d69e2e</code> — <code>--color-gold</code> is never defined, so every reference falls back to the orphan <code>#c9a961</code>. The <code>prefers-contrast: high</code> block overrides primary/secondary but not the accent. (Verified against the repo; ≥3 distinct golds ship in CSS — <code>#d69e2e</code>, <code>#c9a961</code>, <code>#b8860b</code>.)</dd>
+        <dt>Rationale</dt>
+        <dd>This is the cheapest move with the widest blast radius and it fixes a genuine latent bug, not just a style nit. Once the token resolves, every other idea here (warm base, card rule, focus ring) has one correct gold to reference instead of a guess.</dd>
+        <dt>Downsides</dt>
+        <dd>Touches ~5 CSS files; the substitution is mechanical but the canonical hex is a judgment call that benefits from a quick visual review (and a re-run of <code>npm run test:a11y</code> to confirm contrast).</dd>
+      </dl>
+    </article>
+
+    <!-- IDEA 2 -->
+    <article class="idea" id="idea2">
+      <div class="head"><span class="rank">2.</span><h3>Self-host a serif/sans "Modern Reverence" type system</h3></div>
+      <div class="chips"><span class="chip axis">A2 · Typography</span><span class="chip hi">Confidence High (92%)</span><span class="chip med">Complexity Low–Med</span><span class="chip">Loudest premium signal</span></div>
+      <div class="viz">
+        <div class="specimen">
+          <div class="sh">Shabbat services &amp; community</div>
+          <div class="sb">A warm humanist sans for body copy keeps long passages effortless to read, while a calligraphic serif gives every heading the gravitas of carved stone. (This document is set in that pairing.)</div>
+        </div>
+        <div class="cap">A serif heading + sans body pairing — the single change that most shifts perceived quality.</div>
+      </div>
+      <dl>
+        <dt>Description</dt>
+        <dd>Self-host one display serif for headings (Cormorant Garamond, Marcellus, or Quattrocento) and a humanist sans for body into <code>public/fonts/</code> via <code>@font-face</code> (WOFF2, Latin subset, fetched with google-webfonts-helper — no CDN). Define <code>--font-serif</code> / <code>--font-sans</code> and apply the serif to <code>h1–h4</code> in <code>main.css</code>. No template edits — the cascade carries it to every page.</dd>
+        <dt>Basis</dt>
+        <dd class="basis"><b>direct:</b> <code>ux-design-specification.md</code> documents the serif-heading "Modern Reverence" direction and proposes <code>--font-serif</code>, but <code>main.css</code> ships a system sans stack only and <code>public/fonts/</code> doesn't exist. <b>direct:</b> <code>server.js</code> CSP <code>fontSrc: ['self']</code> permits self-hosted fonts. <b>external:</b> Cormorant Garamond/Lato, Marcellus/DM Sans, Quattrocento/Questrial are established "modern + traditional" pairings; google-webfonts-helper produces CSP-clean self-hosted WOFF2.</dd>
+        <dt>Rationale</dt>
+        <dd>Typeface is the loudest single signal of "a place of worship" vs "a generic Node app," and it's the one ratified-but-unbuilt brand decision. One <code>@font-face</code> block + one heading rule lifts every screen at once.</dd>
+        <dt>Downsides</dt>
+        <dd>Adds ~30–60 KB of self-hosted WOFF2 and a one-time setup step. Keep serif for <b>headings</b> and an accessible sans for <b>body</b> (some display serifs read thin at small sizes); re-clear AA + zoom on the chosen faces.</dd>
+      </dl>
+    </article>
+
+    <!-- IDEA 3 -->
+    <article class="idea" id="idea3">
+      <div class="head"><span class="rank">3.</span><h3>A photo-ready sanctuary hero with a navy scrim</h3></div>
+      <div class="chips"><span class="chip axis">A3 · Imagery &amp; identity</span><span class="chip hi">Confidence High</span><span class="chip med">Complexity Med</span><span class="chip">Biggest first impression</span></div>
+      <div class="viz">
+        <div class="twocol">
+          <div class="panel"><div class="tag">Today</div><div class="hero-before"><div class="hh">Temple B'nai Israel</div><div class="hs">text on a flat blue gradient</div></div></div>
+          <div class="panel"><div class="tag">Direction</div><div class="hero-after"><div class="hh">Temple B'nai Israel</div><div class="hs">real photo + navy scrim, AA-safe text</div></div></div>
+        </div>
+        <div class="cap">Same headline markup; a real sanctuary/community photo drops into the <code>background-image</code> slot behind a navy→transparent scrim.</div>
+      </div>
+      <dl>
+        <dt>Description</dt>
+        <dd>Keep the existing hero text (headline / mission / CTA) but layer it over a real, art-directed sanctuary or community photo with a navy→transparent <code>linear-gradient</code> scrim so white text keeps AA contrast. Engineer the slot now (a <code>background-image</code> on a hero class) so a photo drops in without a redesign; ship a CSS-only fallback (see also the deferred Star-of-David texture) until a photo exists.</dd>
+        <dt>Basis</dt>
+        <dd class="basis"><b>direct:</b> the hero is <code>background: linear-gradient(135deg, var(--color-primary), var(--color-secondary))</code> with no image (<code>main.css</code> / <code>home.ejs</code>); the spec explicitly calls for a real sanctuary photo, unimplemented. <b>direct:</b> CSP <code>imgSrc</code> allows <code>'self'</code> + <code>https:</code>. <b>external:</b> a dark-scrim gradient over hero photography is the standard accessible-text-over-image pattern; exemplars emanuelnyc.org, bj.org lead with real community imagery.</dd>
+        <dt>Rationale</dt>
+        <dd>The hero is the first thing every visitor sees and currently the <i>least</i> "temple" surface on the site — an abstract blue rectangle. One real photo does more for "warm and inviting" than any amount of CSS, and the scrim keeps it CSP- and AA-safe. It's also where florencetemple.org's one strength (showing the actual place) beats us today.</dd>
+        <dt>Downsides</dt>
+        <dd>Needs a good photograph (the real dependency) and per-image scrim tuning to hold contrast. Ship the CSS/SVG fallback first so the hero improves even before a photo is sourced.</dd>
+      </dl>
+    </article>
+
+    <!-- IDEA 4 -->
+    <article class="idea" id="idea4">
+      <div class="head"><span class="rank">4.</span><h3>A warm cream canvas with deliberate section rhythm</h3></div>
+      <div class="chips"><span class="chip axis">A1 / A4 · Color &amp; rhythm</span><span class="chip med">Confidence Med–High</span><span class="chip med">Complexity Low–Med</span></div>
+      <div class="viz">
+        <div class="bands" style="border-radius:8px; overflow:hidden; border:1px solid var(--border)">
+          <div class="b-cream">Cream — primary sections (<code>#faf7f0</code>)</div>
+          <div class="b-sand">Warm sand — alternating band (<code>#f0ebe0</code>)</div>
+          <div class="b-navy">Navy — anchor band / header / footer</div>
+          <div class="b-cream">Cream — primary sections</div>
+        </div>
+        <div class="cap">Swap clinical white for a warm cream base, then alternate cream / sand / navy for breathing rhythm — no markup changes.</div>
+      </div>
+      <dl>
+        <dt>Description</dt>
+        <dd>Replace the cool <code>#ffffff</code> / <code>#f7fafc</code> backgrounds with a warm cream <code>--color-bg</code> (~<code>#faf7f0</code>) via the token, and turn the single existing alt-band into a deliberate site-wide rhythm: cream primary sections, a warm-sand alternating band, and the navy as a high-contrast anchor. The gold accent reads richer on cream than on stark white.</dd>
+        <dt>Basis</dt>
+        <dd class="basis"><b>direct:</b> <code>main.css :root</code> sets <code>--color-bg: #ffffff</code> / <code>--color-bg-alt: #f7fafc</code>; the countdown section is the one section that already uses an alt background, so the pattern exists but isn't applied as rhythm. <b>reasoned:</b> <code>#faf7f0</code> against <code>--color-text: #2d3748</code> is ~10:1 — comfortably AA. <b>external:</b> a warm-cream base is the canonical warm register on Jewish-community exemplars (emanuelnyc.org, bj.org) — verify the specific pairing visually before committing.</dd>
+        <dt>Rationale</dt>
+        <dd>This is the change that most shifts the site's <i>felt temperature</i> from "institutional portal" to "community home," and because it's a token swap, all 13 stylesheets inherit it for free.</dd>
+        <dt>Downsides</dt>
+        <dd>The ripple surface is large (the bg token is used widely) so it needs a full visual pass + a11y re-run; the alternation pattern wants a quick design review per page rather than a blind global toggle.</dd>
+      </dl>
+    </article>
+
+    <!-- IDEA 5 -->
+    <article class="idea" id="idea5">
+      <div class="head"><span class="rank">5.</span><h3>A unified card system with a gold top-rule</h3></div>
+      <div class="chips"><span class="chip axis">A4 · Components</span><span class="chip hi">Confidence High</span><span class="chip">Complexity Low</span><span class="chip">Compounds across pages</span></div>
+      <div class="viz">
+        <div class="twocol">
+          <div class="card-flat"><div class="tag" style="display:inline-block; border-radius:4px; margin-bottom:.4rem">Today</div><div class="ct">Friday Night Service</div><div class="cm">flat border, mixed radii, faint shadow</div></div>
+          <div class="card-rich"><div class="tag" style="display:inline-block; border-radius:4px; margin-bottom:.4rem">Direction</div><div class="ct">Friday Night Service</div><div class="cm">gold top-rule, one radius, layered shadow</div></div>
+        </div>
+        <div class="cap">Generalize the featured-announcement gold accent into one card signature used by events, streams, and announcements.</div>
+      </div>
+      <dl>
+        <dt>Description</dt>
+        <dd>Define <code>--radius</code> and a single shadow recipe as tokens, then give the card family one signature: a 3px gold top-rule (base <code>transparent</code> → gold on hover, to avoid layout shift) plus a calm layered shadow. Apply across <code>.event-card</code>, <code>.stream-card</code>, <code>.announcement-card</code>, calendar <code>.card</code>.</dd>
+        <dt>Basis</dt>
+        <dd class="basis"><b>direct:</b> <code>announcements.css</code> already uses a gold left-border on <code>.announcement-card--featured</code> (<code>#b8860b</code>) — proof the accent already reads as "important" here; cards currently use mixed radii (6px/8px) and several shadow recipes. <b>external:</b> a gold top-border card with a soft shadow is a standard warm-institutional card pattern.</dd>
+        <dt>Rationale</dt>
+        <dd>Cards are the most-repeated component on the site (events, streams, announcements, calendar). One coherent treatment in <code>main.css</code> makes every list look designed by the same hand — and every future card inherits it.</dd>
+        <dt>Downsides</dt>
+        <dd>A solid top-border on hover can cause a 3px layout shift — mitigate with a transparent→gold transition. Target named card classes (avoid wildcard selectors). Pairs best after idea 1 defines the gold.</dd>
+      </dl>
+    </article>
+
+    <!-- IDEA 6 -->
+    <article class="idea" id="idea6">
+      <div class="head"><span class="rank">6.</span><h3>Fluid <code>clamp()</code> type scale + a 65ch reading measure</h3></div>
+      <div class="chips"><span class="chip axis">A2 · Typography</span><span class="chip hi">Confidence High</span><span class="chip">Complexity Low</span><span class="chip">Pure CSS</span></div>
+      <dl>
+        <dt>Description</dt>
+        <dd>Replace the three per-breakpoint <code>font-size</code> declarations for <code>.hero-headline</code> and <code>.section-title</code> with one <code>clamp()</code> each (e.g. <code>clamp(1.5rem, 4vw + .5rem, 3rem)</code>), and cap prose containers at <code>max-width: 65ch</code>. Headings then scale continuously instead of snapping at 768px / 1024px, and line length stays in the comfortable reading band.</dd>
+        <dt>Basis</dt>
+        <dd class="basis"><b>direct:</b> <code>main.css</code> declares <code>.hero-headline</code> and <code>.section-title</code> font-sizes at three discrete breakpoints; there is no <code>clamp()</code> or <code>ch</code> measure anywhere in <code>public/css/</code>. <b>external:</b> <code>clamp()</code> fluid type + ~65ch measure are well-established readability best practices (MDN, Every Layout).</dd>
+        <dt>Rationale</dt>
+        <dd>It removes the most visibly jarring transition on the site — the size jump at breakpoints — in two declarations, with no new assets and no a11y risk (relative units respect zoom). It also lets the new serif headings (idea 2) shine at every width, not just desktop.</dd>
+        <dt>Downsides</dt>
+        <dd>The <code>clamp()</code> parameters are starting points; verify the interpolated sizes at 375 / 600 / 768 / 1024 / 1440px so nothing reads too small or too large mid-range.</dd>
+      </dl>
+    </article>
+
+    <!-- IDEA 7 -->
+    <article class="idea" id="idea7">
+      <div class="head"><span class="rank">7.</span><h3>Restore interactive feedback on the "dead" surfaces</h3></div>
+      <div class="chips"><span class="chip axis">A5 · Motion</span><span class="chip hi">Confidence High</span><span class="chip">Complexity Low</span><span class="chip">Trust surface</span></div>
+      <dl>
+        <dt>Description</dt>
+        <dd>Define a <code>--transition-base</code> timing token, then add calm hover/focus feedback (gold border + soft lift, and a clear selected-state for the donation amounts) to the interactive surfaces that currently have none: <code>.amount-level</code> donation buttons, <code>.btn-link</code>, and the public <code>.event-card</code>. The existing global <code>prefers-reduced-motion</code> block covers the new transitions automatically.</dd>
+        <dt>Basis</dt>
+        <dd class="basis"><b>direct:</b> the motion evidence shows <code>.amount-level</code> (donation radios), <code>.btn-link</code>, and the public <code>.event-card</code> have no hover/focus rules, while <code>main.css</code> already has a global <code>prefers-reduced-motion</code> block. (Correction from verification: <code>.member-card</code>'s inner link <i>does</i> have hover — so the gap is narrower than first scoped.) <b>external:</b> a gold underline/lift on hover matches the existing nav/button vocabulary.</dd>
+        <dt>Rationale</dt>
+        <dd>An element with <code>cursor: pointer</code> and zero response reads as broken — and the worst offender is the donation amount button, the highest-stakes click on the site. Unifying the motion language is what makes "polished" legible; it's near-free given the existing timing and reduced-motion safety net.</dd>
+        <dt>Downsides</dt>
+        <dd>Per-file edits across <code>donations.css</code> / <code>calendar.css</code>; the hover/selected look is a small design decision (a gold border + light shadow is enough). Lower visual "wow" than ideas 1–3 but high trust value.</dd>
+      </dl>
+    </article>
+  </section>
+
+  <section>
+    <h2>Rejection Summary</h2>
+    <table>
+      <thead><tr><th>Idea</th><th>Axis</th><th>Reason not ranked</th></tr></thead>
+      <tbody>
+        <tr><td class="idea-name">Promote <code>favicon.svg</code> → header logo</td><td>A3</td><td>Strong low-cost quick win (one <code>&lt;img&gt;</code> + a CSS rule); folded into the hero/identity direction (idea 3) rather than ranked separately — worth doing alongside it.</td></tr>
+        <tr><td class="idea-name">Star-of-David hex-lattice texture</td><td>A3</td><td>Verification: derived/gestural, not spec-backed, and needs a hand-authored tiling SVG. Keep as the CSS-only hero fallback under idea 3 until a real photo decision is made.</td></tr>
+        <tr><td class="idea-name">Illuminated drop cap (<code>::first-letter</code>)</td><td>A2</td><td>Content fragility — the lead paragraph is dynamic, so the first character could be a quote or digit; ornamental with no spec backing.</td></tr>
+        <tr><td class="idea-name">Pull-quote / prayer-book blockquotes</td><td>A2</td><td>Thin hook — unknown whether authors use blockquotes today; better captured as a detail when brainstorming the type system (idea 2).</td></tr>
+        <tr><td class="idea-name">Richer multi-column footer</td><td>A4</td><td>Sound and useful, but more an information-architecture/content change than visual "prettiness"; track separately from this aesthetic pass.</td></tr>
+        <tr><td class="idea-name">Card entrance stagger + gold shimmer</td><td>A5</td><td>Gimmick risk; lower priority than fixing the dead-on-touch elements (idea 7). Revisit once the calm motion language is consistent.</td></tr>
+        <tr><td class="idea-name">Dark mode (<code>prefers-color-scheme</code>)</td><td>A1</td><td>Raised in grounding; a larger effort and not an MVP "prettier" lever — defer past launch.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer class="composition-signal">
+    Composed 2026-06-14 by ce-ideate from the in-session prompt "how can we make the UI prettier? Use florencetemple.org for inspiration." Grounded in <code>public/css/*</code>, <code>src/views/*</code>, and <code>_bmad-output/planning-artifacts/ux-design-specification.md</code>; candidate bases verified against the repo. Directional discovery artifact — not a spec.
+  </footer>
+
+</div>
+</body>
+</html>
