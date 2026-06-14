@@ -180,13 +180,15 @@ exports.getCalendarPage = async (req, res) => {
 
         const includeMembersOnly = !!req.user;
 
+        const now = new Date();
         const parsed = parseMonthParam(req.query.month);
+        // Anchor on the FIRST of the month (UTC) so the ±month window math below
+        // can't overflow on day 29-31 (setUTCMonth rolls overflow days forward).
         const anchor = parsed
             ? new Date(Date.UTC(parsed.year, parsed.month - 1, 1))
-            : new Date();
+            : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
         // Upcoming window: anchor → +3 months. Archive window: anchor −1 month → anchor.
-        const now = new Date();
         const windowStart = new Date(anchor.getTime());
         windowStart.setUTCMonth(windowStart.getUTCMonth() - 1);
         const windowEnd = new Date(anchor.getTime());

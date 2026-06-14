@@ -14,14 +14,15 @@ const makeEvent = (overrides = {}) => ({
 const silentLog = { info: jest.fn(), error: jest.fn() };
 
 describe('reminderWorker.runReminderScan (U10)', () => {
-    test('happy: due event enqueues per member and marks reminder sent', async () => {
+    test('happy: claims the reminder then enqueues per member', async () => {
         const eventService = {
             getEventsNeedingReminder: jest.fn().mockResolvedValue([makeEvent({ id: 5 })]),
             getOptedInMembers: jest.fn().mockResolvedValue([
                 { id: 'm1', email: 'a@x.com', first_name: 'A' },
                 { id: 'm2', email: 'b@x.com', first_name: 'B' }
             ]),
-            markReminderSent: jest.fn().mockResolvedValue(undefined)
+            // markReminderSent now atomically CLAIMS; true = this scan won the claim.
+            markReminderSent: jest.fn().mockResolvedValue(true)
         };
         const enqueue = jest.fn().mockResolvedValue({});
 
@@ -36,7 +37,28 @@ describe('reminderWorker.runReminderScan (U10)', () => {
         expect(result).toEqual({ eventsProcessed: 1, emailsQueued: 2 });
     });
 
-    test('edge: no due events → no enqueue, no markReminderSent', async () => {
+    test('claim-then-send: an event already claimed (false) is NOT re-sent to anyone', async () => {
+        // Simulates an overlapping scan / job retry: getEventsNeedingReminder still
+        // returns the event (its row was selected before the other scan committed),
+        // but the atomic claim loses, so no member is reminded a second time.
+        const eventService = {
+            getEventsNeedingReminder: jest.fn().mockResolvedValue([makeEvent({ id: 9 })]),
+            getOptedInMembers: jest.fn().mockResolvedValue([
+                { id: 'm1', email: 'a@x.com', first_name: 'A' },
+                { id: 'm2', email: 'b@x.com', first_name: 'B' }
+            ]),
+            markReminderSent: jest.fn().mockResolvedValue(false)
+        };
+        const enqueue = jest.fn().mockResolvedValue({});
+
+        const result = await runReminderScan({ eventService, enqueue, log: silentLog });
+
+        expect(eventService.markReminderSent).toHaveBeenCalledWith(9);
+        expect(enqueue).not.toHaveBeenCalled();
+        expect(result).toEqual({ eventsProcessed: 0, emailsQueued: 0 });
+    });
+
+    test('edge: no due events → no claim, no enqueue', async () => {
         const eventService = {
             getEventsNeedingReminder: jest.fn().mockResolvedValue([]),
             getOptedInMembers: jest.fn(),
@@ -49,11 +71,11 @@ describe('reminderWorker.runReminderScan (U10)', () => {
         expect(result.eventsProcessed).toBe(0);
     });
 
-    test('error: a member enqueue failure does not abort the scan; reminder still marked', async () => {
+    test('error: a member enqueue failure does not abort the scan (reminder already claimed)', async () => {
         const eventService = {
             getEventsNeedingReminder: jest.fn().mockResolvedValue([makeEvent({ id: 8 })]),
             getOptedInMembers: jest.fn().mockResolvedValue([{ id: 'm1', email: 'a@x.com', first_name: 'A' }]),
-            markReminderSent: jest.fn().mockResolvedValue(undefined)
+            markReminderSent: jest.fn().mockResolvedValue(true)
         };
         const enqueue = jest.fn().mockRejectedValue(new Error('queue down'));
 
@@ -61,7 +83,7 @@ describe('reminderWorker.runReminderScan (U10)', () => {
         expect(eventService.markReminderSent).toHaveBeenCalledWith(8);
     });
 
-    test('edge: opted-in members lookup failure aborts cleanly without throwing', async () => {
+    test('edge: opted-in members lookup failure aborts cleanly without claiming', async () => {
         const eventService = {
             getEventsNeedingReminder: jest.fn().mockResolvedValue([makeEvent()]),
             getOptedInMembers: jest.fn().mockRejectedValue(new Error('db down')),
@@ -79,7 +101,7 @@ describe('reminderWorker.startReminderWorker (U10)', () => {
         const eventService = {
             getEventsNeedingReminder: jest.fn().mockResolvedValue([makeEvent({ id: 3 })]),
             getOptedInMembers: jest.fn().mockResolvedValue([{ id: 'm1', email: 'a@x.com', first_name: 'A' }]),
-            markReminderSent: jest.fn().mockResolvedValue(undefined)
+            markReminderSent: jest.fn().mockResolvedValue(true)
         };
         const enqueue = jest.fn().mockResolvedValue({});
 

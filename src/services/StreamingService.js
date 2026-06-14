@@ -449,6 +449,11 @@ class StreamingService {
 
     async invalidateCaches() {
         await CacheService.del(CACHE_KEY);
+        // EventService caches the merged event list per visibility scope; a stream
+        // change alters that merge, so bust both scoped keys (+ the legacy key) or
+        // the homepage keeps serving the pre-merge list for the cache TTL.
+        await CacheService.del('event:all:public');
+        await CacheService.del('event:all:members');
         await CacheService.del('event:all');
     }
 }

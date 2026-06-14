@@ -94,7 +94,8 @@ class EventService {
         if (cachedEvents) {
             return cachedEvents.map(event => ({
                 ...event,
-                date: event.date ? new Date(event.date) : null
+                date: event.date ? new Date(event.date) : null,
+                endsAt: event.endsAt ? new Date(event.endsAt) : null
             }));
         }
 
@@ -238,11 +239,19 @@ class EventService {
     }
 
     /**
-     * Mark an event's 24h reminder as sent (one-shot guard).
+     * Atomically claim an event's 24h reminder (one-shot guard). Returns true only
+     * when THIS call flips reminder_sent_at NULL → NOW(), so an overlapping scan or
+     * a job retry can't double-fire the reminder to the whole membership. Callers
+     * claim BEFORE fanning out (claim-then-send).
      * @param {number} id
+     * @returns {Promise<boolean>} true if this call won the claim
      */
     async markReminderSent(id) {
-        await db.query('UPDATE events SET reminder_sent_at = NOW() WHERE id = $1', [id]);
+        const result = await db.query(
+            'UPDATE events SET reminder_sent_at = NOW() WHERE id = $1 AND reminder_sent_at IS NULL RETURNING id',
+            [id]
+        );
+        return result.rows.length > 0;
     }
 
     /**
@@ -521,31 +530,31 @@ class EventService {
             });
         }
 
-        for (const member of members) {
-            await enqueueEmail({
-                to: member.email,
-                template,
-                data: {
-                    memberName: member.first_name || 'Member',
-                    eventId: event.id,
-                    title: event.title,
-                    description: event.description,
-                    date: event.date,
-                    location: event.location,
-                    zoomUrl: event.zoomUrl,
-                    calendarUrl: process.env.APP_BASE_URL
-                        ? `${process.env.APP_BASE_URL}/calendar`
-                        : 'http://localhost:3000/calendar',
-                    unsubscribeToken: member.id
-                },
-                attachments: icsAttachment ? [icsAttachment] : undefined,
-                priority: 2
-            }).catch(error => logger.error('Failed to queue calendar notification email', {
-                error: error.message,
+        // Fan out concurrently with per-recipient failure isolation (mirrors
+        // AnnouncementService) so one bad address can't block or abort the rest.
+        await Promise.allSettled(members.map(member => enqueueEmail({
+            to: member.email,
+            template,
+            data: {
+                memberName: member.first_name || 'Member',
                 eventId: event.id,
-                template
-            }));
-        }
+                title: event.title,
+                description: event.description,
+                date: event.date,
+                location: event.location,
+                zoomUrl: event.zoomUrl,
+                calendarUrl: process.env.APP_BASE_URL
+                    ? `${process.env.APP_BASE_URL}/calendar`
+                    : 'http://localhost:3000/calendar',
+                unsubscribeToken: member.id
+            },
+            attachments: icsAttachment ? [icsAttachment] : undefined,
+            priority: 2
+        }).catch(error => logger.error('Failed to queue calendar notification email', {
+            error: error.message,
+            eventId: event.id,
+            template
+        }))));
     }
 }
 

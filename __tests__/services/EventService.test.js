@@ -131,6 +131,20 @@ describe('EventService reads (U1)', () => {
         expect(sql).toContain('reminder_sent_at IS NULL');
         expect(sql).toContain("INTERVAL '24 hours'");
     });
+
+    test('markReminderSent claims atomically: true on update, false when already sent', async () => {
+        db.query.mockResolvedValueOnce({ rows: [{ id: 7 }] });
+        const won = await EventService.markReminderSent(7);
+        expect(won).toBe(true);
+        const sql = db.query.mock.calls[0][0];
+        expect(sql).toContain('reminder_sent_at = NOW()');
+        expect(sql).toContain('reminder_sent_at IS NULL'); // the one-shot guard
+        expect(sql).toContain('RETURNING');
+
+        db.query.mockResolvedValueOnce({ rows: [] }); // already claimed by another scan
+        const lost = await EventService.markReminderSent(7);
+        expect(lost).toBe(false);
+    });
 });
 
 describe('EventService writes (U1)', () => {

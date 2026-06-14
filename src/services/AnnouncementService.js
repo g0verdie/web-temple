@@ -37,6 +37,9 @@ const SANITIZE_OPTIONS = {
         a: ['http', 'https', 'mailto'],
         img: ['http', 'https']
     },
+    // Reject protocol-relative URLs (//evil.com), which otherwise bypass the scheme
+    // allowlist and render as off-site links on the public homepage.
+    allowProtocolRelative: false,
     // Drop <img> that has no alt text (accessibility requirement, Story 5.2).
     exclusiveFilter: (frame) => frame.tag === 'img' && !(frame.attribs && frame.attribs.alt && frame.attribs.alt.trim()),
     disallowedTagsMode: 'discard'

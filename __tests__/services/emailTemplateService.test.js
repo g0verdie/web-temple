@@ -77,5 +77,36 @@ describe('emailTemplateService', () => {
             expect(r.html).not.toContain('Where:');
             expect(r.html).not.toContain('Join online');
         });
+
+        test('security: hostile event fields are HTML-escaped in the email body (no stored XSS)', () => {
+            const r = emailTemplateService.renderTemplate('new-event', {
+                memberName: 'Ilya',
+                title: '<script>alert(1)</script>',
+                description: '<img src=x onerror=alert(2)>',
+                location: '"><b>hax</b>',
+                zoomUrl: 'javascript:alert(3)',
+                date: new Date('2099-07-10T19:00:00Z'),
+                calendarUrl: 'https://temple.example.com/calendar'
+            });
+            // Raw author markup must NOT survive into the HTML body.
+            expect(r.html).not.toContain('<script>alert(1)</script>');
+            expect(r.html).not.toContain('<img src=x onerror=alert(2)>');
+            expect(r.html).not.toContain('<b>hax</b>');
+            // Escaped entities are present instead.
+            expect(r.html).toContain('&lt;script&gt;');
+            // A javascript: zoom URL must be neutralised in the href.
+            expect(r.html).not.toContain('href="javascript:alert(3)"');
+        });
+
+        test('security: event-reminder escapes hostile fields too', () => {
+            const r = emailTemplateService.renderTemplate('event-reminder', {
+                title: '<script>x</script>',
+                description: '<svg onload=alert(1)>',
+                date: new Date('2099-07-10T19:00:00Z')
+            });
+            expect(r.html).not.toContain('<script>x</script>');
+            expect(r.html).not.toContain('<svg onload=alert(1)>');
+            expect(r.html).toContain('&lt;script&gt;');
+        });
     });
 });

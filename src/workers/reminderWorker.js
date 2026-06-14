@@ -61,7 +61,21 @@ const runReminderScan = async ({
 
     let emailsQueued = 0;
 
+    let eventsProcessed = 0;
+
     for (const event of events) {
+        // Claim-then-send: atomically flip reminder_sent_at NULL → NOW() BEFORE the
+        // fan-out. If we don't win the claim (an overlapping scan or a job retry got
+        // here first), skip — so the whole membership is never reminded twice.
+        let claimed = false;
+        try {
+            claimed = await eventService.markReminderSent(event.id);
+        } catch (error) {
+            log.error('Reminder scan failed to claim reminder', { error: error.message, eventId: event.id });
+        }
+        if (!claimed) continue;
+        eventsProcessed++;
+
         let icsAttachment = null;
         try {
             const ics = buildIcs(event);
@@ -95,16 +109,9 @@ const runReminderScan = async ({
                     eventId: event.id
                 }));
         }
-
-        // One-shot guard: set immediately so overlapping scans don't double-send.
-        try {
-            await eventService.markReminderSent(event.id);
-        } catch (error) {
-            log.error('Reminder scan failed to mark reminder sent', { error: error.message, eventId: event.id });
-        }
     }
 
-    return { eventsProcessed: events.length, emailsQueued };
+    return { eventsProcessed, emailsQueued };
 };
 
 const startReminderWorker = ({

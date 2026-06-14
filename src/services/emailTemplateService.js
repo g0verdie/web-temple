@@ -17,6 +17,22 @@ const formatEventTime = (value) => {
     return d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });
 };
 
+// Escape user-authored text before embedding it in email HTML. Calendar event
+// fields (title/description/location/zoomUrl) are staff-authored and fan out to
+// every opted-in member, so they must be escaped at this sink (security review).
+const htmlEscape = (value) => String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+// Only emit an href for http(s) URLs; neutralise javascript:/data:/etc.
+const safeHttpUrl = (value) => {
+    const s = String(value == null ? '' : value).trim();
+    return /^https?:\/\//i.test(s) ? s : '#';
+};
+
 const buildUnsubscribeLink = (token) => {
     const baseUrl = process.env.APP_BASE_URL || 'http://localhost:3000';
     const url = new URL('/unsubscribe', baseUrl);
@@ -117,11 +133,11 @@ If you did not request this change, you can ignore this email.`
     'new-event': (data = {}) => ({
         subject: `New Temple Event: ${data.title || 'Event'}`,
         html: `<p>Shalom${data.memberName ? ` ${data.memberName}` : ''}!</p>
-               <p>A new event has been added to the temple calendar: <strong>${data.title || 'Event'}</strong></p>
+               <p>A new event has been added to the temple calendar: <strong>${htmlEscape(data.title || 'Event')}</strong></p>
                ${data.date ? `<p>When: ${formatEventDateTime(data.date)}</p>` : ''}
-               ${data.location ? `<p>Where: ${data.location}</p>` : ''}
-               ${data.zoomUrl ? `<p>Join online: <a href="${data.zoomUrl}">${data.zoomUrl}</a></p>` : ''}
-               ${data.description ? `<p>${data.description}</p>` : ''}
+               ${data.location ? `<p>Where: ${htmlEscape(data.location)}</p>` : ''}
+               ${data.zoomUrl ? `<p>Join online: <a href="${safeHttpUrl(data.zoomUrl)}">${htmlEscape(data.zoomUrl)}</a></p>` : ''}
+               ${data.description ? `<p>${htmlEscape(data.description)}</p>` : ''}
                <p>An "Add to Calendar" file is attached.</p>
                <p><a href="${data.calendarUrl || '#'}">View the calendar</a></p>`,
         text: `Shalom${data.memberName ? ` ${data.memberName}` : ''}!\n\nA new event has been added to the temple calendar: ${data.title || 'Event'}\n${data.date ? `When: ${formatEventDateTime(data.date)}\n` : ''}${data.location ? `Where: ${data.location}\n` : ''}${data.zoomUrl ? `Join online: ${data.zoomUrl}\n` : ''}${data.description ? `\n${data.description}\n` : ''}\nAn "Add to Calendar" file is attached.\nView the calendar: ${data.calendarUrl || '#'}`
@@ -129,11 +145,11 @@ If you did not request this change, you can ignore this email.`
     'event-updated': (data = {}) => ({
         subject: `Event Updated: ${data.title || 'Event'}`,
         html: `<p>Shalom${data.memberName ? ` ${data.memberName}` : ''}!</p>
-               <p>An event on the temple calendar has been updated: <strong>${data.title || 'Event'}</strong></p>
+               <p>An event on the temple calendar has been updated: <strong>${htmlEscape(data.title || 'Event')}</strong></p>
                ${data.date ? `<p>When: ${formatEventDateTime(data.date)}</p>` : ''}
-               ${data.location ? `<p>Where: ${data.location}</p>` : ''}
-               ${data.zoomUrl ? `<p>Join online: <a href="${data.zoomUrl}">${data.zoomUrl}</a></p>` : ''}
-               ${data.description ? `<p>${data.description}</p>` : ''}
+               ${data.location ? `<p>Where: ${htmlEscape(data.location)}</p>` : ''}
+               ${data.zoomUrl ? `<p>Join online: <a href="${safeHttpUrl(data.zoomUrl)}">${htmlEscape(data.zoomUrl)}</a></p>` : ''}
+               ${data.description ? `<p>${htmlEscape(data.description)}</p>` : ''}
                <p>An updated "Add to Calendar" file is attached.</p>
                <p><a href="${data.calendarUrl || '#'}">View the calendar</a></p>`,
         text: `Shalom${data.memberName ? ` ${data.memberName}` : ''}!\n\nAn event on the temple calendar has been updated: ${data.title || 'Event'}\n${data.date ? `When: ${formatEventDateTime(data.date)}\n` : ''}${data.location ? `Where: ${data.location}\n` : ''}${data.zoomUrl ? `Join online: ${data.zoomUrl}\n` : ''}${data.description ? `\n${data.description}\n` : ''}\nAn updated "Add to Calendar" file is attached.\nView the calendar: ${data.calendarUrl || '#'}`
@@ -141,7 +157,7 @@ If you did not request this change, you can ignore this email.`
     'event-canceled': (data = {}) => ({
         subject: `Event Canceled: ${data.title || 'Event'}`,
         html: `<p>Shalom${data.memberName ? ` ${data.memberName}` : ''}.</p>
-               <p>The following event has been canceled: <strong>${data.title || 'Event'}</strong></p>
+               <p>The following event has been canceled: <strong>${htmlEscape(data.title || 'Event')}</strong></p>
                ${data.date ? `<p>Originally scheduled for: ${formatEventDateTime(data.date)}</p>` : ''}
                <p>We apologize for any inconvenience.</p>
                <p><a href="${data.calendarUrl || '#'}">View the calendar</a></p>`,
@@ -150,11 +166,11 @@ If you did not request this change, you can ignore this email.`
     'event-reminder': (data = {}) => ({
         subject: `Reminder: ${data.title || 'Event'} tomorrow at ${formatEventTime(data.date)}`,
         html: `<p>Shalom${data.memberName ? ` ${data.memberName}` : ''}!</p>
-               <p>This event starts in 24 hours: <strong>${data.title || 'Event'}</strong></p>
+               <p>This event starts in 24 hours: <strong>${htmlEscape(data.title || 'Event')}</strong></p>
                ${data.date ? `<p>When: ${formatEventDateTime(data.date)}</p>` : ''}
-               ${data.location ? `<p>Where: ${data.location}</p>` : ''}
-               ${data.zoomUrl ? `<p>Join online: <a href="${data.zoomUrl}">${data.zoomUrl}</a></p>` : ''}
-               ${data.description ? `<p>${data.description}</p>` : ''}
+               ${data.location ? `<p>Where: ${htmlEscape(data.location)}</p>` : ''}
+               ${data.zoomUrl ? `<p>Join online: <a href="${safeHttpUrl(data.zoomUrl)}">${htmlEscape(data.zoomUrl)}</a></p>` : ''}
+               ${data.description ? `<p>${htmlEscape(data.description)}</p>` : ''}
                <p>An "Add to Calendar" file is attached.</p>
                <p><a href="${data.calendarUrl || '#'}">View the calendar</a></p>`,
         text: `Shalom${data.memberName ? ` ${data.memberName}` : ''}!\n\nThis event starts in 24 hours: ${data.title || 'Event'}\n${data.date ? `When: ${formatEventDateTime(data.date)}\n` : ''}${data.location ? `Where: ${data.location}\n` : ''}${data.zoomUrl ? `Join online: ${data.zoomUrl}\n` : ''}${data.description ? `\n${data.description}\n` : ''}\nAn "Add to Calendar" file is attached.\nView the calendar: ${data.calendarUrl || '#'}`

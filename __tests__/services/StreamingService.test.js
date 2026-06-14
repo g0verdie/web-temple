@@ -28,6 +28,18 @@ describe('StreamingService', () => {
         process.env = originalEnv;
     });
 
+    it('invalidateCaches busts the visibility-scoped event cache keys so the homepage refreshes', async () => {
+        // EventService caches the merged event list under event:all:public / :members;
+        // a stream mutation must bust both or the homepage serves the pre-merge list.
+        // beforeEach calls jest.resetModules(), so require CacheService fresh here to
+        // get the same mocked instance the re-required StreamingService uses.
+        const StreamingService = require('../../src/services/StreamingService');
+        const cache = require('../../src/services/CacheService');
+        await StreamingService.invalidateCaches();
+        expect(cache.del).toHaveBeenCalledWith('event:all:public');
+        expect(cache.del).toHaveBeenCalledWith('event:all:members');
+    });
+
     it('returns offline state when no active stream or future scheduled start is configured', async () => {
         const StreamingService = require('../../src/services/StreamingService');
 
