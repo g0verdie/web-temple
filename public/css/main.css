@@ -738,3 +738,26 @@ img[loading="lazy"] {
   text-align: center;
   padding: 0 var(--spacing-sm);
 }
+
+/* ── CSP: utility classes moved out of inline style= attributes ─────────────── */
+.error-page-main {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.u-nowrap {
+  white-space: nowrap;
+}
+
+.chat-msg-cell {
+  max-width: 400px;
+  word-break: break-word;
+}
+
+.recording-preview-box {
+  border: 1px solid #ccc;
+  padding: 10px;
+  border-radius: 4px;
+  min-height: 300px;
+  background-color: #f9f9f9;
+}
