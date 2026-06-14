@@ -13,8 +13,8 @@
 Confirmed LOW findings, deferred to a follow-up polish story (the 2 HIGH WS-robustness
 issues, the connection-cap TOCTOU, the pause-UI AC, and the test gaps were fixed in this pass):
 
-- Guest display-name impersonation: a guest can pick "Rabbi David"; add a guest/member provenance badge in live-chat.js appendMessage, recordings/show.ejs, and the moderation queue [src/services/chatSocketServer.js, public/js/live-chat.js]
-- WS upgrade auth skips the token_version/blacklist check that requireAuth enforces, so a revoked/demoted JWT keeps working (incl. moderator role) over WS until natural expiry [src/services/chatSocketServer.js:223-231]
+- ~~Guest display-name impersonation~~ **[RESOLVED 2026-06-14, f/launch-verification]** — Guest badge now rendered wherever chat authors appear (live-chat.js, recordings/show.ejs, chat-moderation.ejs) keyed on user_id IS NULL.
+- ~~WS upgrade auth skips the token_version/blacklist check~~ **[RESOLVED 2026-06-14, f/launch-verification]** — the upgrade now mirrors requireAuth (jti blacklist + token_version) and rejects revoked/demoted sessions with 401.
 - Inline style attributes vs the strict CSP (no 'unsafe-inline' on styleSrc) [src/views/admin/chat-moderation.ejs:25,31,34; src/views/recordings/show.ejs:113] — pre-existing pattern in other views
 - Reconnect stampede: no jitter on the backoff intervals, and closeAllConnections() is defined but never wired to SIGTERM/SIGINT so a restart produces synchronized reconnects [public/js/live-chat.js:17,184-235; src/services/chatSocketServer.js:312]
 - Dead moderator-badge branch: live-chat.js styles msg.role but no query/column/broadcast ever supplies role — either drop it or denormalize role through the payload [public/js/live-chat.js:410-413]

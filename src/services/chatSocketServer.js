@@ -7,6 +7,7 @@ const ws = require('ws');
 const url = require('url');
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
+const redis = require('../config/redis');
 const logger = require('../utils/logger');
 
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'test' ? 'test-jwt-secret' : null);
@@ -56,29 +57,14 @@ const hasModeratorPermission = (role) => {
     return ['admin', 'rabbi', 'social_chair'].includes(role);
 };
 
-// Resolve display name for logged-in user or guest fallback
-const resolveUserDisplayName = async (userId, guestNameFallback) => {
-    if (!userId) {
-        return guestNameFallback || 'Guest';
+// Format a display name from a users row: first+last → first → email local-part.
+const formatDisplayName = (u) => {
+    const firstName = (u.first_name || '').trim();
+    const lastName = (u.last_name || '').trim();
+    if (firstName) {
+        return lastName ? `${firstName} ${lastName}` : firstName;
     }
-    try {
-        const result = await db.query(
-            'SELECT first_name, last_name, email FROM users WHERE id = $1',
-            [userId]
-        );
-        if (result.rows.length > 0) {
-            const u = result.rows[0];
-            const firstName = (u.first_name || '').trim();
-            const lastName = (u.last_name || '').trim();
-            if (firstName) {
-                return lastName ? `${firstName} ${lastName}` : firstName;
-            }
-            return u.email.split('@')[0];
-        }
-    } catch (e) {
-        logger.error(`Error resolving display name for WS: ${e.message}`);
-    }
-    return guestNameFallback || 'Member';
+    return (u.email || '').split('@')[0] || 'Member';
 };
 
 let wss = null;
@@ -259,6 +245,8 @@ const initChatSocketServer = (server) => {
         // is atomic on the single-threaded event loop.
         let userId = null;
         let role = 'guest';
+        let tokenJti = null;
+        let tokenVersion = 0;
 
         const cookies = parseCookies(request.headers ? request.headers.cookie : null);
         const token = cookies.auth_token || query.auth_token;
@@ -268,6 +256,8 @@ const initChatSocketServer = (server) => {
                 const decoded = jwt.verify(token, JWT_SECRET);
                 userId = decoded.user_id;
                 role = decoded.role;
+                tokenJti = decoded.jti || null;
+                tokenVersion = decoded.token_version || 0;
             } catch (err) {
                 // Ignore token and treat as guest
             }
@@ -321,30 +311,65 @@ const initChatSocketServer = (server) => {
             socket.destroy();
         }, UPGRADE_AUTH_TIMEOUT_MS);
 
-        resolveUserDisplayName(userId, query.guestName)
-            .then((displayName) => {
-                clearTimeout(authTimeout);
-                wss.handleUpgrade(request, socket, head, (wsClient) => {
-                    socket.removeListener('error', onSocketError);
-                    releaseReservation();
-                    wss.emit('connection', wsClient, request, {
-                        streamId,
-                        userId,
-                        displayName,
-                        role
-                    });
-                });
-            })
-            .catch((err) => {
-                clearTimeout(authTimeout);
-                socket.removeListener('error', onSocketError);
-                releaseReservation();
-                logger.error(`WS Upgrade resolve error: ${err.message}`);
-                if (!socket.destroyed) {
-                    socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
-                    socket.destroy();
+        const rejectUpgrade = (statusLine) => {
+            clearTimeout(authTimeout);
+            socket.removeListener('error', onSocketError);
+            releaseReservation();
+            if (!socket.destroyed) {
+                socket.write(`HTTP/1.1 ${statusLine}\r\n\r\n`);
+                socket.destroy();
+            }
+        };
+
+        const finalizeUpgrade = async () => {
+            let displayName;
+
+            if (userId) {
+                // Mirror requireAuth's revocation checks: a blacklisted jti or a
+                // token_version mismatch means the session was invalidated upstream
+                // (logout / password change / forced logout). Don't honor a stale
+                // role — possibly moderator — for the connection's whole lifetime.
+                if (tokenJti) {
+                    const blacklisted = await redis.get(`invalidated:token:${tokenJti}`);
+                    if (blacklisted) {
+                        return rejectUpgrade('401 Unauthorized');
+                    }
                 }
+                const result = await db.query(
+                    'SELECT first_name, last_name, email, token_version, role FROM users WHERE id = $1',
+                    [userId]
+                );
+                if (result.rows.length === 0) {
+                    return rejectUpgrade('401 Unauthorized');
+                }
+                const u = result.rows[0];
+                if (tokenVersion !== (u.token_version || 0)) {
+                    return rejectUpgrade('401 Unauthorized');
+                }
+                // Trust the live DB role over the (older) token role.
+                role = u.role || role;
+                displayName = formatDisplayName(u);
+            } else {
+                displayName = (query.guestName && query.guestName.trim()) || 'Guest';
+            }
+
+            clearTimeout(authTimeout);
+            socket.removeListener('error', onSocketError);
+            releaseReservation();
+            wss.handleUpgrade(request, socket, head, (wsClient) => {
+                wss.emit('connection', wsClient, request, {
+                    streamId,
+                    userId,
+                    displayName,
+                    role
+                });
             });
+        };
+
+        finalizeUpgrade().catch((err) => {
+            logger.error(`WS Upgrade finalize error: ${err.message}`);
+            rejectUpgrade('500 Internal Server Error');
+        });
     });
 
     return wss;

@@ -444,9 +444,14 @@
 
         const timeStr = msgTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+        // Guests (no user_id) are tagged so a guest can't pass as clergy/staff
+        // (e.g. choosing the display name "Rabbi David") without it being visible.
+        const guestBadge = !msg.user_id ? '<span class="message-guest-badge">Guest</span>' : '';
+
         msgDiv.innerHTML = `
             <div class="message-meta">
                 <span class="message-author">${escapeHTML(msg.display_name)}</span>
+                ${guestBadge}
                 <span class="message-time">${timeStr}</span>
             </div>
             <div class="message-text">${escapeHTML(msg.message_text)}</div>

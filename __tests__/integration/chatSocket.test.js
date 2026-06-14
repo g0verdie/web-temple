@@ -163,6 +163,47 @@ describe('Chat WebSocket Server Integration Tests', () => {
             expect(wsClient.send).toHaveBeenCalledWith(expect.stringContaining('connection_established'));
         });
 
+        it('rejects an authenticated upgrade when token_version is stale (revoked session)', async () => {
+            const token = jwt.sign({ user_id: 'user-stale', role: 'rabbi', email: 'r@e.com', token_version: 1 }, JWT_SECRET);
+            const req = { url: '/ws/chat?streamId=10', headers: { cookie: `auth_token=${token}` } };
+            const socket = makeSocket();
+
+            // DB has a newer token_version → the token was invalidated upstream.
+            db.query.mockResolvedValueOnce({
+                rows: [{ first_name: 'R', last_name: 'B', email: 'r@e.com', token_version: 2, role: 'rabbi' }]
+            });
+
+            let connected = false;
+            const onConn = () => { connected = true; };
+            wss.once('connection', onConn);
+            await emitUpgradeAsync(req, socket);
+            wss.removeListener('connection', onConn);
+
+            expect(socket.write).toHaveBeenCalledWith(expect.stringContaining('HTTP/1.1 401'));
+            expect(socket.destroy).toHaveBeenCalled();
+            expect(connected).toBe(false);
+        });
+
+        it('rejects an authenticated upgrade when the token jti is blacklisted', async () => {
+            const redis = require('../../src/config/redis');
+            await redis.set('invalidated:token:revoked-jti-1', '1');
+            const token = jwt.sign({ user_id: 'user-bl', role: 'admin', email: 'a@e.com', jti: 'revoked-jti-1' }, JWT_SECRET);
+            const req = { url: '/ws/chat?streamId=10', headers: { cookie: `auth_token=${token}` } };
+            const socket = makeSocket();
+
+            let connected = false;
+            const onConn = () => { connected = true; };
+            wss.once('connection', onConn);
+            await emitUpgradeAsync(req, socket);
+            wss.removeListener('connection', onConn);
+
+            expect(socket.write).toHaveBeenCalledWith(expect.stringContaining('HTTP/1.1 401'));
+            expect(socket.destroy).toHaveBeenCalled();
+            expect(connected).toBe(false);
+            // Blacklist hit short-circuits before any DB lookup.
+            expect(db.query).not.toHaveBeenCalled();
+        });
+
         it('should enforce concurrency limit of 50 connections per stream', async () => {
             const socket = makeSocket();
             

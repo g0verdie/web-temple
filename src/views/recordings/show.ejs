@@ -120,6 +120,7 @@
                         <div class="chat-message <%= (typeof user !== 'undefined' && user && String(msg.user_id) === String(user.id)) ? 'self' : '' %>">
                             <div class="message-meta">
                                 <span class="message-author"><%= msg.display_name %></span>
+                                <% if (!msg.user_id) { %><span class="message-guest-badge">Guest</span><% } %>
                                 <span class="message-time">
                                     <%= new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %>
                                 </span>

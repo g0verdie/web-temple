@@ -5,6 +5,12 @@
 // an IIFE that runs on require and reads #live-chat-panel at eval time, so each
 // test sets up the DOM, then requires the module fresh (jest.resetModules()).
 
+const { TextEncoder, TextDecoder } = require('util');
+global.TextEncoder = global.TextEncoder || TextEncoder;
+global.TextDecoder = global.TextDecoder || TextDecoder;
+const { axe, toHaveNoViolations } = require('jest-axe');
+expect.extend(toHaveNoViolations);
+
 class MockWebSocket {
     constructor(url) {
         this.url = url;
@@ -152,5 +158,33 @@ describe('live-chat client behavior', () => {
         loadModule();
 
         expect(document.getElementById('chat-pause-btn')).toBeNull();
+    });
+
+    it('tags guest-authored messages with a Guest badge but not authenticated ones', () => {
+        document.body.innerHTML = PANEL('member');
+        loadModule();
+        MockWebSocket.last._open();
+
+        MockWebSocket.last._emit({ type: 'message_approved', data: { id: 501, display_name: 'Rabbi David', message_text: 'hi', status: 'approved', user_id: null, created_at: '2026-06-14T12:00:00Z' } });
+        MockWebSocket.last._emit({ type: 'message_approved', data: { id: 502, display_name: 'Real Member', message_text: 'hello', status: 'approved', user_id: 'u-9', created_at: '2026-06-14T12:01:00Z' } });
+
+        const guestMsg = document.getElementById('msg-501');
+        const authMsg = document.getElementById('msg-502');
+        expect(guestMsg.querySelector('.message-guest-badge')).not.toBeNull();
+        expect(guestMsg.querySelector('.message-guest-badge').textContent).toBe('Guest');
+        expect(authMsg.querySelector('.message-guest-badge')).toBeNull();
+    });
+
+    it('the rendered moderator chat UI has no WCAG AA violations', async () => {
+        document.body.innerHTML = PANEL('rabbi');
+        loadModule();
+        MockWebSocket.last._open();
+
+        // axe-core uses real timers internally; the chat UI is fully rendered by now.
+        jest.useRealTimers();
+        const results = await axe(document.getElementById('live-chat-panel'), {
+            runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] }
+        });
+        expect(results).toHaveNoViolations();
     });
 });

@@ -163,6 +163,19 @@
     color: #2a5db0;
 }
 
+.message-guest-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #6b7280;
+    background-color: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 0 0.3rem;
+    margin-left: 0.25rem;
+}
+
 .message-time {
     color: #9ca3af;
 }
