@@ -81,7 +81,7 @@ exports.getHomepage = async (req, res) => {
       viewData: {
         mission: {
           headline: 'Welcome to Temple B\'nai Israel',
-          statement: 'A warm, inclusive Jewish community in Hattiesburg, MS, celebrating tradition, fostering spiritual growth, and building lasting connections.',
+          statement: 'A warm, inclusive Jewish community in Florence, AL, celebrating tradition, fostering spiritual growth, and building lasting connections.',
           cta: {
             text: 'New Here? Learn More',
             link: '/about'
