@@ -77,10 +77,11 @@ describe('Admin directory routes', () => {
                 .send({ user_id: 'u2', unlist: 'on', clearFields: ['bio', 'household_encrypted'] });
             expect(res.status).toBe(302);
             expect(res.header.location).toBe('/admin/directory');
-            expect(MemberDirectoryService.moderateProfile).toHaveBeenCalledWith('u2', {
+            expect(MemberDirectoryService.moderateProfile).toHaveBeenCalledWith('u2', expect.objectContaining({
                 unlist: true,
-                clearFields: ['bio', 'household_encrypted']
-            });
+                clearFields: ['bio', 'household_encrypted'],
+                actorId: 'admin-1'
+            }));
         });
 
         it('400s when no member is specified', async () => {

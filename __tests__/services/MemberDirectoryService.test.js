@@ -153,7 +153,12 @@ describe('MemberDirectoryService', () => {
     describe('getListedProfile', () => {
         test('returns null for a member who is not listed', async () => {
             db.query.mockResolvedValue({ rows: [] });
-            expect(await svc.getListedProfile('u9')).toBeNull();
+            expect(await svc.getListedProfile('11111111-1111-4111-8111-111111111111')).toBeNull();
+        });
+
+        test('returns null for a malformed (non-UUID) id without querying', async () => {
+            expect(await svc.getListedProfile('not-a-uuid')).toBeNull();
+            expect(db.query).not.toHaveBeenCalled();
         });
     });
 

@@ -11,6 +11,7 @@
  */
 
 const db = require('../config/db');
+const validator = require('validator');
 const logger = require('../utils/logger');
 const { encrypt, decrypt } = require('../utils/encryptionHelper');
 const { logAudit, AUDIT_ACTIONS } = require('./auditService');
@@ -230,6 +231,12 @@ const listListedProfiles = async ({ search, page = 1, limit = 20 } = {}) => {
  * listed (member-facing callers can never see an unlisted profile).
  */
 const getListedProfile = async (userId) => {
+    // Guard the UUID column: a malformed id (e.g. /directory/foo) would otherwise
+    // hit Postgres 22P02 and surface as a 500. Treat it as not-found instead
+    // (mirrors RecordingService.getPublishedRecordingById's uuid guard).
+    if (!userId || !validator.isUUID(String(userId))) {
+        return null;
+    }
     const result = await db.query(
         `SELECT mp.user_id, u.first_name, u.last_name, u.email,
                 mp.show_phone, mp.show_email, mp.show_household,
@@ -333,7 +340,7 @@ const listAllMembersForAdmin = async ({ search, page = 1, limit = 20 } = {}) => 
  * fields. `clearFields` is validated against MODERATABLE_FIELDS — any other column
  * name is ignored. Audit-logged. Standalone; no dependency on the Rabbi dashboard.
  */
-const moderateProfile = async (targetUserId, { unlist = false, clearFields = [] } = {}) => {
+const moderateProfile = async (targetUserId, { unlist = false, clearFields = [], actorId = null } = {}) => {
     const setClauses = [];
     if (unlist) setClauses.push('listed = false');
 
@@ -355,6 +362,7 @@ const moderateProfile = async (targetUserId, { unlist = false, clearFields = [] 
     );
 
     logAudit({
+        user_id: actorId,
         action: AUDIT_ACTIONS.DIRECTORY_MODERATED,
         entity_type: 'member_profile',
         entity_id: targetUserId,

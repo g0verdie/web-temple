@@ -56,7 +56,11 @@ exports.moderate = async (req, res) => {
         let clearFields = (req.body && req.body.clearFields) || [];
         if (typeof clearFields === 'string') clearFields = [clearFields];
 
-        await MemberDirectoryService.moderateProfile(userId, { unlist, clearFields });
+        await MemberDirectoryService.moderateProfile(userId, {
+            unlist,
+            clearFields,
+            actorId: req.user && req.user.id
+        });
         return res.redirect('/admin/directory');
     } catch (error) {
         console.error('Error moderating directory profile:', error);
