@@ -20,7 +20,9 @@ jest.mock('../../src/controllers/userController', () => ({
     changePassword: jest.fn(),
     requestEmailChange: jest.fn(),
     confirmEmailChange: jest.fn(),
-    completeOnboarding: jest.fn()
+    completeOnboarding: jest.fn(),
+    getDirectoryListing: jest.fn(),
+    updateDirectoryListing: jest.fn()
 }));
 jest.mock('../../src/routes/auth', () => {
     const router = require('express').Router();
