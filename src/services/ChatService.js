@@ -79,7 +79,26 @@ const createMessage = async ({ streamId, userId, displayName, messageText }) => 
     const values = [cleanStreamId, userId || null, cleanDisplayName, cleanMessageText, status];
 
     const result = await db.query(query, values);
-    return result.rows[0];
+    const message = result.rows[0];
+
+    // Audit auto-filter so moderators can review the heuristic's calls.
+    // user_id is the poster (or null for a guest); this is a system action,
+    // not a moderation action, so the description carries the reason.
+    if (isSpam) {
+        try {
+            await logAudit({
+                user_id: userId || null,
+                action: AUDIT_ACTIONS.CHAT_MESSAGE_AUTO_FILTERED,
+                entity_type: 'chat_message',
+                entity_id: String(message.id),
+                description: `Auto-filtered as spam from ${cleanDisplayName}: "${cleanMessageText.substring(0, 30)}..."`
+            });
+        } catch (e) {
+            logger.error(`Audit write for auto-filter failed: ${e.message}`);
+        }
+    }
+
+    return message;
 };
 
 /**
@@ -193,13 +212,16 @@ const getMessagesForRecording = async (serviceDate) => {
     }
 
     try {
-        // Query to find closest stream within 6 hours of the recording's service date
+        // Query to find closest stream within 6 hours of the recording's service date.
+        // Cast to timestamptz on both sides: scheduled_start is TIMESTAMPTZ; if we cast
+        // to plain timestamp the comparison silently reapplies session TZ and the 6h
+        // window drifts by (session_tz - UTC). See review finding #3.
         const streamQuery = `
             SELECT id
             FROM scheduled_streams
-            WHERE scheduled_start >= $1::timestamp - INTERVAL '6 hours'
-              AND scheduled_start <= $1::timestamp + INTERVAL '6 hours'
-            ORDER BY ABS(EXTRACT(EPOCH FROM (scheduled_start - $1::timestamp))) ASC
+            WHERE scheduled_start >= $1::timestamptz - INTERVAL '6 hours'
+              AND scheduled_start <= $1::timestamptz + INTERVAL '6 hours'
+            ORDER BY ABS(EXTRACT(EPOCH FROM (scheduled_start - $1::timestamptz))) ASC
             LIMIT 1
         `;
         const dateObj = new Date(serviceDate);

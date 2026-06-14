@@ -19,7 +19,8 @@
   </div>
 
   <% if (stream && stream.status === 'live' && stream.embedUrl) { %>
-    <link rel="stylesheet" href="/css/live-chat.css">
+    <% const chatEnabled = !!stream.id; /* env-var fallback path has no DB id; chat needs a real stream id */ %>
+    <% if (chatEnabled) { %><link rel="stylesheet" href="/css/live-chat.css"><% } %>
     <div class="stream-container-layout">
       <div class="stream-card">
         <div class="stream-player-frame">
@@ -43,12 +44,14 @@
         </div>
       </div>
 
+      <% if (chatEnabled) { %>
       <!-- Live Chat Panel -->
-      <div id="live-chat-panel" 
-           data-stream-id="<%= stream.id %>" 
+      <div id="live-chat-panel"
+           data-stream-id="<%= stream.id %>"
            data-logged-in="<%= typeof user !== 'undefined' && user ? 'true' : 'false' %>"
            data-current-user-id="<%= typeof user !== 'undefined' && user ? user.id : '' %>">
       </div>
+      <% } %>
     </div>
   <% } else { %>
     <div class="stream-card stream-card--fallback">
@@ -139,6 +142,6 @@
 
 <!-- Client-side logic for countdown timer and stream parsing -->
 <script src="/js/stream-status.js"></script>
-<% if (stream && stream.status === 'live' && stream.embedUrl) { %>
+<% if (stream && stream.status === 'live' && stream.embedUrl && stream.id) { %>
 <script src="/js/live-chat.js"></script>
 <% } %>

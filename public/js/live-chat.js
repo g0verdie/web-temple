@@ -358,8 +358,9 @@
 
             const result = await response.json();
             if (result.success) {
-                const container = document.getElementById('chat-messages-container');
-                container.innerHTML = ''; // Clear previous messages
+                // Don't clear the container: any message broadcast that arrived between
+                // socket.onopen and this fetch resolving could be wiped, and the fetch's
+                // snapshot may not include it yet. appendMessage dedupes via msg-${id}.
                 result.data.forEach(msg => {
                     appendMessage(msg);
                 });
@@ -420,6 +421,7 @@
             </div>
             <div class="message-text">${escapeHTML(msg.message_text)}</div>
             ${msg.status === 'pending' ? '<span class="message-status-tag">Pending approval</span>' : ''}
+            ${msg.status === 'deleted' ? '<span class="message-status-tag message-status-tag--filtered">Held for review</span>' : ''}
         `;
 
         // Check if container was scrolled to the bottom before appending

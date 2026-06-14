@@ -260,6 +260,9 @@ const initChatSocketServer = (server) => {
                     socket.write('HTTP/1.1 500 Internal Server Error\r\n\r\n');
                     socket.destroy();
                 });
+        } else {
+            // Drop unknown upgrade paths so half-open sockets don't accumulate.
+            socket.destroy();
         }
     });
 
