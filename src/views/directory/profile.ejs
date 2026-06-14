@@ -1,0 +1,43 @@
+<div class="directory-container member-profile">
+    <p><a href="/directory">&larr; Back to directory</a></p>
+
+    <div class="member-profile-header">
+        <%- include('../partials/initials-avatar', { initials: profile.initials }) %>
+        <h1><%= profile.first_name %> <%= profile.last_name %></h1>
+    </div>
+
+    <% if (profile.bio) { %>
+        <section class="member-section" aria-labelledby="bio-heading">
+            <h2 id="bio-heading">About</h2>
+            <p><%= profile.bio %></p>
+        </section>
+    <% } %>
+
+    <% if (profile.interests) { %>
+        <section class="member-section" aria-labelledby="interests-heading">
+            <h2 id="interests-heading">Committees &amp; Interests</h2>
+            <p><%= profile.interests %></p>
+        </section>
+    <% } %>
+
+    <% if (profile.household) { %>
+        <section class="member-section" aria-labelledby="household-heading">
+            <h2 id="household-heading">Household</h2>
+            <p><%= profile.household %></p>
+        </section>
+    <% } %>
+
+    <% if (profile.email || profile.phone) { %>
+        <section class="member-section" aria-labelledby="contact-heading">
+            <h2 id="contact-heading">Contact</h2>
+            <ul class="member-contact">
+                <% if (profile.email) { %>
+                    <li>Email: <a href="mailto:<%= profile.email %>"><%= profile.email %></a></li>
+                <% } %>
+                <% if (profile.phone) { %>
+                    <li>Phone: <a href="tel:<%= profile.phone %>"><%= profile.phone %></a></li>
+                <% } %>
+            </ul>
+        </section>
+    <% } %>
+</div>
