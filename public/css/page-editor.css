@@ -95,9 +95,9 @@
 }
 
 .form-input:focus {
-    outline: 2px solid #c9a961;
+    outline: 2px solid var(--color-gold-focus);
     outline-offset: 2px;
-    border-color: #c9a961;
+    border-color: var(--color-gold);
 }
 
 .form-help {
@@ -117,8 +117,8 @@
 }
 
 .quill-editor:focus-within {
-    border-color: #c9a961;
-    box-shadow: 0 0 0 2px rgba(201, 169, 97, 0.1);
+    border-color: var(--color-gold);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-gold) 10%, transparent);
 }
 
 .ql-toolbar {
@@ -146,7 +146,7 @@
     background-color: #f9f8f6;
     padding: 1.5rem;
     border-radius: 4px;
-    border-left: 4px solid #c9a961;
+    border-left: 4px solid var(--color-gold);
 }
 
 .publish-section__title {
@@ -186,7 +186,7 @@
 .btn:hover,
 .btn:focus {
     background-color: #2d5a7b;
-    outline: 2px solid #c9a961;
+    outline: 2px solid var(--color-gold-focus);
     outline-offset: 2px;
 }
 
@@ -236,7 +236,7 @@
 
 .btn--text {
     background-color: transparent;
-    color: #c9a961;
+    color: var(--color-gold-dark);
     padding: 0.5rem 0;
     font-weight: 400;
 }
@@ -292,7 +292,7 @@
     background-color: #f9f8f6;
     padding: 1rem;
     border-radius: 4px;
-    border-left: 3px solid #c9a961;
+    border-left: 3px solid var(--color-gold);
 }
 
 .version-header {
@@ -359,6 +359,6 @@
 
 /* Accessibility */
 *:focus-visible {
-    outline: 2px solid #c9a961;
+    outline: 2px solid var(--color-gold-focus);
     outline-offset: 2px;
 }

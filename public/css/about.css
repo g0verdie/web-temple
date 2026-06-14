@@ -87,7 +87,7 @@
 }
 
 .prose a {
-  color: #c9a961;
+  color: var(--color-gold-dark);
   text-decoration: underline;
   transition: color 0.2s;
 }
@@ -95,7 +95,7 @@
 .prose a:hover,
 .prose a:focus {
   color: #a88040;
-  outline: 2px solid #c9a961;
+  outline: 2px solid var(--color-gold-focus);
   outline-offset: 2px;
 }
 
@@ -183,8 +183,8 @@
 .about-sidebar__link:hover,
 .about-sidebar__link:focus {
   background-color: #f0f0f0;
-  color: #c9a961;
-  outline: 2px solid #c9a961;
+  color: var(--color-gold-dark);
+  outline: 2px solid var(--color-gold-focus);
   outline-offset: -2px;
 }
 
@@ -193,7 +193,7 @@
   background: linear-gradient(135deg, #f5f3f0 0%, #ede9e4 100%);
   padding: 1rem;
   border-radius: 8px;
-  border-left: 4px solid #c9a961;
+  border-left: 4px solid var(--color-gold);
   margin-top: 1.5rem;
 }
 
@@ -244,12 +244,12 @@
 .btn:hover,
 .btn:focus {
   background-color: #2d5a7b;
-  outline: 2px solid #c9a961;
+  outline: 2px solid var(--color-gold-focus);
   outline-offset: 2px;
 }
 
 .btn--primary {
-  background-color: #c9a961;
+  background-color: var(--color-gold);
   color: #1a3a52;
 }
 
@@ -345,7 +345,7 @@
 
 /* Accessibility: Focus Indicators */
 *:focus-visible {
-  outline: 2px solid #c9a961;
+  outline: 2px solid var(--color-gold-focus);
   outline-offset: 2px;
 }
 

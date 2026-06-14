@@ -15,7 +15,12 @@
   /* Color palette - WCAG AA compliant */
   --color-primary: #1a365d; /* Deep blue - sufficient contrast on white */
   --color-secondary: #2c5282; /* Medium blue */
-  --color-accent: #d69e2e; /* Gold accent */
+  /* Gold accent system — one canonical gold (plan KTD1/KTD5). Values are
+     contrast-verified and provisional pending the visual-review checkpoint. */
+  --color-gold: #d69e2e; /* warm gold — fills, large accents, CTA bg (navy-on-gold ~4.6:1) */
+  --color-gold-dark: #8a6d24; /* gold-as-text/links on light surfaces (on white ~5:1, AA) */
+  --color-gold-focus: #b8860b; /* focus outline — clears 3:1 on white AND navy */
+  --color-accent: var(--color-gold); /* alias kept for existing var(--color-accent) usages */
   --color-text: #2d3748; /* Dark gray text */
   --color-text-light: #4a5568; /* Medium gray */
   --color-bg: #ffffff;
@@ -24,6 +29,8 @@
   
   /* Typography */
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-sans: var(--font-family); /* body */
+  --font-serif: Georgia, 'Times New Roman', serif; /* headings — self-hosted Cormorant Garamond prepended in U3 */
   --font-size-base: 16px;
   --line-height-base: 1.6;
   
@@ -35,7 +42,7 @@
   --spacing-xl: 3rem;
   
   /* Focus indicator - 3px minimum per AC */
-  --focus-outline: 3px solid var(--color-accent);
+  --focus-outline: 3px solid var(--color-gold-focus);
   --focus-offset: 2px;
 }
 
@@ -616,6 +623,8 @@ footer {
     --color-secondary: #1a1a1a;
     --color-text: #000000;
     --color-border: #000000;
+    --color-gold: #6b5012; /* darken the accent for high-contrast mode */
+    --color-gold-focus: #6b5012;
   }
   
   .event-card,

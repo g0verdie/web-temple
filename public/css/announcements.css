@@ -21,7 +21,7 @@
 }
 
 .announcement-card--featured {
-    border-color: #b8860b;
+    border-color: var(--color-gold);
     border-left-width: 4px;
 }
 
