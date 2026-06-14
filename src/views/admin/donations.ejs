@@ -1,0 +1,58 @@
+<div class="donations-container admin-donations">
+    <h1>Donations</h1>
+
+    <div class="donation-metrics" aria-label="Donation totals">
+        <div class="metric"><span class="metric-label">All-time</span><span class="metric-value">$<%= (metrics.totalAllTimeCents / 100).toFixed(2) %></span></div>
+        <div class="metric"><span class="metric-label">Year to date</span><span class="metric-value">$<%= (metrics.totalYtdCents / 100).toFixed(2) %></span></div>
+        <div class="metric"><span class="metric-label">Month to date</span><span class="metric-value">$<%= (metrics.totalMtdCents / 100).toFixed(2) %></span></div>
+        <div class="metric"><span class="metric-label">Identified donors</span><span class="metric-value"><%= metrics.identifiedDonorCount %></span></div>
+        <div class="metric"><span class="metric-label">Anonymous gifts</span><span class="metric-value"><%= metrics.anonymousGiftCount %></span></div>
+        <div class="metric"><span class="metric-label">Recurring donors</span><span class="metric-value"><%= metrics.recurringDonorCount %></span></div>
+        <div class="metric"><span class="metric-label">Monthly recurring</span><span class="metric-value">$<%= (metrics.monthlyRecurringRevenueCents / 100).toFixed(2) %></span></div>
+    </div>
+
+    <form method="GET" action="/admin/donations" class="donation-filters" role="search">
+        <select name="type" aria-label="Donation type">
+            <option value="">All types</option>
+            <option value="one-time" <%= filters.type === 'one-time' ? 'selected' : '' %>>One-time</option>
+            <option value="recurring" <%= filters.type === 'recurring' ? 'selected' : '' %>>Recurring</option>
+        </select>
+        <select name="anon" aria-label="Donor anonymity">
+            <option value="">All donors</option>
+            <option value="false" <%= filters.anon === 'false' ? 'selected' : '' %>>Identified</option>
+            <option value="true" <%= filters.anon === 'true' ? 'selected' : '' %>>Anonymous</option>
+        </select>
+        <input type="date" name="startDate" value="<%= filters.startDate %>" aria-label="Start date">
+        <input type="date" name="endDate" value="<%= filters.endDate %>" aria-label="End date">
+        <button type="submit">Filter</button>
+        <a href="/admin/donations/export.csv" class="btn-link">Export CSV</a>
+    </form>
+
+    <% if (donations && donations.length > 0) { %>
+        <table class="admin-donation-table">
+            <thead>
+                <tr><th scope="col">Date</th><th scope="col">Amount</th><th scope="col">Donor</th><th scope="col">Type</th></tr>
+            </thead>
+            <tbody>
+                <% donations.forEach(d => { %>
+                    <tr>
+                        <td><%= new Date(d.createdAt).toLocaleDateString() %></td>
+                        <td>$<%= (d.amountCents / 100).toFixed(2) %></td>
+                        <td><%= d.donor %></td>
+                        <td><%= d.donationType %><%= d.recurringFrequency ? ' (' + d.recurringFrequency + ')' : '' %></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    <% } else { %>
+        <p class="donations-empty">No donations match these filters.</p>
+    <% } %>
+
+    <% if (totalPages > 1) { %>
+        <nav class="donations-pagination" aria-label="Donation pages">
+            <% if (currentPage > 1) { %><a href="/admin/donations?page=<%= currentPage - 1 %>" rel="prev">Previous</a><% } %>
+            <span>Page <%= currentPage %> of <%= totalPages %></span>
+            <% if (currentPage < totalPages) { %><a href="/admin/donations?page=<%= currentPage + 1 %>" rel="next">Next</a><% } %>
+        </nav>
+    <% } %>
+</div>

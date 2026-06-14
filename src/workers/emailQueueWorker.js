@@ -13,7 +13,7 @@ const startEmailQueueWorker = ({
     log = logger
 } = {}) => {
     queue.process('email', async (job) => {
-        const { to, subject, text, html, template, data } = job.data;
+        const { to, subject, text, html, template, data, attachments } = job.data;
         const rendered = template ? templateService.renderTemplate(template, data) : { subject, text, html };
         const payload = {
             to,
@@ -21,6 +21,9 @@ const startEmailQueueWorker = ({
             text: rendered.text,
             html: rendered.html
         };
+        if (attachments && attachments.length) {
+            payload.attachments = attachments;
+        }
 
         await mailer.sendEmail(payload);
         log.info(`Email job ${job.id} sent`, { jobId: job.id, to: payload.to, template });

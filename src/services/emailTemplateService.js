@@ -69,8 +69,11 @@ If you did not request this change, you can ignore this email.`
     }),
     receipt: (data = {}) => ({
         subject: 'Your Temple donation receipt',
-        html: `<p>Thank you for your donation${data.amount ? ` of ${data.amount}` : ''}.</p><p>Receipt ID: ${data.receiptId || 'N/A'}</p>`,
-        text: `Thank you for your donation${data.amount ? ` of ${data.amount}` : ''}.\nReceipt ID: ${data.receiptId || 'N/A'}`
+        html: `<p>Shalom${data.name ? ` ${data.name}` : ''},</p>
+               <p>Thank you for your generous donation${data.amount ? ` of ${data.amount}` : ''} to Temple B'nai Israel.</p>
+               <p>Your official tax receipt is attached as a PDF for your records (Receipt ID: ${data.receiptId || 'N/A'}).</p>
+               <p>This contribution is tax-deductible to the extent allowed by law; no goods or services were provided in exchange.</p>`,
+        text: `Shalom${data.name ? ` ${data.name}` : ''},\n\nThank you for your generous donation${data.amount ? ` of ${data.amount}` : ''} to Temple B'nai Israel.\n\nYour official tax receipt is attached as a PDF for your records (Receipt ID: ${data.receiptId || 'N/A'}).\n\nThis contribution is tax-deductible to the extent allowed by law; no goods or services were provided in exchange.`
     }),
     'new-recording-available': (data = {}) => ({
         subject: 'New Recording: ' + (data.title || 'Service Recording'),
