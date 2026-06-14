@@ -1,0 +1,77 @@
+<%
+  const fmt = (d) => d ? new Date(d).toLocaleString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
+  }) : '';
+%>
+<section class="calendar-page" role="region" aria-labelledby="calendar-heading">
+  <div class="calendar-page-header">
+    <h2 id="calendar-heading">Calendar</h2>
+    <nav class="calendar-month-nav" aria-label="Month navigation">
+      <a class="btn btn-secondary btn-sm" href="/calendar?month=<%= prevMonth %>" rel="prev">&larr; Previous</a>
+      <span class="calendar-current-month"><%= currentMonthLabel %></span>
+      <a class="btn btn-secondary btn-sm" href="/calendar?month=<%= nextMonth %>" rel="next">Next &rarr;</a>
+    </nav>
+  </div>
+
+  <% if (!isMember) { %>
+    <div class="calendar-members-prompt" role="note">
+      <p>Some events are visible to members only. <a href="/login">Log in</a> to see members-only events.</p>
+    </div>
+  <% } %>
+
+  <h3 class="section-title" id="upcoming-heading">Upcoming Events</h3>
+  <% if (upcoming && upcoming.length > 0) { %>
+    <ul class="calendar-events-list" role="list" aria-labelledby="upcoming-heading">
+      <% upcoming.forEach(function(event) { %>
+        <li class="event-card" role="listitem">
+          <div class="event-card-header">
+            <h4 class="event-title"><%= event.title %></h4>
+            <% if (event.visibility === 'members') { %>
+              <span class="badge badge-members">Members</span>
+            <% } %>
+          </div>
+          <p class="event-date">
+            <time datetime="<%= event.date ? new Date(event.date).toISOString() : '' %>"><%= fmt(event.date) %></time>
+          </p>
+          <% if (event.description) { %>
+            <p class="event-description"><%= event.description %></p>
+          <% } %>
+          <% if (event.location) { %>
+            <p class="event-location"><span aria-hidden="true">📍</span> <%= event.location %></p>
+          <% } %>
+          <% if (event.zoomUrl) { %>
+            <p class="event-zoom"><a href="<%= event.zoomUrl %>" rel="noopener noreferrer">Join online</a></p>
+          <% } %>
+        </li>
+      <% }); %>
+    </ul>
+  <% } else { %>
+    <p class="no-events">No upcoming events in this window. Check back soon!</p>
+  <% } %>
+
+  <h3 class="section-title" id="archive-heading">Past Events</h3>
+  <% if (archive && archive.length > 0) { %>
+    <ul class="calendar-events-list calendar-archive-list" role="list" aria-labelledby="archive-heading">
+      <% archive.forEach(function(event) { %>
+        <li class="event-card event-card--past" role="listitem">
+          <div class="event-card-header">
+            <h4 class="event-title"><%= event.title %></h4>
+            <% if (event.visibility === 'members') { %>
+              <span class="badge badge-members">Members</span>
+            <% } %>
+          </div>
+          <p class="event-date">
+            <time datetime="<%= event.date ? new Date(event.date).toISOString() : '' %>"><%= fmt(event.date) %></time>
+          </p>
+          <% if (event.location) { %>
+            <p class="event-location"><span aria-hidden="true">📍</span> <%= event.location %></p>
+          <% } %>
+        </li>
+      <% }); %>
+    </ul>
+  <% } else { %>
+    <p class="no-events">No past events in this window.</p>
+  <% } %>
+</section>
+
+<script src="/js/calendar.js"></script>

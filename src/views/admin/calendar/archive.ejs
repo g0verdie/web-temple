@@ -1,0 +1,55 @@
+<div class="calendar-admin-container">
+  <div class="calendar-admin-header">
+    <h2>Archived Events</h2>
+    <a href="/admin/calendar" class="btn btn-secondary">&larr; Back to Calendar</a>
+  </div>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+    <div class="alert alert-success" role="alert"><%= success %></div>
+  <% } %>
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-danger" role="alert"><%= error %></div>
+  <% } %>
+
+  <div class="card">
+    <h3 class="card-title">Deleted Events</h3>
+
+    <% if (events && events.length > 0) { %>
+      <div class="table-responsive">
+        <table class="calendar-table">
+          <thead>
+            <tr>
+              <th scope="col">Title</th>
+              <th scope="col">When</th>
+              <th scope="col">Deleted</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% events.forEach(function(event) { %>
+              <tr>
+                <td><strong><%= event.title %></strong></td>
+                <td>
+                  <%= event.date ? new Date(event.date).toLocaleString('en-US', {
+                    month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
+                  }) : '' %>
+                </td>
+                <td>
+                  <%= event.deletedAt ? new Date(event.deletedAt).toLocaleDateString('en-US') : '' %>
+                </td>
+                <td class="action-buttons">
+                  <form action="/admin/calendar/<%= event.id %>/restore" method="POST">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit" class="btn btn-success btn-sm">Restore</button>
+                  </form>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } else { %>
+      <p class="no-events">No archived events.</p>
+    <% } %>
+  </div>
+</div>
