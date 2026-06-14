@@ -78,6 +78,22 @@ describe('RBAC Route Protection Integration Tests', () => {
             expect(res.text).toContain('Admin Dashboard');
         });
 
+        it('GET /admin/metrics.json should return JSON metrics for admin', async () => {
+            db.query.mockResolvedValue({ rows: [] });
+
+            const res = await request(app).get('/admin/metrics.json');
+
+            expect(res.statusCode).toBe(200);
+            expect(res.headers['content-type']).toContain('application/json');
+            expect(res.body).toEqual(expect.objectContaining({
+                newMembersThisMonth: expect.any(Number),
+                donationsMtdCents: expect.any(Number),
+                pendingMessages: expect.any(Number),
+                pendingChat: expect.any(Number),
+                serverUptime: expect.any(String)
+            }));
+        });
+
         it('GET /admin/audit-logs should require admin access', async () => {
             db.query.mockResolvedValue({ rows: [], rowCount: 0 });
 

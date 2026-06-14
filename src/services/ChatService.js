@@ -242,11 +242,21 @@ const getMessagesForRecording = async (serviceDate) => {
     }
 };
 
+/**
+ * Count of pending (awaiting-moderation) chat messages — cheap COUNT for the
+ * dashboard moderation badge (avoids loading every pending row just to size it).
+ */
+const getPendingMessageCount = async () => {
+    const result = await db.query("SELECT COUNT(*)::int AS count FROM chat_messages WHERE status = 'pending'");
+    return result.rows[0] ? result.rows[0].count : 0;
+};
+
 module.exports = {
     createMessage,
     approveMessage,
     deleteMessage,
     getApprovedMessagesForStream,
     getPendingMessages,
+    getPendingMessageCount,
     getMessagesForRecording
 };

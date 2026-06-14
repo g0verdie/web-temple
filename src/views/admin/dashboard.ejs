@@ -1,6 +1,133 @@
 <div class="container mt-5">
     <h1>Admin Dashboard</h1>
 
+    <!-- Today's Priorities (Story 9.1: first visible element for Rabbi/Admin) -->
+    <section class="card border-primary mt-4 mb-4" aria-labelledby="priorities-heading">
+        <div class="card-header bg-primary text-white">
+            <h2 class="h5 mb-0" id="priorities-heading">Today's Priorities</h2>
+        </div>
+        <div class="card-body">
+            <% const hasAlerts = priorities && priorities.alerts && (priorities.alerts.backupFailed || priorities.alerts.failedEmailJobs > 0); %>
+            <% const hasChat = hasPermission(Permissions.MODERATE_CHAT); %>
+            <% const hasMessages = hasPermission(Permissions.MANAGE_MESSAGES); %>
+            <% const upcoming = (priorities && priorities.upcomingEvents) || []; %>
+            <% const nothingPending = !hasAlerts && (!hasChat || priorities.pendingChat === 0) && (!hasMessages || priorities.pendingMessages === 0) && upcoming.length === 0; %>
+
+            <% if (hasAlerts) { %>
+                <div class="alert alert-danger" role="alert">
+                    <strong>⚠️ Attention needed:</strong>
+                    <% if (priorities.alerts.backupFailed) { %><span>the last backup attempt did not succeed. </span><% } %>
+                    <% if (priorities.alerts.failedEmailJobs > 0) { %><span><%= priorities.alerts.failedEmailJobs %> failed email job(s) in the queue. </span><% } %>
+                </div>
+            <% } %>
+
+            <ul class="list-group list-group-flush">
+                <% if (hasChat) { %>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Chat messages awaiting approval</span>
+                        <span>
+                            <span class="badge bg-warning text-dark me-2" id="priority-pending-chat"><%= priorities.pendingChat %></span>
+                            <a href="/admin/chat-moderation" class="btn btn-sm btn-outline-primary">Review</a>
+                        </span>
+                    </li>
+                <% } %>
+                <% if (hasMessages) { %>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>New contact messages <span class="text-muted">(inbox coming soon)</span></span>
+                        <span class="badge bg-secondary" id="priority-pending-messages"><%= priorities.pendingMessages %></span>
+                    </li>
+                <% } %>
+                <li class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Upcoming events (next 7 days)</span>
+                        <a href="/admin/calendar" class="btn btn-sm btn-outline-primary">Open calendar</a>
+                    </div>
+                    <% if (upcoming.length > 0) { %>
+                        <ul class="mt-2 mb-0">
+                            <% upcoming.forEach(function(ev) { %>
+                                <li><time datetime="<%= ev.date ? ev.date.toISOString() : '' %>"><%= ev.date ? ev.date.toLocaleDateString() : '' %></time> — <%= ev.title %></li>
+                            <% }) %>
+                        </ul>
+                    <% } else { %>
+                        <p class="text-muted mb-0 mt-1">No events scheduled in the next 7 days.</p>
+                    <% } %>
+                </li>
+            </ul>
+
+            <% if (nothingPending) { %>
+                <p class="text-success mb-0 mt-3">You're all caught up — nothing needs attention right now.</p>
+            <% } %>
+        </div>
+    </section>
+
+    <!-- Key metrics (Story 9.1 / FR61); values auto-refresh every 30s via /js/admin-dashboard.js -->
+    <section class="row g-3 mb-4" aria-label="Key metrics" data-metrics-endpoint="/admin/metrics.json">
+        <div class="col-6 col-md-4 col-lg-2">
+            <a href="<%= hasPermission(Permissions.MANAGE_DIRECTORY) ? '/admin/directory' : '#' %>" class="card text-decoration-none h-100">
+                <div class="card-body text-center">
+                    <div class="h3 mb-0" id="metric-new-members"><%= metrics.newMembersThisMonth %></div>
+                    <small class="text-muted">New members (month)</small>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <a href="<%= hasPermission(Permissions.VIEW_DONATIONS) ? '/admin/donations' : '#' %>" class="card text-decoration-none h-100">
+                <div class="card-body text-center">
+                    <div class="h3 mb-0" id="metric-donations">$<%= (metrics.donationsMtdCents / 100).toFixed(2) %></div>
+                    <small class="text-muted">Donations (month)</small>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <a href="<%= hasPermission(Permissions.MODERATE_CHAT) ? '/admin/chat-moderation' : '#' %>" class="card text-decoration-none h-100">
+                <div class="card-body text-center">
+                    <div class="h3 mb-0" id="metric-active-chat"><%= metrics.activeChatUsers %></div>
+                    <small class="text-muted">Active chat users</small>
+                </div>
+            </a>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="h3 mb-0" id="metric-pending-messages"><%= metrics.pendingMessages %></div>
+                    <small class="text-muted">Pending messages</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="h3 mb-0" id="metric-uptime"><%= metrics.serverUptime %></div>
+                    <small class="text-muted">Server uptime</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="h6 mb-0" id="metric-last-backup"><%= metrics.lastBackupAt ? new Date(metrics.lastBackupAt).toLocaleDateString() : '—' %></div>
+                    <small class="text-muted">Last backup</small>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Manage hub: permission-gated links to every admin feature this user can reach -->
+    <section class="card mb-4" aria-labelledby="manage-heading">
+        <div class="card-header"><h2 class="h5 mb-0" id="manage-heading">Manage</h2></div>
+        <div class="card-body">
+            <% if (hasPermission(Permissions.POST_ANNOUNCEMENTS)) { %><a href="/admin/announcements" class="btn btn-outline-primary me-2 mb-2">Announcements</a><% } %>
+            <% if (hasPermission(Permissions.MANAGE_CALENDAR)) { %><a href="/admin/calendar" class="btn btn-outline-primary me-2 mb-2">Calendar</a><% } %>
+            <% if (hasPermission(Permissions.VIEW_DONATIONS)) { %><a href="/admin/donations" class="btn btn-outline-primary me-2 mb-2">Donations</a><% } %>
+            <% if (hasPermission(Permissions.MANAGE_DIRECTORY)) { %><a href="/admin/directory" class="btn btn-outline-primary me-2 mb-2">Member Directory</a><% } %>
+            <% if (hasPermission(Permissions.MANAGE_STREAMING)) { %><a href="/admin/streaming" class="btn btn-outline-primary me-2 mb-2">Livestreams</a><% } %>
+            <% if (hasPermission(Permissions.MODERATE_CHAT)) { %><a href="/admin/chat-moderation" class="btn btn-outline-primary me-2 mb-2">Chat Moderation</a><% } %>
+            <a href="/admin/recordings" class="btn btn-outline-primary me-2 mb-2">Recordings</a>
+            <% if (hasPermission(Permissions.MANAGE_CONTENT)) { %><a href="/admin/pages" class="btn btn-outline-primary me-2 mb-2">Pages</a><% } %>
+            <a href="/admin/audit-logs" class="btn btn-outline-secondary me-2 mb-2">Audit Logs</a>
+        </div>
+    </section>
+
     <div class="row mt-4">
         <!-- Backup Status Card -->
         <div class="col-md-6 mb-4">
@@ -29,13 +156,6 @@
                                         No successful backups found.
                                     </div>
                                     <% } %>
-
-                                        <hr>
-                                        <a href="/admin/pages" class="btn btn-outline-primary me-2">Manage Pages</a>
-                                        <% if (hasPermission(Permissions.MANAGE_STREAMING)) { %>
-                                            <a href="/admin/streaming" class="btn btn-outline-info me-2">Manage Livestreams</a>
-                                        <% } %>
-                                        <a href="/admin/audit-logs" class="btn btn-outline-secondary">Audit Logs</a>
                 </div>
             </div>
         </div>
@@ -158,10 +278,8 @@
                     </div>
                     <div class="card-body">
                         <a href="/admin/announcements" id="tour-announcements" class="btn btn-primary me-2 mb-2">Post Announcement</a>
-                        <a href="javascript:void(0)" id="tour-calendar" class="btn btn-primary me-2 mb-2"
-                            onclick="alert('Calendar management coming soon!')">Manage Calendar</a>
-                        <a href="javascript:void(0)" id="tour-messages" class="btn btn-primary me-2 mb-2"
-                            onclick="alert('Message inbox coming soon!')">Message Inbox</a>
+                        <a href="/admin/calendar" id="tour-calendar" class="btn btn-primary me-2 mb-2">Manage Calendar</a>
+                        <span id="tour-messages" class="btn btn-secondary disabled me-2 mb-2" aria-disabled="true" title="Message inbox is coming soon">Message Inbox (coming soon)</span>
                     </div>
                 </div>
                 <!-- Include driver.js for the onboarding tour -->
@@ -179,3 +297,5 @@
             <% } %>
     </div>
 </div>
+
+<script src="/js/admin-dashboard.js"></script>

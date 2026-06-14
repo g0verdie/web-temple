@@ -17,6 +17,9 @@ const requireAdminAccess = [
 // Dashboard Route
 router.get('/', requireAdminAccess, adminController.getDashboard);
 
+// Dashboard metrics JSON (30s client auto-refresh, Story 9.1) — admin/rabbi only.
+router.get('/metrics.json', requireAdminAccess, adminController.getDashboardMetricsJson);
+
 // Email Queue Retry Route
 router.post('/email-queue/:id/retry', requireAdminAccess, adminController.retryEmailJob);
 
