@@ -29,8 +29,8 @@
   
   /* Typography */
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  --font-sans: var(--font-family); /* body */
-  --font-serif: Georgia, 'Times New Roman', serif; /* headings — self-hosted Cormorant Garamond prepended in U3 */
+  --font-sans: 'Inter', var(--font-family); /* body */
+  --font-serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif; /* headings */
   --font-size-base: 16px;
   --line-height-base: 1.6;
   
@@ -46,9 +46,47 @@
   --focus-offset: 2px;
 }
 
+/* Self-hosted "Modern Reverence" type system (U3). WOFF2 served from /fonts
+   (CSP fontSrc 'self'). font-display: swap keeps text visible during load;
+   the Georgia/system fallbacks in --font-serif/--font-sans cover the swap.
+   (Fallback metric-override descriptors to further trim CLS are a deferred refinement.) */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/inter-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/inter-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Cormorant Garamond';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/cormorant-garamond-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Cormorant Garamond';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/cormorant-garamond-700.woff2') format('woff2');
+}
+
+/* Serif headings site-wide — the "Modern Reverence" direction */
+h1, h2, h3, h4 {
+  font-family: var(--font-serif);
+}
+
 /* Base typography */
 body {
-  font-family: var(--font-family);
+  font-family: var(--font-sans);
   font-size: var(--font-size-base);
   line-height: var(--line-height-base);
   color: var(--color-text);
