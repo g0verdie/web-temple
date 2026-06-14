@@ -22,7 +22,7 @@
                     <tbody>
                         <% messages.forEach(function(msg) { %>
                             <tr id="row-<%= msg.id %>">
-                                <td class="text-muted" style="white-space: nowrap;">
+                                <td class="text-muted u-nowrap">
                                     <%= new Date(msg.created_at).toLocaleTimeString() %>
                                 </td>
                                 <td>
@@ -31,10 +31,10 @@
                                         <span class="badge bg-secondary ms-1">Guest</span>
                                     <% } %>
                                 </td>
-                                <td class="text-wrap" style="max-width: 400px; word-break: break-word;">
+                                <td class="text-wrap chat-msg-cell">
                                     <%= msg.message_text %>
                                 </td>
-                                <td class="text-end" style="white-space: nowrap;">
+                                <td class="text-end u-nowrap">
                                     <button class="btn btn-sm btn-success me-2 btn-action" data-action="approve" data-id="<%= msg.id %>">
                                         Approve
                                     </button>

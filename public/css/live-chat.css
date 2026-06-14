@@ -315,6 +315,9 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    /* moved from an inline style on the <summary> (CSP) */
+    cursor: pointer;
+    list-style: none;
 }
 
 .historical-chat-header h3 {
@@ -322,6 +325,15 @@
     font-size: 1.1rem;
     color: #111827;
     font-weight: 600;
+}
+
+/* moved from an inline style on the empty-state <p> (CSP) */
+.historical-chat-empty {
+    text-align: center;
+    color: #6b7280;
+    font-size: 0.9rem;
+    padding: 1.5rem 0;
+    margin: 0;
 }
 
 .historical-chat-messages {
