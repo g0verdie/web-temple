@@ -18,9 +18,25 @@ exports.getWatchPage = async (req, res) => {
         degraded = true;
     }
 
+    // VideoObject structured data (schema.org) for the featured (first) video.
+    // Top-level layout render local (U6) — viewData keys never reach <head>.
+    const featured = videos[0];
+    const jsonLd = featured ? {
+        '@context': 'https://schema.org',
+        '@type': 'VideoObject',
+        name: featured.title,
+        description: `Past service recording from Temple B'nai Israel: ${featured.title}`,
+        thumbnailUrl: featured.thumbnailUrl || undefined,
+        embedUrl: featured.embedUrl || undefined,
+        uploadDate: (featured.date && !Number.isNaN(new Date(featured.date).getTime()))
+            ? new Date(featured.date).toISOString()
+            : undefined
+    } : undefined;
+
     res.render('layout', {
         title: 'Past Services',
         description: 'Watch past services and recordings from Temple B\'nai Israel. Catch up on sermons, prayers, and community gatherings.',
+        jsonLd,
         bodyView: 'watch/index',
         stylesheets: ['/css/watch.css'],
         viewData: {

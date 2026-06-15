@@ -17,6 +17,24 @@
     // Brand the title with the site name unless the page already includes it
     // (auth pages suffix the brand themselves — avoid double-branding).
     const brandedTitle = title.includes(siteName) ? title : `${title} · ${siteName}`;
+    // Sitewide structured data (schema.org PlaceOfWorship), always emitted.
+    const siteJsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'PlaceOfWorship',
+      name: siteName,
+      url: siteUrl || undefined,
+      logo: siteUrl + '/images/tbi-logo.png',
+      image: ogImage,
+      description: defaultDescription,
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: '201 E Hawthorne St',
+        addressLocality: 'Florence',
+        addressRegion: 'AL',
+        postalCode: '35630',
+        addressCountry: 'US'
+      }
+    };
   %>
   <meta name="description" content="<%= metaDescription %>">
   <% if (typeof csrfToken !=='undefined' ) { %>
@@ -49,6 +67,12 @@
           <link rel="stylesheet" href="<%= stylesheet %>">
           <% }) %>
             <% } %>
+
+              <!-- Structured data (schema.org). Server-built JSON, not executable script — CSP-safe as data. -->
+              <script type="application/ld+json"><%- JSON.stringify(siteJsonLd) %></script>
+              <% if (typeof jsonLd !== 'undefined' && jsonLd) { %>
+                <script type="application/ld+json"><%- JSON.stringify(jsonLd) %></script>
+                <% } %>
 </head>
 
 <body>
