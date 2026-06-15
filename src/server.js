@@ -15,8 +15,10 @@ const csurf = require('csurf');
 const jwt = require('jsonwebtoken');
 const sessionTimeout = require('./middleware/sessionTimeout');
 
-// Downstream resources + chat-socket teardown, used by graceful shutdown (U1).
-const { pool } = require('./config/db');
+// Downstream resources + chat-socket teardown, used by graceful shutdown (U1)
+// and the /ready deep-health probe (U3).
+const db = require('./config/db');
+const { pool } = db;
 const redis = require('./config/redis');
 const { closeAllConnections } = require('./services/chatSocketServer');
 
@@ -241,6 +243,30 @@ app.use('/donations', donationRoutes);
 // from downstream services.
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', uptime: process.uptime() });
+});
+
+// Deep readiness probe for a load balancer / uptime monitor: reflects DB +
+// Redis health (unlike /health, which is liveness-only). 200 when both are
+// reachable, 503 with per-check status otherwise.
+app.get('/ready', async (req, res) => {
+  const checks = { db: 'ok', redis: 'ok' };
+
+  const [dbResult, redisResult] = await Promise.allSettled([
+    db.query('SELECT 1'),
+    redis.ping()
+  ]);
+
+  if (dbResult.status === 'rejected') {
+    checks.db = 'failed';
+    logger.warn('Readiness check: DB unreachable', { error: dbResult.reason && dbResult.reason.message });
+  }
+  if (redisResult.status === 'rejected') {
+    checks.redis = 'failed';
+    logger.warn('Readiness check: Redis unreachable', { error: redisResult.reason && redisResult.reason.message });
+  }
+
+  const ready = checks.db === 'ok' && checks.redis === 'ok';
+  res.status(ready ? 200 : 503).json(ready ? { status: 'ready', checks } : { status: 'degraded', checks });
 });
 
 // robots.txt — allow crawling and advertise the sitemap (absolute URL).
