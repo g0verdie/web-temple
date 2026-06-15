@@ -275,6 +275,21 @@ header {
   color: var(--color-primary);
 }
 
+/* Donate link styled as a gold CTA, mirroring the login button */
+.nav-menu a.nav-donate {
+  color: var(--color-gold);
+  border: 2px solid var(--color-gold);
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.nav-menu a.nav-donate:hover,
+.nav-menu a.nav-donate:focus,
+.nav-menu a.nav-donate[aria-current="page"] {
+  background-color: var(--color-gold);
+  color: var(--color-primary);
+}
+
 /* Logout: a subtle secondary action, distinct from the gold CTAs */
 .nav-menu a.nav-logout {
   border: 1px solid rgba(255, 255, 255, 0.5);

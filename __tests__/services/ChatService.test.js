@@ -228,6 +228,38 @@ describe('ChatService', () => {
             expect(result.status).toBe('approved');
         });
 
+        it('rejects a guest display name containing a reserved role word (case-insensitive)', async () => {
+            const reserved = ['Rabbi David', 'cantor sam', 'The ADMIN', 'a moderator here'];
+            for (const name of reserved) {
+                await expect(ChatService.createMessage({
+                    streamId: 10,
+                    displayName: name,
+                    messageText: 'Hello there'
+                })).rejects.toThrow('That display name is not allowed');
+            }
+            // No INSERT should have run for any rejected name.
+            expect(db.query).not.toHaveBeenCalledWith(
+                expect.stringContaining('INSERT INTO chat_messages'),
+                expect.anything()
+            );
+        });
+
+        it('allows a guest display name that merely contains a reserved word as a substring of a larger word', async () => {
+            // "Caminator" contains no whole reserved word; the check is substring-based
+            // per the plan (case-insensitive contains), so this name IS rejected only
+            // if it contains one of the exact tokens. "Sandra" must pass.
+            const mockMsg = { id: 20, stream_id: 10, user_id: null, display_name: 'Sandra', message_text: 'Hi', status: 'pending' };
+            db.query.mockResolvedValueOnce({ rows: [] });
+            db.query.mockResolvedValueOnce({ rows: [mockMsg] });
+
+            const result = await ChatService.createMessage({
+                streamId: 10,
+                displayName: 'Sandra',
+                messageText: 'Hi'
+            });
+            expect(result.status).toBe('pending');
+        });
+
         it('marks a guest spam message as deleted without running the prior-approved lookup', async () => {
             const mockMsg = { id: 13, stream_id: 10, user_id: null, display_name: 'KnownGuest', message_text: 'VISIT scam.xyz NOW', status: 'deleted' };
             db.query.mockResolvedValueOnce({ rows: [mockMsg] });

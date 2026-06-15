@@ -62,7 +62,7 @@ describe('homeController', () => {
       }));
     });
 
-    it('should handle service failures gracefully', async () => {
+    it('should render the branded error view (not plain text) on failure', async () => {
       EventService.getNextService.mockRejectedValue(new Error('Service failure'));
       StreamingService.getPublicEmbedMetadata.mockResolvedValue({
         status: 'offline',
@@ -72,7 +72,11 @@ describe('homeController', () => {
       await homeController.getHomepage(req, res);
 
       expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.send).toHaveBeenCalledWith('Internal Server Error');
+      expect(res.render).toHaveBeenCalledWith('error', expect.objectContaining({
+        title: expect.any(String),
+        message: expect.any(String)
+      }));
+      expect(res.send).not.toHaveBeenCalled();
     });
 
     it('should format event dates for display', async () => {

@@ -21,6 +21,10 @@ jest.mock('../../src/services/ChatService', () => ({
     }),
     approveMessage: jest.fn(),
     deleteMessage: jest.fn(),
+    containsReservedName: (displayName) => {
+        const lower = String(displayName).toLowerCase();
+        return ['rabbi', 'cantor', 'admin', 'moderator'].some((w) => lower.includes(w));
+    },
 }));
 
 const chatSocketServer = require('../../src/services/chatSocketServer');

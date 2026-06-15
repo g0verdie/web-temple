@@ -436,11 +436,9 @@
             msgDiv.classList.add('self');
         }
 
-        // Add moderator styling helper
-        const isModRole = ['admin', 'rabbi', 'social_chair'].includes(msg.role || '');
-        if (isModRole) {
-            msgDiv.classList.add('moderator');
-        }
+        // No payload-role styling: the broadcast payload (a chat_messages row)
+        // carries no role, so a guest can't be styled as a moderator. The Guest
+        // badge below is the single, non-suppressible author distinction.
 
         const timeStr = msgTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
