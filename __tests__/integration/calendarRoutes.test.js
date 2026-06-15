@@ -72,6 +72,17 @@ describe('Public calendar page (U5)', () => {
         expect(res.status).toBe(400);
     });
 
+    it('scopes the fetched window to the viewed month (prev/next navigation works)', async () => {
+        EventService.getEventsInRange.mockResolvedValue([]);
+        await request(app).get('/calendar?month=2026-07');
+        const [start, end] = EventService.getEventsInRange.mock.calls.at(-1);
+        // Window is the requested month only — not a fixed now-relative range, which
+        // is what made adjacent months render identical content.
+        expect(start.toISOString().slice(0, 10)).toBe('2026-07-01');
+        expect(end.toISOString().slice(0, 7)).toBe('2026-07');
+        expect(end.getTime()).toBeGreaterThan(start.getTime());
+    });
+
     it('edge: empty window renders an empty state', async () => {
         EventService.getEventsInRange.mockResolvedValue([]);
         const res = await request(app).get('/calendar');

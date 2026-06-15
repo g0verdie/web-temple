@@ -188,14 +188,17 @@ exports.getCalendarPage = async (req, res) => {
             ? new Date(Date.UTC(parsed.year, parsed.month - 1, 1))
             : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
-        // Upcoming window: anchor → +3 months. Archive window: anchor −1 month → anchor.
-        const windowStart = new Date(anchor.getTime());
-        windowStart.setUTCMonth(windowStart.getUTCMonth() - 1);
-        const windowEnd = new Date(anchor.getTime());
-        windowEnd.setUTCMonth(windowEnd.getUTCMonth() + 3);
+        // Scope the fetched window to the viewed month so prev/next navigation shows
+        // that month's events. (The window must track the anchor — a fixed range that
+        // ignores the anchor makes every month render the same now-relative slice.)
+        const monthStart = new Date(anchor.getTime());
+        const monthEnd = new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth() + 1, 1) - 1); // last ms of the month
 
-        const events = await EventService.getEventsInRange(windowStart, windowEnd, includeMembersOnly);
+        const events = await EventService.getEventsInRange(monthStart, monthEnd, includeMembersOnly);
 
+        // Within the month, split by real "now": an event that already happened is Past,
+        // one still to come is Upcoming — correct for whichever month is being viewed
+        // (a future month is all-Upcoming, a past month all-Past, this month splits at now).
         const upcoming = events.filter(e => e.date >= now);
         const archive = events.filter(e => e.date < now);
 
