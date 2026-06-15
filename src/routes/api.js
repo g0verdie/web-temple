@@ -9,6 +9,7 @@ const backupLogService = require('../services/backupLogService');
 const auditService = require('../services/auditService');
 const sessionService = require('../services/sessionService');
 const userController = require('../controllers/userController');
+const unsubscribeController = require('../controllers/unsubscribeController');
 const authRoutes = require('./auth');
 const StreamingService = require('../services/StreamingService');
 
@@ -66,6 +67,10 @@ router.put('/account/preferences', requireAuthSession, userController.updatePref
 router.post('/account/password', requireAuthSession, userController.changePassword);
 router.post('/account/email-change', requireAuthSession, emailChangeLimiter, userController.requestEmailChange);
 router.post('/account/email-change/confirm', userController.confirmEmailChange);
+
+// Public one-click unsubscribe (CAN-SPAM). Token-authenticated, no requireAuth —
+// mirrors the email-change/confirm flow. The signed token proves the recipient.
+router.post('/unsubscribe/confirm', unsubscribeController.apply);
 
 // Member directory: a member's own listing (self-service)
 router.get('/account/directory', requireAuthSession, userController.getDirectoryListing);

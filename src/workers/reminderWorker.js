@@ -9,6 +9,7 @@ const logger = require('../utils/logger');
 const EventService = require('../services/EventService');
 const { enqueueEmail } = require('../services/emailQueueService');
 const { buildEventIcs } = require('../services/icalService');
+const { signUnsubscribeToken } = require('../utils/unsubscribeToken');
 
 const REMINDER_QUEUE_NAME = 'reminder-scan';
 const REPEAT_EVERY_MS = 3600000; // hourly
@@ -99,7 +100,7 @@ const runReminderScan = async ({
                     calendarUrl: process.env.APP_BASE_URL
                         ? `${process.env.APP_BASE_URL}/calendar`
                         : 'http://localhost:3000/calendar',
-                    unsubscribeToken: member.id
+                    unsubscribeToken: signUnsubscribeToken(member.id)
                 },
                 attachments: icsAttachment ? [icsAttachment] : undefined,
                 priority: 2

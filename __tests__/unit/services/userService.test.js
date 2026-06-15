@@ -2,10 +2,18 @@ const userService = require('../../../src/services/userService');
 const db = require('../../../src/config/db');
 const { enqueueEmail } = require('../../../src/services/emailQueueService');
 const { renderTemplate } = require('../../../src/services/emailTemplateService');
+const { logAudit, AUDIT_ACTIONS } = require('../../../src/services/auditService');
 
 jest.mock('../../../src/config/db');
 jest.mock('../../../src/services/emailQueueService');
 jest.mock('../../../src/services/emailTemplateService');
+jest.mock('../../../src/services/auditService', () => {
+    const actual = jest.requireActual('../../../src/services/auditService');
+    return {
+        ...actual,
+        logAudit: jest.fn().mockResolvedValue(undefined)
+    };
+});
 
 describe('userService.completeOnboarding', () => {
     beforeEach(() => {
@@ -134,6 +142,71 @@ describe('userService.updatePreferences', () => {
             'UPDATE users SET notification_preferences = $1, updated_at = NOW() WHERE id = $2 RETURNING id',
             [expect.objectContaining({ announcements: false, recordings: true }), 'user-1']
         );
+    });
+});
+
+describe('userService.unsubscribeAll', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('sets all four bulk notification keys to false and returns true', async () => {
+        db.query.mockResolvedValue({ rows: [{ id: 'user-1' }] });
+
+        const result = await userService.unsubscribeAll('user-1');
+
+        expect(result).toBe(true);
+        expect(db.query).toHaveBeenCalledWith(
+            'UPDATE users SET notification_preferences = $1, updated_at = NOW() WHERE id = $2 RETURNING id',
+            [
+                expect.objectContaining({
+                    announcements: false,
+                    calendar_events: false,
+                    recordings: false,
+                    messages: false
+                }),
+                'user-1'
+            ]
+        );
+    });
+
+    it('writes an audit-log entry', async () => {
+        db.query.mockResolvedValue({ rows: [{ id: 'user-1' }] });
+
+        await userService.unsubscribeAll('user-1');
+
+        expect(logAudit).toHaveBeenCalledWith(
+            expect.objectContaining({
+                user_id: 'user-1',
+                action: AUDIT_ACTIONS.PREFERENCES_UPDATED,
+                entity_type: 'user',
+                entity_id: 'user-1'
+            })
+        );
+    });
+
+    it('is idempotent: a second call writes the same all-false preferences', async () => {
+        db.query.mockResolvedValue({ rows: [{ id: 'user-1' }] });
+
+        await userService.unsubscribeAll('user-1');
+        await userService.unsubscribeAll('user-1');
+
+        const calls = db.query.mock.calls;
+        expect(calls).toHaveLength(2);
+        for (const call of calls) {
+            expect(call[1][0]).toEqual(expect.objectContaining({
+                announcements: false,
+                calendar_events: false,
+                recordings: false,
+                messages: false
+            }));
+        }
+    });
+
+    it('returns falsey for an unknown user without throwing', async () => {
+        db.query.mockResolvedValue({ rows: [] });
+
+        await expect(userService.unsubscribeAll('missing')).resolves.toBeFalsy();
     });
 });
 

@@ -3,6 +3,7 @@ const CacheService = require('../../src/services/CacheService');
 const emailQueueService = require('../../src/services/emailQueueService');
 const emailTemplateService = require('../../src/services/emailTemplateService');
 const auditService = require('../../src/services/auditService');
+const { verifyUnsubscribeToken } = require('../../src/utils/unsubscribeToken');
 
 jest.mock('../../src/config/db');
 jest.mock('../../src/services/CacheService');
@@ -173,6 +174,12 @@ describe('RecordingService', () => {
         expect(emailTemplateService.renderTemplate).toHaveBeenCalledWith('new-recording-available', expect.objectContaining({
             title: 'Shabbat Service'
         }));
+        // Each rendered recording email now carries a signed unsubscribe token
+        // (previously absent) that verifies back to the recipient's id.
+        const m1Render = emailTemplateService.renderTemplate.mock.calls
+            .find(c => c[1] && c[1].memberName === 'Ari')[1];
+        expect(m1Render.unsubscribeToken).toBeTruthy();
+        expect(verifyUnsubscribeToken(m1Render.unsubscribeToken)).toBe('member-1');
         expect(emailQueueService.enqueueEmail).toHaveBeenCalledTimes(2);
         expect(published.publishState).toBe('published');
         expect(client.release).toHaveBeenCalled();

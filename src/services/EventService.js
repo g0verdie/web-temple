@@ -4,6 +4,7 @@ const db = require('../config/db');
 const auditService = require('./auditService');
 const { enqueueEmail } = require('./emailQueueService');
 const { buildEventIcs } = require('./icalService');
+const { signUnsubscribeToken } = require('../utils/unsubscribeToken');
 const logger = require('../utils/logger');
 
 const VALID_VISIBILITY = ['public', 'members'];
@@ -546,7 +547,7 @@ class EventService {
                 calendarUrl: process.env.APP_BASE_URL
                     ? `${process.env.APP_BASE_URL}/calendar`
                     : 'http://localhost:3000/calendar',
-                unsubscribeToken: member.id
+                unsubscribeToken: signUnsubscribeToken(member.id)
             },
             attachments: icsAttachment ? [icsAttachment] : undefined,
             priority: 2
