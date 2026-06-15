@@ -138,6 +138,273 @@ async function seedDemoAccounts(database) {
     return contentOwnerId;
 }
 
+// ---------------------------------------------------------------------------
+// B2 — content seeding (recordings, calendar events, announcements)
+// All written via direct parameterized SQL to bypass the service-layer email
+// fan-outs and keep full idempotency control. All rows are owned by the B1
+// content owner.
+// ---------------------------------------------------------------------------
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const WEEK_MS = 7 * DAY_MS;
+
+/**
+ * Build the demo recordings (>=4), each with a stable provider key and a
+ * service_date within the last ~8 weeks.
+ * @returns {Array<Object>}
+ */
+function buildRecordings() {
+    const now = Date.now();
+    const specs = [
+        { weeksAgo: 1, title: 'Shabbat Morning Service', torahPortion: 'Bereshit', duration: 4500 },
+        { weeksAgo: 2, title: 'Friday Night Kabbalat Shabbat', torahPortion: 'Noach', duration: 3600 },
+        { weeksAgo: 4, title: 'Shabbat Morning Service', torahPortion: 'Lech-Lecha', duration: 4800 },
+        { weeksAgo: 6, title: 'Community Healing Service', torahPortion: 'Vayera', duration: 3300 },
+        { weeksAgo: 8, title: 'Shabbat Morning Service', torahPortion: 'Chayei Sara', duration: 4200 }
+    ];
+
+    return specs.map((spec, index) => {
+        const n = index + 1;
+        return {
+            providerRecordingId: `seed-rec-${n}`,
+            title: spec.title,
+            description: `Recorded service — ${spec.torahPortion}. Seeded demo content.`,
+            serviceDate: new Date(now - spec.weeksAgo * WEEK_MS),
+            torahPortion: spec.torahPortion,
+            durationSeconds: spec.duration,
+            providerVideoUrl: `https://example.org/seed/recordings/${n}`,
+            previewUrl: `https://example.org/seed/recordings/${n}/preview.jpg`
+        };
+    });
+}
+
+/**
+ * Build the demo calendar events (6-8): a mix of past and future, including at
+ * least one FUTURE event_type='service' to drive the homepage countdown.
+ * @returns {Array<Object>}
+ */
+function buildEvents() {
+    const now = Date.now();
+    return [
+        {
+            title: 'Friday Night Service',
+            description: 'Weekly Kabbalat Shabbat.',
+            startsAt: new Date(now + 3 * DAY_MS),
+            endsAt: new Date(now + 3 * DAY_MS + 2 * 60 * 60 * 1000),
+            visibility: 'public',
+            eventType: 'service',
+            location: 'Main Sanctuary',
+            zoomUrl: null
+        },
+        {
+            title: 'Shabbat Morning Service',
+            description: 'Weekly Shabbat morning service and Torah reading.',
+            startsAt: new Date(now + 10 * DAY_MS),
+            endsAt: new Date(now + 10 * DAY_MS + 3 * 60 * 60 * 1000),
+            visibility: 'public',
+            eventType: 'service',
+            location: 'Main Sanctuary',
+            zoomUrl: null
+        },
+        {
+            title: 'Adult Education: Intro to Talmud',
+            description: 'Members-only weekly study session.',
+            startsAt: new Date(now + 5 * DAY_MS),
+            endsAt: new Date(now + 5 * DAY_MS + 90 * 60 * 1000),
+            visibility: 'members',
+            eventType: 'event',
+            location: 'Library',
+            zoomUrl: 'https://example.org/seed/zoom/talmud'
+        },
+        {
+            title: 'Community Potluck Dinner',
+            description: 'Bring a dish to share. Open to all.',
+            startsAt: new Date(now + 18 * DAY_MS),
+            endsAt: new Date(now + 18 * DAY_MS + 3 * 60 * 60 * 1000),
+            visibility: 'public',
+            eventType: 'event',
+            location: 'Social Hall',
+            zoomUrl: null
+        },
+        {
+            title: 'Board Meeting',
+            description: 'Monthly board meeting (members welcome to observe).',
+            startsAt: new Date(now + 25 * DAY_MS),
+            endsAt: new Date(now + 25 * DAY_MS + 2 * 60 * 60 * 1000),
+            visibility: 'members',
+            eventType: 'event',
+            location: 'Conference Room',
+            zoomUrl: null
+        },
+        {
+            title: 'Friday Night Service',
+            description: 'Past Kabbalat Shabbat service.',
+            startsAt: new Date(now - 4 * DAY_MS),
+            endsAt: new Date(now - 4 * DAY_MS + 2 * 60 * 60 * 1000),
+            visibility: 'public',
+            eventType: 'service',
+            location: 'Main Sanctuary',
+            zoomUrl: null
+        },
+        {
+            title: 'Past Community Lecture',
+            description: 'A recent guest lecture.',
+            startsAt: new Date(now - 11 * DAY_MS),
+            endsAt: new Date(now - 11 * DAY_MS + 90 * 60 * 1000),
+            visibility: 'public',
+            eventType: 'event',
+            location: 'Social Hall',
+            zoomUrl: null
+        }
+    ];
+}
+
+/**
+ * Build the demo announcements (>=3, exactly one featured), with fixed UUIDs
+ * so re-runs upsert in place. body_html is static, pre-sanitized markup.
+ * @returns {Array<Object>}
+ */
+function buildAnnouncements() {
+    const now = Date.now();
+    return [
+        {
+            id: 'a1f3c2d4-0001-4b5a-9c1e-000000000001',
+            title: 'High Holy Days Schedule Now Available',
+            bodyHtml:
+                '<p>Our complete schedule for the High Holy Days is now posted. ' +
+                'Please review service times and reserve your seats early.</p>',
+            bodyText:
+                'Our complete schedule for the High Holy Days is now posted. ' +
+                'Please review service times and reserve your seats early.',
+            featured: true,
+            featuredUntil: new Date(now + 30 * DAY_MS),
+            publishedAt: new Date(now - 1 * DAY_MS)
+        },
+        {
+            id: 'a1f3c2d4-0002-4b5a-9c1e-000000000002',
+            title: 'Volunteers Needed for Community Potluck',
+            bodyHtml:
+                '<p>We are looking for volunteers to help set up and serve at our ' +
+                'upcoming community potluck. Reach out to the office to sign up.</p>',
+            bodyText:
+                'We are looking for volunteers to help set up and serve at our ' +
+                'upcoming community potluck. Reach out to the office to sign up.',
+            featured: false,
+            featuredUntil: null,
+            publishedAt: new Date(now - 5 * DAY_MS)
+        },
+        {
+            id: 'a1f3c2d4-0003-4b5a-9c1e-000000000003',
+            title: 'Adult Education Series Begins Next Week',
+            bodyHtml:
+                '<p>Join us for our new adult education series on the Talmud. ' +
+                'Sessions are held weekly in the Library and are open to members.</p>',
+            bodyText:
+                'Join us for our new adult education series on the Talmud. ' +
+                'Sessions are held weekly in the Library and are open to members.',
+            featured: false,
+            featuredUntil: null,
+            publishedAt: new Date(now - 9 * DAY_MS)
+        }
+    ];
+}
+
+/**
+ * Seed all demo content, owned by the B1 content owner. Idempotent:
+ *  - recordings: ON CONFLICT (provider_name, provider_recording_id)
+ *  - events: DELETE by created_by (the dedicated owner) then re-insert
+ *  - announcements: ON CONFLICT (id) on fixed UUIDs
+ * @param {{query: Function}} database
+ * @param {string} contentOwnerId
+ */
+async function seedContent(database, contentOwnerId) {
+    // Recordings (upsert on the provider natural key).
+    for (const rec of buildRecordings()) {
+        await database.query(
+            `INSERT INTO recordings (
+                provider_name, provider_recording_id, provider_video_url, preview_url,
+                title, description, service_date, torah_portion, duration_seconds,
+                publish_state, published_at, created_at, updated_at, updated_by
+            ) VALUES ('seed', $1, $2, $3, $4, $5, $6, $7, $8, 'published', NOW(), NOW(), NOW(), $9)
+            ON CONFLICT (provider_name, provider_recording_id) DO UPDATE SET
+                provider_video_url = EXCLUDED.provider_video_url,
+                preview_url = EXCLUDED.preview_url,
+                title = EXCLUDED.title,
+                description = EXCLUDED.description,
+                service_date = EXCLUDED.service_date,
+                torah_portion = EXCLUDED.torah_portion,
+                duration_seconds = EXCLUDED.duration_seconds,
+                publish_state = 'published',
+                published_at = NOW(),
+                updated_at = NOW(),
+                updated_by = EXCLUDED.updated_by`,
+            [
+                rec.providerRecordingId,
+                rec.providerVideoUrl,
+                rec.previewUrl,
+                rec.title,
+                rec.description,
+                rec.serviceDate,
+                rec.torahPortion,
+                rec.durationSeconds,
+                contentOwnerId
+            ]
+        );
+    }
+
+    // Events have a SERIAL id with no natural key: clear this owner's events,
+    // then re-insert. Only the seed owns that account, so this is safe.
+    await database.query('DELETE FROM events WHERE created_by = $1', [contentOwnerId]);
+    for (const evt of buildEvents()) {
+        await database.query(
+            `INSERT INTO events (
+                title, description, starts_at, ends_at, visibility, event_type, location, zoom_url, created_by
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+            [
+                evt.title,
+                evt.description,
+                evt.startsAt,
+                evt.endsAt,
+                evt.visibility,
+                evt.eventType,
+                evt.location,
+                evt.zoomUrl,
+                contentOwnerId
+            ]
+        );
+    }
+
+    // Announcements (upsert on fixed UUIDs).
+    for (const ann of buildAnnouncements()) {
+        await database.query(
+            `INSERT INTO announcements (
+                id, title, body_html, body_text, status, featured, featured_until,
+                published_at, updated_at, created_by, updated_by
+            ) VALUES ($1, $2, $3, $4, 'published', $5, $6, $7, NOW(), $8, $8)
+            ON CONFLICT (id) DO UPDATE SET
+                title = EXCLUDED.title,
+                body_html = EXCLUDED.body_html,
+                body_text = EXCLUDED.body_text,
+                status = 'published',
+                featured = EXCLUDED.featured,
+                featured_until = EXCLUDED.featured_until,
+                published_at = EXCLUDED.published_at,
+                updated_at = NOW(),
+                updated_by = EXCLUDED.updated_by`,
+            [
+                ann.id,
+                ann.title,
+                ann.bodyHtml,
+                ann.bodyText,
+                ann.featured,
+                ann.featuredUntil,
+                ann.publishedAt,
+                contentOwnerId
+            ]
+        );
+    }
+}
+
 async function main() {
     const argv = process.argv.slice(2);
 
@@ -155,6 +422,9 @@ async function main() {
         if (!contentOwnerId) {
             throw new Error('Could not resolve the content-owner account id.');
         }
+
+        console.log('Seeding demo content (recordings, calendar, announcements)...');
+        await seedContent(db, contentOwnerId);
 
         console.log('\nDemo accounts (all share the same password):');
         for (const account of buildDemoAccounts()) {
@@ -180,5 +450,9 @@ module.exports = {
     assertSafeToRun,
     buildDemoAccounts,
     seedDemoAccounts,
+    buildRecordings,
+    buildEvents,
+    buildAnnouncements,
+    seedContent,
     CONTENT_OWNER_EMAIL
 };

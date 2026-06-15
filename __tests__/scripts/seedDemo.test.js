@@ -93,4 +93,123 @@ describe('seed-demo script', () => {
             expect(ownerId).toBe('existing-owner-uuid');
         });
     });
+
+    describe('content seeding (B2)', () => {
+        const OWNER_ID = 'owner-uuid';
+
+        const recordingInserts = () =>
+            db.query.mock.calls.filter((c) => /INSERT INTO recordings/.test(c[0]));
+        const eventInserts = () =>
+            db.query.mock.calls.filter((c) => /INSERT INTO events/.test(c[0]));
+        const eventDeletes = () =>
+            db.query.mock.calls.filter((c) => /DELETE FROM events/.test(c[0]));
+        const announcementInserts = () =>
+            db.query.mock.calls.filter((c) => /INSERT INTO announcements/.test(c[0]));
+
+        test('seeds >=4 published recordings with recent service dates, owned by the content owner', async () => {
+            await seed.seedContent(db, OWNER_ID);
+
+            const inserts = recordingInserts();
+            expect(inserts.length).toBeGreaterThanOrEqual(4);
+
+            const eightWeeksAgo = Date.now() - 8 * 7 * 24 * 60 * 60 * 1000;
+            inserts.forEach((call) => {
+                // Idempotent upsert on the provider natural key.
+                expect(call[0]).toMatch(/ON CONFLICT \(provider_name, provider_recording_id\)/i);
+                const params = call[1];
+                // publish_state is set to 'published' (SQL literal).
+                expect(call[0]).toMatch(/'published'/);
+                // service_date is a recent Date
+                const dateParam = params.find((p) => p instanceof Date);
+                expect(dateParam).toBeInstanceOf(Date);
+                expect(dateParam.getTime()).toBeGreaterThanOrEqual(eightWeeksAgo);
+                expect(dateParam.getTime()).toBeLessThanOrEqual(Date.now() + 1000);
+                // updated_by FK = content owner
+                expect(params).toContain(OWNER_ID);
+            });
+        });
+
+        test('seeds 6-8 events including >=1 future service, idempotent via delete-by-owner', async () => {
+            await seed.seedContent(db, OWNER_ID);
+
+            const deletes = eventDeletes();
+            expect(deletes.length).toBe(1);
+            // The delete is scoped to the content owner only.
+            expect(deletes[0][1]).toContain(OWNER_ID);
+
+            const inserts = eventInserts();
+            expect(inserts.length).toBeGreaterThanOrEqual(6);
+            expect(inserts.length).toBeLessThanOrEqual(8);
+
+            // starts_at passed as a JS Date; created_by = owner.
+            inserts.forEach((call) => {
+                expect(call[1].find((p) => p instanceof Date)).toBeInstanceOf(Date);
+                expect(call[1]).toContain(OWNER_ID);
+            });
+
+            // At least one future service event drives the homepage countdown.
+            const now = Date.now();
+            const futureService = inserts.some((call) => {
+                const params = call[1];
+                const isService = params.includes('service');
+                const hasFutureStart = params.some(
+                    (p) => p instanceof Date && p.getTime() > now
+                );
+                return isService && hasFutureStart;
+            });
+            expect(futureService).toBe(true);
+        });
+
+        test('seeds >=3 announcements with exactly one featured, idempotent on fixed id', async () => {
+            await seed.seedContent(db, OWNER_ID);
+
+            const inserts = announcementInserts();
+            expect(inserts.length).toBeGreaterThanOrEqual(3);
+
+            let featuredCount = 0;
+            inserts.forEach((call) => {
+                expect(call[0]).toMatch(/ON CONFLICT \(id\)/i);
+                const params = call[1];
+                // created_by/updated_by FK = owner
+                expect(params).toContain(OWNER_ID);
+                if (params.includes(true)) {
+                    featuredCount += 1;
+                }
+            });
+            expect(featuredCount).toBe(1);
+        });
+
+        test('never enqueues member email', async () => {
+            // The script must not import/trigger the fan-out services. Spy on the
+            // shared email queue module: if seed-demo touched it, this would fire.
+            const emailQueueService = require('../../src/services/emailQueueService');
+            const spy = jest
+                .spyOn(emailQueueService, 'enqueueEmail')
+                .mockResolvedValue({ id: 'should-never-be-called' });
+
+            await seed.seedContent(db, OWNER_ID);
+
+            expect(spy).not.toHaveBeenCalled();
+            spy.mockRestore();
+        });
+
+        test('re-running produces no duplicates (stable keys / delete-by-owner)', async () => {
+            await seed.seedContent(db, OWNER_ID);
+            const firstRunIds = recordingInserts().map(
+                (c) => c[1].find((p) => typeof p === 'string' && p.startsWith('seed-rec-'))
+            );
+
+            jest.clearAllMocks();
+            db.query.mockResolvedValue({ rows: [] });
+
+            await seed.seedContent(db, OWNER_ID);
+            const secondRunIds = recordingInserts().map(
+                (c) => c[1].find((p) => typeof p === 'string' && p.startsWith('seed-rec-'))
+            );
+
+            // Same stable provider_recording_id keys both runs => ON CONFLICT no-dupes.
+            expect(secondRunIds).toEqual(firstRunIds);
+            expect(new Set(secondRunIds).size).toBe(secondRunIds.length);
+        });
+    });
 });
