@@ -182,6 +182,7 @@ exports.getPendingMessagesPage = async (req, res) => {
         res.render('layout', {
             title: 'Chat Moderation',
             bodyView: 'admin/chat-moderation',
+            stylesheets: ['/css/admin.css'],
             viewData: {
                 messages
             }

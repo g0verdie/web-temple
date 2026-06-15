@@ -26,6 +26,7 @@ exports.getAuditLogs = async (req, res) => {
         res.render('layout', {
             title: 'Audit Logs',
             bodyView: 'admin/audit-logs',
+            stylesheets: ['/css/admin.css'],
             viewData: {
                 logs: logsData.logs,
                 total: logsData.total,
@@ -146,6 +147,7 @@ exports.getDashboard = async (req, res) => {
         res.render('layout', {
             title: 'Admin Dashboard',
             bodyView: 'admin/dashboard',
+            stylesheets: ['/css/admin.css'],
             viewData: {
                 lastBackup,
                 latestAttempt,
