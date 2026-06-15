@@ -29,11 +29,16 @@ jest.mock('../../src/config/db', () => ({
 }));
 const db = require('../../src/config/db');
 
-// Mock ChatService
+// Mock ChatService. containsReservedName is the real (pure) implementation so
+// the upgrade handler's reserved-name gate behaves as in production.
 jest.mock('../../src/services/ChatService', () => ({
     createMessage: jest.fn(),
     approveMessage: jest.fn(),
-    deleteMessage: jest.fn()
+    deleteMessage: jest.fn(),
+    containsReservedName: (displayName) => {
+        const lower = String(displayName).toLowerCase();
+        return ['rabbi', 'cantor', 'admin', 'moderator'].some((w) => lower.includes(w));
+    }
 }));
 const ChatService = require('../../src/services/ChatService');
 
@@ -114,6 +119,24 @@ describe('Chat WebSocket Server Integration Tests', () => {
 
             expect(socket.write).toHaveBeenCalledWith(expect.stringContaining('HTTP/1.1 400 Bad Request'));
             expect(socket.destroy).toHaveBeenCalled();
+        });
+
+        it('should reject a guest connection whose guestName contains a reserved role word', async () => {
+            const reservedNames = ['Rabbi David', 'cantor sam', 'The ADMIN', 'a moderator'];
+            for (const name of reservedNames) {
+                const req = { url: `/ws/chat?streamId=10&guestName=${encodeURIComponent(name)}` };
+                const socket = makeSocket();
+
+                let connected = false;
+                const onConn = () => { connected = true; };
+                wss.once('connection', onConn);
+                await emitUpgradeAsync(req, socket);
+                wss.removeListener('connection', onConn);
+
+                expect(socket.write).toHaveBeenCalledWith(expect.stringContaining('HTTP/1.1 400 Bad Request'));
+                expect(socket.destroy).toHaveBeenCalled();
+                expect(connected).toBe(false);
+            }
         });
 
         it('should allow guest connection with valid guestName and upgrade successfully', async () => {

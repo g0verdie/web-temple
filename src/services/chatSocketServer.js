@@ -9,6 +9,7 @@ const jwt = require('jsonwebtoken');
 const db = require('../config/db');
 const redis = require('../config/redis');
 const logger = require('../utils/logger');
+const { containsReservedName } = require('./ChatService');
 
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'test' ? 'test-jwt-secret' : null);
 const MAX_CONCURRENT_CONNECTIONS = 50;
@@ -271,6 +272,14 @@ const initChatSocketServer = (server) => {
                 return;
             }
             if (guestName.length > 50) {
+                socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
+                socket.destroy();
+                return;
+            }
+            // Block clergy/staff impersonation: a guest can't open a connection
+            // (or receive the connection_established echo) under a role name.
+            // Mirrors ChatService.validateMessage's reserved-name check (REST path).
+            if (containsReservedName(guestName)) {
                 socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
                 socket.destroy();
                 return;

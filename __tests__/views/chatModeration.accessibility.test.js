@@ -35,6 +35,14 @@ describe('Chat moderation queue accessibility (WCAG AA)', () => {
         expect((html.match(/>Guest</g) || []).length).toBe(1);
     });
 
+    it('renders the guest badge prominently (warning emphasis, not muted gray)', () => {
+        const html = renderModeration(SAMPLE);
+        // The guest badge must stand out so a role-named guest can't blend in.
+        // bg-warning is the prominent emphasis; bg-secondary (muted gray) is not used.
+        expect(html).toMatch(/badge bg-warning[^>]*>Guest</);
+        expect(html).not.toContain('bg-secondary');
+    });
+
     it('has no WCAG AA violations', async () => {
         const html = renderModeration(SAMPLE);
         const results = await axe(html, {

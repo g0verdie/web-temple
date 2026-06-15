@@ -7,6 +7,19 @@ const db = require('../config/db');
 const { log: logAudit, AUDIT_ACTIONS } = require('./auditService');
 const logger = require('../utils/logger');
 
+// Role words a guest may not use in a display name. Blocks clergy/staff
+// impersonation in live chat (a guest choosing "Rabbi David"). Shared with the
+// WS upgrade handler in chatSocketServer.js so the gate covers both paths.
+const RESERVED_NAME_WORDS = ['rabbi', 'cantor', 'admin', 'moderator'];
+
+/**
+ * Whether a display name (case-insensitively) contains a reserved role word.
+ */
+const containsReservedName = (displayName) => {
+    const lower = String(displayName).toLowerCase();
+    return RESERVED_NAME_WORDS.some((word) => lower.includes(word));
+};
+
 /**
  * Validates a chat message payload
  */
@@ -19,6 +32,9 @@ const validateMessage = (streamId, displayName, messageText) => {
     }
     if (displayName.length > 50) {
         throw new Error('Display name must not exceed 50 characters');
+    }
+    if (containsReservedName(displayName)) {
+        throw new Error('That display name is not allowed');
     }
     if (!messageText || typeof messageText !== 'string' || messageText.trim() === '') {
         throw new Error('Message text is required');
@@ -285,5 +301,6 @@ module.exports = {
     getApprovedMessagesForStream,
     getPendingMessages,
     getPendingMessageCount,
-    getMessagesForRecording
+    getMessagesForRecording,
+    containsReservedName
 };

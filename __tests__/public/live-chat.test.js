@@ -175,6 +175,20 @@ describe('live-chat client behavior', () => {
         expect(authMsg.querySelector('.message-guest-badge')).toBeNull();
     });
 
+    it('never applies moderator styling from a message payload role (defends against forged role)', () => {
+        document.body.innerHTML = PANEL('member');
+        loadModule();
+        MockWebSocket.last._open();
+
+        // A guest message that smuggles a role field must NOT be styled as a moderator.
+        MockWebSocket.last._emit({ type: 'message_approved', data: { id: 601, display_name: 'Sneaky', message_text: 'hi', status: 'approved', user_id: null, role: 'rabbi', created_at: '2026-06-14T12:00:00Z' } });
+
+        const msg = document.getElementById('msg-601');
+        expect(msg.classList.contains('moderator')).toBe(false);
+        // The guest badge is still shown — unmistakably a guest.
+        expect(msg.querySelector('.message-guest-badge').textContent).toBe('Guest');
+    });
+
     it('the rendered moderator chat UI has no WCAG AA violations', async () => {
         document.body.innerHTML = PANEL('rabbi');
         loadModule();
