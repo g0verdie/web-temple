@@ -5,6 +5,8 @@ const logger = require('../../utils/logger');
 const DEFAULT_GRAPH_VERSION = 'v21.0';
 const PAGE_SIZE = 50;
 const TITLE_MAX_LEN = 80;
+const FETCH_TIMEOUT_MS = 5000; // bound the Graph call below the refresh lock TTL (10s)
+                               // so a hung upstream can't block the request or the lock holder
 
 /**
  * GraphApiSource — auto-pulls the temple page's videos from the Facebook Graph API.
@@ -33,10 +35,13 @@ class GraphApiSource extends PastVideoSource {
 
         let response;
         try {
-            response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+            response = await fetch(url, {
+                headers: { Authorization: `Bearer ${token}` },
+                signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+            });
         } catch (cause) {
-            // Network failure — never log the token (it is in the header, not the URL).
-            logger.warn('GraphApiSource fetch failed', { error: cause.message });
+            // Network failure or timeout — never log the token (it is in the header, not the URL).
+            logger.warn('GraphApiSource fetch failed', { error: cause && cause.message });
             throw new Error('GraphApiSource fetch failed');
         }
 

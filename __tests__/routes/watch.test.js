@@ -56,6 +56,15 @@ describe('GET /watch (public Past Services page)', () => {
         expect(res.status).toBe(200);
         expect(res.text).toContain('watch-empty');
         expect(res.text).toContain('facebook.com/share/18jfSPTgMw');
+        // reverse-tabnabbing guard on the external link
+        expect(res.text).toContain('rel="noopener"');
+    });
+
+    it('(g) returns 200 with the empty state even if the service throws (never 500)', async () => {
+        PastVideoService.getVideos.mockRejectedValue(new Error('boom'));
+        const res = await request(app).get('/watch');
+        expect(res.status).toBe(200);
+        expect(res.text).toContain('watch-empty');
     });
 
     it('(d) shows the degraded notice when degraded with videos present', async () => {

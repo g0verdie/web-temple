@@ -115,4 +115,38 @@ describe('PastVideoService.getVideos', () => {
 
         await expect(PastVideoService.getVideos()).resolves.toEqual({ videos, degraded: false });
     });
+
+    it('(g) caches an empty source result briefly (not as a 6h success) and does not poison lastgood', async () => {
+        process.env.PAST_VIDEO_SOURCE = 'graph';
+        getSource.mockReturnValue({ listVideos: jest.fn().mockResolvedValue([]) });
+
+        const result = await PastVideoService.getVideos();
+
+        expect(result).toEqual({ videos: [], degraded: false });
+        expect(CacheService.set).toHaveBeenCalledWith(FALLBACK_KEY, { videos: [], degraded: false }, expect.any(Number));
+        expect(CacheService.set).not.toHaveBeenCalledWith(LIST_KEY, expect.anything(), expect.anything());
+        expect(CacheService.set).not.toHaveBeenCalledWith(LASTGOOD_KEY, expect.anything(), expect.anything());
+    });
+
+    it('(i) when graph and the curated fallback both fail, returns empty degraded without throwing', async () => {
+        process.env.PAST_VIDEO_SOURCE = 'graph';
+        getSource.mockReturnValue({ listVideos: jest.fn().mockRejectedValue(Object.assign(new Error('x'), { tokenInvalid: true })) });
+        CuratedSource.mockImplementation(() => ({ listVideos: jest.fn().mockRejectedValue(new Error('curated boom')) }));
+
+        await expect(PastVideoService.getVideos()).resolves.toEqual({ videos: [], degraded: true });
+    });
+
+    it('(j) when the lock is held and there is no last-good, serves the curated fallback (degraded), not a blank page', async () => {
+        process.env.PAST_VIDEO_SOURCE = 'graph';
+        CacheService.acquireLock.mockResolvedValue(false); // lock held by another request
+        CacheService.get.mockResolvedValue(null);          // no list / fallback / lastgood yet
+        const fakeSource = { listVideos: jest.fn() };
+        getSource.mockReturnValue(fakeSource);
+        CuratedSource.mockImplementation(() => ({ listVideos: jest.fn().mockResolvedValue([{ id: 'cu' }]) }));
+
+        const result = await PastVideoService.getVideos();
+
+        expect(result).toEqual({ videos: [{ id: 'cu' }], degraded: true });
+        expect(fakeSource.listVideos).not.toHaveBeenCalled();
+    });
 });

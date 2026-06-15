@@ -34,19 +34,45 @@ class PastVideoService {
         const fallbackCached = await CacheService.get(FALLBACK_KEY);
         if (fallbackCached) return fallbackCached;
 
+        // The curated source is an in-memory read — no network, no stampede — so it
+        // skips the single-flight lock entirely. That also avoids the cold-start
+        // "lock-loser sees a blank page" race for the MVP default source.
+        if (getSource() instanceof CuratedSource) {
+            return this._loadAndCache();
+        }
+
+        // Network-backed (graph) source: single-flight so concurrent misses don't
+        // stampede the rate-limited Graph API.
         const gotLock = await CacheService.acquireLock(LOCK_KEY, LOCK_TTL);
         if (!gotLock) {
-            // Another request is refreshing — serve the last good list (stale) rather
-            // than calling the source too, which would defeat the single-flight guard.
+            // Another request is refreshing. Serve last-good if we have it, else the
+            // curated fallback — never a blank, non-degraded page at cold start.
             const lastGood = await CacheService.get(LASTGOOD_KEY);
             if (Array.isArray(lastGood) && lastGood.length) {
                 return { videos: lastGood, degraded: false };
             }
-            return { videos: [], degraded: false };
+            const fallbackVideos = await this._curatedFallback();
+            return { videos: fallbackVideos, degraded: fallbackVideos.length > 0 };
         }
 
         try {
+            return await this._loadAndCache();
+        } finally {
+            await CacheService.del(LOCK_KEY);
+        }
+    }
+
+    async _loadAndCache() {
+        try {
             const videos = await getSource().listVideos();
+            // An empty result is not authoritative (every video private/processing, or
+            // a genuinely empty page) — cache it only briefly and don't poison lastgood,
+            // so one empty refresh can't pin a blank page for the full 6h success TTL.
+            if (!videos.length) {
+                const emptyResult = { videos: [], degraded: false };
+                await CacheService.set(FALLBACK_KEY, emptyResult, FALLBACK_TTL);
+                return emptyResult;
+            }
             const result = { videos, degraded: false };
             await CacheService.set(LIST_KEY, result, SUCCESS_TTL);
             await CacheService.set(LASTGOOD_KEY, videos, LASTGOOD_TTL);
@@ -63,16 +89,13 @@ class PastVideoService {
             await CacheService.set(FALLBACK_KEY, result, FALLBACK_TTL);
             await this._alertOperator(err);
             return result;
-        } finally {
-            await CacheService.del(LOCK_KEY);
         }
     }
 
     async _curatedFallback() {
-        // Only the graph source has a meaningful curated fallback; if curated is the
-        // active source and it failed, re-calling it would just fail again.
-        const activeIsGraph = (process.env.PAST_VIDEO_SOURCE || 'curated').toLowerCase() === 'graph';
-        if (!activeIsGraph) return [];
+        // If curated is the active source and it just failed, re-calling it would only
+        // fail again — decide off the live source object, not a duplicated env parse.
+        if (getSource() instanceof CuratedSource) return [];
         try {
             return await new CuratedSource().listVideos();
         } catch (curatedErr) {
@@ -83,7 +106,9 @@ class PastVideoService {
 
     async _alertOperator(err) {
         // Atomic fire-once-per-hour guard so a broken token doesn't email on every miss.
-        const firstAlert = await CacheService.acquireLock(ALERTED_KEY, ALERT_DEDUPE_TTL);
+        // failClosed: a Redis outage must NOT be read as "first alert" (that would email
+        // the operator on every request during an incident) — suppress instead.
+        const firstAlert = await CacheService.acquireLock(ALERTED_KEY, ALERT_DEDUPE_TTL, { failClosed: true });
         if (!firstAlert) return;
 
         const recipient = process.env.ADMIN_EMAIL || process.env.CONTACT_EMAIL;

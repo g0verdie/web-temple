@@ -92,6 +92,27 @@ describe('GraphApiSource', () => {
         await expect(source.listVideos()).rejects.toThrow();
     });
 
+    it('throws WITHOUT tokenInvalid on a non-190 Graph error (so the alert is a generic failure)', async () => {
+        global.fetch.mockResolvedValue({
+            ok: false,
+            status: 500,
+            json: async () => ({ error: { code: 1, message: 'server error' } })
+        });
+        let err;
+        try { await source.listVideos(); } catch (e) { err = e; }
+        expect(err).toBeInstanceOf(Error);
+        expect(err.tokenInvalid).toBeFalsy();
+    });
+
+    it('truncates a long first-line description for the card title', async () => {
+        global.fetch.mockResolvedValue(okResponse([
+            { id: '555', description: 'A'.repeat(120), created_time: '2026-05-29T19:00:00+0000', status: { video_status: 'ready' } }
+        ]));
+        const videos = await source.listVideos();
+        expect(videos[0].title.length).toBeLessThanOrEqual(80);
+        expect(videos[0].title.endsWith('…')).toBe(true);
+    });
+
     it('sends the token in the Authorization header, not the URL, and pins the API version', async () => {
         global.fetch.mockResolvedValue(okResponse([]));
         await source.listVideos();
