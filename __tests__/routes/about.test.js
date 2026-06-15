@@ -85,6 +85,12 @@ describe('About Page Route', () => {
       expect(res.text).toContain('Contact');
     });
 
+    it('should show a Login link for logged-out visitors', async () => {
+      const res = await request(app).get('/about');
+      expect(res.text).toContain('href="/login"');
+      expect(res.text).toContain('nav-login');
+    });
+
     it('should include footer', async () => {
       const res = await request(app).get('/about');
       expect(res.text).toContain('Temple B\'nai Israel');
@@ -95,6 +101,22 @@ describe('About Page Route', () => {
       const res = await request(app).get('/about');
       expect(res.text).toContain('skip-link');
       expect(res.text).toContain('main-content');
+    });
+  });
+
+  describe('Quick Links sidebar', () => {
+    it('should link Services & Events to /calendar and Support Us to /donations', async () => {
+      const res = await request(app).get('/about');
+      expect(res.text).toContain('href="/calendar"');
+      expect(res.text).toContain('href="/donations"');
+      expect(res.text).toContain('Services & Events');
+      expect(res.text).toContain('Support Us');
+    });
+
+    it('should not render "Coming Soon" placeholders', async () => {
+      const res = await request(app).get('/about');
+      expect(res.text).not.toContain('Coming Soon');
+      expect(res.text).not.toContain('aria-disabled');
     });
   });
 
