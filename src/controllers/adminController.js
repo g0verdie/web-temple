@@ -39,7 +39,7 @@ exports.getAuditLogs = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Error fetching audit logs:', error);
+        logger.error('Error fetching audit logs', { error });
         res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to load audit logs.' });
     }
 };
@@ -216,7 +216,7 @@ exports.retryEmailJob = async (req, res) => {
 
         return res.redirect('/admin');
     } catch (error) {
-        console.error('Error retrying email job:', error);
+        logger.error('Error retrying email job', { error });
         res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to retry the email job.' });
     }
 };

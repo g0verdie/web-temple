@@ -20,7 +20,7 @@ exports.getRecordingsList = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Error loading recordings list:', error);
+        logger.error('Error loading recordings list', { error });
         res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to load recordings.' });
     }
 };
@@ -70,7 +70,7 @@ exports.saveDraft = async (req, res) => {
             message: 'Draft saved successfully'
         });
     } catch (error) {
-        console.error('Error saving draft:', error);
+        logger.error('Error saving draft', { error });
         res.status(500).json({
             success: false,
             error: error.message
@@ -125,7 +125,7 @@ exports.publishRecording = async (req, res) => {
             message: 'Recording published successfully'
         });
     } catch (error) {
-        console.error('Error publishing recording:', error);
+        logger.error('Error publishing recording', { error });
         const statusCode = error.message.includes('required') ? 400 : 500;
         res.status(statusCode).json({
             success: false,
@@ -234,7 +234,7 @@ exports.getArchiveList = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Error loading archive:', error);
+        logger.error('Error loading archive', { error });
         res.status(500).render('error', { 
             title: '500 - Server Error',
             message: 'Unable to load archive.' 

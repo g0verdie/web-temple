@@ -23,8 +23,6 @@ router.post('/register', authLimiter, register);
  * POST /api/auth/login
  * Authenticate and login a user
  */
-// Debug middleware
-// router.post('/login', authLimiter, (req, res, next) => { console.error('Debug: Hit Login Route Middleware'); next(); }, login);
 router.post('/login', authLimiter, login);
 
 /**

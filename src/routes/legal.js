@@ -10,6 +10,7 @@
 
 const express = require('express');
 const pageController = require('../controllers/pageController');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -60,7 +61,7 @@ LEGAL_PAGES.forEach(({ path, slug, title, fallback }) => {
         viewData: { page }
       });
     } catch (error) {
-      console.error(`Error loading ${slug} page:`, error);
+      logger.error(`Error loading ${slug} page`, { error });
       next(error);
     }
   });

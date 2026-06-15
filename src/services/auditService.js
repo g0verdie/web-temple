@@ -4,6 +4,7 @@
  */
 
 const db = require('../config/db');
+const logger = require('../utils/logger');
 
 /**
  * Common audit event types
@@ -106,7 +107,7 @@ const log = async (options) => {
     const finalIpAddress = ip_address || ipAddress || null;
 
     if (!action) {
-        console.error('Audit log missing action');
+        logger.error('Audit log missing action');
         return;
     }
 
@@ -141,7 +142,7 @@ const log = async (options) => {
         // For reliability, we await but catch.
         await db.query(query, values);
     } catch (error) {
-        console.error('FAILED TO WRITE AUDIT LOG:', error.message);
+        logger.error('FAILED TO WRITE AUDIT LOG', { error: error.message });
         // We do NOT throw here to avoid blocking user actions
     }
 };
@@ -225,7 +226,7 @@ const queryLogs = async (filters = {}) => {
             total: parseInt(countResult.rows[0].count)
         };
     } catch (error) {
-        console.error('Audit log query failed:', error.message);
+        logger.error('Audit log query failed', { error: error.message });
         throw error; // We throw here because this IS the user action (viewing logs)
     }
 };
@@ -249,10 +250,10 @@ const cleanupOldLogs = async (daysToKeep = 365) => {
             [thresholdDate]
         );
 
-        console.log(`Audit log cleanup: Deleted ${result.rowCount} logs older than ${daysToKeep} days.`);
+        logger.info(`Audit log cleanup: Deleted ${result.rowCount} logs older than ${daysToKeep} days.`);
         return result.rowCount;
     } catch (error) {
-        console.error('Audit log cleanup failed:', error.message);
+        logger.error('Audit log cleanup failed', { error: error.message });
         // We log but don't rethrow to avoid crashing the cron job
         return 0;
     }

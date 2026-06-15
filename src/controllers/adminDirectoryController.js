@@ -1,4 +1,5 @@
 const MemberDirectoryService = require('../services/MemberDirectoryService');
+const logger = require('../utils/logger');
 
 const queryString = (value) => (typeof value === 'string' ? value : '');
 
@@ -37,7 +38,7 @@ exports.getDirectoryAdmin = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Error loading admin directory:', error);
+        logger.error('Error loading admin directory', { error });
         res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to load the member directory.' });
     }
 };
@@ -63,7 +64,7 @@ exports.moderate = async (req, res) => {
         });
         return res.redirect('/admin/directory');
     } catch (error) {
-        console.error('Error moderating directory profile:', error);
+        logger.error('Error moderating directory profile', { error });
         return res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to moderate this profile.' });
     }
 };

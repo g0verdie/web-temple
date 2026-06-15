@@ -5,6 +5,7 @@ const sessionTimeout = require('../middleware/sessionTimeout');
 const userService = require('../services/userService');
 const MemberDirectoryService = require('../services/MemberDirectoryService');
 const unsubscribeController = require('../controllers/unsubscribeController');
+const logger = require('../utils/logger');
 
 /**
  * GET /register
@@ -77,7 +78,7 @@ router.get('/account/settings', requireAuth, sessionTimeout(), async (req, res) 
             stylesheets: ['/css/account.css']
         });
     } catch (error) {
-        console.error('Error loading account settings page:', error);
+        logger.error('Error loading account settings page', { error });
         res.status(500).render('error', {
             title: '500 - Server Error',
             message: 'Unable to load account settings.'
@@ -122,7 +123,7 @@ router.get('/account/directory', requireAuth, sessionTimeout(), async (req, res)
             stylesheets: ['/css/account.css']
         });
     } catch (error) {
-        console.error('Error loading directory listing page:', error);
+        logger.error('Error loading directory listing page', { error });
         res.status(500).render('error', {
             title: '500 - Server Error',
             message: 'Unable to load your directory listing.'

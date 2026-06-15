@@ -5,6 +5,7 @@
 
 const express = require('express');
 const pageController = require('../controllers/pageController');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -50,7 +51,7 @@ router.get('/', async (req, res, next) => {
       viewData: { page },
     });
   } catch (error) {
-    console.error('Error loading About page:', error);
+    logger.error('Error loading About page', { error });
     next(error);
   }
 });

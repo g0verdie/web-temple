@@ -4,6 +4,7 @@ const pool = require('../config/db');
 const { logAudit, AUDIT_ACTIONS } = require('../services/auditService');
 // We will implement emailService later, but requiring it now to structure usage
 const emailService = require('../services/emailService');
+const logger = require('../utils/logger');
 
 const verifyCaptcha = async (token) => {
     if (!token) return false;
@@ -18,7 +19,7 @@ const verifyCaptcha = async (token) => {
         }));
         return response.data.success;
     } catch (error) {
-        console.error('CAPTCHA verification failed:', error);
+        logger.error('CAPTCHA verification failed', { error });
         return false;
     }
 };
@@ -57,7 +58,7 @@ exports.submitMessage = async (req, res) => {
 
         // Trigger Email Notification (Async)
         Promise.resolve(emailService.sendContactNotification({ name, email, subject, message }))
-            .catch(err => console.error('Email failed:', err));
+            .catch(err => logger.error('Email failed', { error: err }));
 
         // Audit Log
         logAudit({
@@ -76,7 +77,7 @@ exports.submitMessage = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error submitting message:', error);
+        logger.error('Error submitting message', { error });
         res.status(500).json({ error: 'Server error' });
     }
 };
