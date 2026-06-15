@@ -29,8 +29,8 @@ describe('Unsubscribe routes', () => {
             expect(res.status).toBe(200);
             expect(res.text).toContain(`id="unsubscribeToken"`);
             expect(res.text).toContain(token);
-            // CSP: no inline <script> (script tags must carry a src=).
-            expect(res.text).not.toMatch(/<script(?![^>]*\ssrc=)[^>]*>/i);
+            // CSP: no executable inline <script> (external src= or application/ld+json data only, KTD9).
+            expect(res.text).not.toMatch(/<script(?![^>]*\ssrc=)(?![^>]*\stype=["']application\/ld\+json["'])[^>]*>/i);
         });
 
         it('renders 200 when no token is supplied', async () => {

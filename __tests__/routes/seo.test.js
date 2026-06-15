@@ -27,13 +27,15 @@ describe('GET /sitemap.xml', () => {
 
     test('lists the main public URLs with an absolute base', async () => {
         const res = await request(app).get('/sitemap.xml');
-        const paths = ['/', '/about', '/contact', '/calendar', '/watch', '/archive', '/privacy', '/terms', '/accessibility'];
+        const paths = ['/', '/about', '/contact', '/calendar', '/watch', '/donations', '/privacy', '/terms', '/accessibility'];
         for (const p of paths) {
             // Absolute URLs (host + path) inside <loc>.
             expect(res.text).toContain(`<loc>http://`);
             expect(res.text).toContain(`${p}</loc>`);
         }
         expect(res.text).toContain('<urlset');
+        // Member-gated /archive must not be advertised to crawlers (U4).
+        expect(res.text).not.toContain('/archive</loc>');
     });
 });
 

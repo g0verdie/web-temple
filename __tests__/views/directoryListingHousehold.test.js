@@ -74,8 +74,8 @@ describe('Directory listing edit view: structured household markup', () => {
         });
 
         const res = await render();
-        // Only the external script tag (with src) is allowed; no inline script bodies.
-        expect(res.text).not.toMatch(/<script(?![^>]*\ssrc=)[^>]*>/i);
+        // Only external scripts (src=) and CSP-safe application/ld+json data blocks (KTD9) are allowed; no executable inline script bodies.
+        expect(res.text).not.toMatch(/<script(?![^>]*\ssrc=)(?![^>]*\stype=["']application\/ld\+json["'])[^>]*>/i);
         expect(res.text).not.toMatch(/<style[\s>]/i);
         expect(res.text).not.toMatch(/\sstyle\s*=\s*["']/i);
         expect(res.text).not.toMatch(/\son[a-z]+\s*=\s*["']/i);

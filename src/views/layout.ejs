@@ -35,6 +35,10 @@
         addressCountry: 'US'
       }
     };
+    // Embed JSON safely inside a script tag: escape chars that could break out of
+    // the element (a literal closing tag in untrusted data) or confuse the HTML parser.
+    const ldJson = (obj) => JSON.stringify(obj)
+      .replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
   %>
   <meta name="description" content="<%= metaDescription %>">
   <% if (typeof noindex !== 'undefined' && noindex) { %>
@@ -72,9 +76,9 @@
             <% } %>
 
               <!-- Structured data (schema.org). Server-built JSON, not executable script — CSP-safe as data. -->
-              <script type="application/ld+json"><%- JSON.stringify(siteJsonLd) %></script>
+              <script type="application/ld+json"><%- ldJson(siteJsonLd) %></script>
               <% if (typeof jsonLd !== 'undefined' && jsonLd) { %>
-                <script type="application/ld+json"><%- JSON.stringify(jsonLd) %></script>
+                <script type="application/ld+json"><%- ldJson(jsonLd) %></script>
                 <% } %>
 </head>
 
