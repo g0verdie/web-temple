@@ -3,6 +3,7 @@ const CacheService = require('../../src/services/CacheService');
 const emailQueueService = require('../../src/services/emailQueueService');
 const emailTemplateService = require('../../src/services/emailTemplateService');
 const auditService = require('../../src/services/auditService');
+const { verifyUnsubscribeToken } = require('../../src/utils/unsubscribeToken');
 
 jest.mock('../../src/config/db');
 jest.mock('../../src/services/CacheService');
@@ -83,6 +84,13 @@ describe('AnnouncementService', () => {
             expect(emailQueueService.enqueueEmail).toHaveBeenCalledTimes(2);
             const recipients = emailQueueService.enqueueEmail.mock.calls.map(c => c[0].to).sort();
             expect(recipients).toEqual(['a@x.com', 'b@x.com']);
+
+            // Each rendered template now carries a signed unsubscribe token
+            // (previously absent) that verifies back to the recipient's id.
+            const m1Render = emailTemplateService.renderTemplate.mock.calls
+                .find(c => c[1] && c[1].memberName === 'A')[1];
+            expect(m1Render.unsubscribeToken).toBeTruthy();
+            expect(verifyUnsubscribeToken(m1Render.unsubscribeToken)).toBe('m1');
 
             expect(auditService.logAudit).toHaveBeenCalledWith(
                 expect.objectContaining({ action: 'ANNOUNCEMENT_CREATED', entity_type: 'announcement' })

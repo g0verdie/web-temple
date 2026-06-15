@@ -16,6 +16,7 @@ const CacheService = require('./CacheService');
 const { enqueueEmail } = require('./emailQueueService');
 const { renderTemplate } = require('./emailTemplateService');
 const { logAudit, AUDIT_ACTIONS } = require('./auditService');
+const { signUnsubscribeToken } = require('../utils/unsubscribeToken');
 const logger = require('../utils/logger');
 
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -185,7 +186,8 @@ const fanOutAnnouncementEmails = async (members, payload) => {
                 title: payload.title,
                 bodyHtml: payload.bodyHtml,
                 bodyText: payload.bodyText,
-                homeUrl: getHomeUrl()
+                homeUrl: getHomeUrl(),
+                unsubscribeToken: signUnsubscribeToken(member.id)
             });
 
             return enqueueEmail({

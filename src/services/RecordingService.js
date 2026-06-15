@@ -8,6 +8,7 @@ const CacheService = require('./CacheService');
 const { enqueueEmail } = require('./emailQueueService');
 const { renderTemplate } = require('./emailTemplateService');
 const { logAudit, AUDIT_ACTIONS } = require('./auditService');
+const { signUnsubscribeToken } = require('../utils/unsubscribeToken');
 const { v4: uuidv4 } = require('uuid');
 const logger = require('../utils/logger');
 
@@ -258,7 +259,8 @@ const publishRecording = async (recording, context) => {
                 title,
                 serviceDate,
                 torahPortion,
-                archiveUrl: process.env.APP_URL ? `${process.env.APP_URL}/archive` : 'https://temple.example.com/archive'
+                archiveUrl: process.env.APP_URL ? `${process.env.APP_URL}/archive` : 'https://temple.example.com/archive',
+                unsubscribeToken: signUnsubscribeToken(member.id)
             });
 
             await enqueueEmail({

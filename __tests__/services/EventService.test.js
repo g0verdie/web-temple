@@ -22,6 +22,7 @@ const CacheService = require('../../src/services/CacheService');
 const StreamingService = require('../../src/services/StreamingService');
 const auditService = require('../../src/services/auditService');
 const { enqueueEmail } = require('../../src/services/emailQueueService');
+const { verifyUnsubscribeToken } = require('../../src/utils/unsubscribeToken');
 const EventService = require('../../src/services/EventService');
 
 const row = (overrides = {}) => ({
@@ -230,12 +231,13 @@ describe('EventService notifications (U6)', () => {
             ] }); // members
         await EventService.create({ title: 'New', starts_at: '2099-01-01T18:00' }, 'user-1');
         expect(enqueueEmail).toHaveBeenCalledTimes(2);
-        expect(enqueueEmail).toHaveBeenCalledWith(expect.objectContaining({
-            to: 'a@x.com',
-            template: 'new-event',
-            data: expect.objectContaining({ unsubscribeToken: 'm1' }),
-            attachments: expect.any(Array)
-        }));
+        const m1Call = enqueueEmail.mock.calls.find(c => c[0].to === 'a@x.com')[0];
+        expect(m1Call.template).toBe('new-event');
+        expect(m1Call.attachments).toEqual(expect.any(Array));
+        // The fan-out now passes a SIGNED token (not the raw member id) that
+        // verifies back to the member id.
+        expect(m1Call.data.unsubscribeToken).not.toBe('m1');
+        expect(verifyUnsubscribeToken(m1Call.data.unsubscribeToken)).toBe('m1');
     });
 
     test('edge: zero opted-in members → no enqueue, no error', async () => {

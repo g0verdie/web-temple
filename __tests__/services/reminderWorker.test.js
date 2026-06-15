@@ -1,4 +1,5 @@
 const { runReminderScan, startReminderWorker } = require('../../src/workers/reminderWorker');
+const { verifyUnsubscribeToken } = require('../../src/utils/unsubscribeToken');
 
 const makeEvent = (overrides = {}) => ({
     id: 1,
@@ -33,6 +34,11 @@ describe('reminderWorker.runReminderScan (U10)', () => {
             template: 'event-reminder',
             attachments: expect.any(Array)
         }));
+        // Each reminder carries a SIGNED token (not the raw member id) that
+        // verifies back to that member.
+        const m1Call = enqueue.mock.calls.find(c => c[0].to === 'a@x.com')[0];
+        expect(m1Call.data.unsubscribeToken).not.toBe('m1');
+        expect(verifyUnsubscribeToken(m1Call.data.unsubscribeToken)).toBe('m1');
         expect(eventService.markReminderSent).toHaveBeenCalledWith(5);
         expect(result).toEqual({ eventsProcessed: 1, emailsQueued: 2 });
     });
