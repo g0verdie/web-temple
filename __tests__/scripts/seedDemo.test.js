@@ -112,7 +112,9 @@ describe('seed-demo script', () => {
             const inserts = recordingInserts();
             expect(inserts.length).toBeGreaterThanOrEqual(4);
 
-            const eightWeeksAgo = Date.now() - 8 * 7 * 24 * 60 * 60 * 1000;
+            // Oldest seeded recording sits at ~8 weeks; add a day of slack so the
+            // boundary isn't flaky against time elapsed between seeding and asserting.
+            const eightWeeksAgo = Date.now() - (8 * 7 + 1) * 24 * 60 * 60 * 1000;
             inserts.forEach((call) => {
                 // Idempotent upsert on the provider natural key.
                 expect(call[0]).toMatch(/ON CONFLICT \(provider_name, provider_recording_id\)/i);
