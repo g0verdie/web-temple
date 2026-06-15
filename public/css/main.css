@@ -240,6 +240,21 @@ header {
   border-bottom: none;
 }
 
+/* Login link styled as a gold button, consistent with the navy header */
+.nav-menu a.nav-login {
+  color: var(--color-gold);
+  border: 2px solid var(--color-gold);
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.nav-menu a.nav-login:hover,
+.nav-menu a.nav-login:focus,
+.nav-menu a.nav-login[aria-current="page"] {
+  background-color: var(--color-gold);
+  color: var(--color-primary);
+}
+
 /* Main content */
 main {
   max-width: 1200px;
