@@ -6,6 +6,14 @@ jest.mock('../../src/services/auditService', () => ({
     logAudit: jest.fn().mockResolvedValue(undefined),
     AUDIT_ACTIONS: { DONATION_RECEIVED: 'DONATION_RECEIVED', DONATION_FAILED: 'DONATION_FAILED' }
 }));
+// Mock CacheService so these tests always exercise the live-read path (no cache
+// state bleeding between cases). Cache hit/miss/bust behavior is covered in
+// __tests__/unit/donationServiceCache.test.js.
+jest.mock('../../src/services/CacheService', () => ({
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn().mockResolvedValue(true),
+    del: jest.fn().mockResolvedValue(true)
+}));
 
 const db = require('../../src/config/db');
 const { logAudit } = require('../../src/services/auditService');
