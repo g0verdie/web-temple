@@ -392,6 +392,34 @@ function _setShutdownHandles(handles = {}) {
   }
 }
 
+/**
+ * uncaughtException handler (KTD8). The process is in an undefined state, so:
+ * arm a non-unref force-process.exit(1) FIRST (the shutdown itself may throw or
+ * hang post-crash), then attempt the graceful shutdown as a best-effort drain.
+ * Reported through the sentry passthrough (no-op when disabled). Exported for
+ * direct unit testing (signal/handler registration is suppressed in test).
+ */
+function handleUncaughtException(err) {
+  logger.error('Uncaught exception', { error: err && err.message, stack: err && err.stack });
+  sentry.captureException(err);
+  // Force exit even if shutdown rejects or hangs after a crash.
+  setTimeout(() => process.exit(1), SHUTDOWN_TIMEOUT_MS);
+  Promise.resolve()
+    .then(() => shutdown('uncaughtException'))
+    .catch(() => { /* force-exit timeout already armed above */ });
+}
+
+/**
+ * unhandledRejection handler (KTD8). Log + report, but do not force-exit — an
+ * escaped rejection is recoverable and a hard exit here would be more disruptive
+ * than the observability win. Exported for direct unit testing.
+ */
+function handleUnhandledRejection(reason) {
+  const err = reason instanceof Error ? reason : new Error(String(reason));
+  logger.error('Unhandled rejection', { error: err.message, stack: err.stack });
+  sentry.captureException(err);
+}
+
 // Start server
 if (process.env.NODE_ENV !== 'test' && require.main === module) {
   server = app.listen(PORT, HOST, () => {
@@ -411,8 +439,12 @@ if (process.env.NODE_ENV !== 'test' && require.main === module) {
   };
   process.on('SIGTERM', () => onSignal('SIGTERM'));
   process.on('SIGINT', () => onSignal('SIGINT'));
+  process.on('uncaughtException', handleUncaughtException);
+  process.on('unhandledRejection', handleUnhandledRejection);
 }
 
 module.exports = app;
 module.exports.shutdown = shutdown;
+module.exports.handleUncaughtException = handleUncaughtException;
+module.exports.handleUnhandledRejection = handleUnhandledRejection;
 module.exports._setShutdownHandles = _setShutdownHandles;
