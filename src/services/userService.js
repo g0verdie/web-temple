@@ -124,6 +124,42 @@ const updatePreferences = async (userId, preferences) => {
     return merged;
 };
 
+/**
+ * One-click opt-out of ALL bulk email types (CAN-SPAM). Flips every bulk
+ * notification preference to false so the existing fan-out queries stop
+ * selecting this user. Idempotent; an unknown id returns false (no throw).
+ * @param {string} userId
+ * @returns {Promise<boolean>} whether a row was updated
+ */
+const unsubscribeAll = async (userId) => {
+    const preferences = {
+        ...DEFAULT_NOTIFICATION_PREFERENCES,
+        announcements: false,
+        calendar_events: false,
+        recordings: false,
+        messages: false
+    };
+
+    const result = await db.query(
+        'UPDATE users SET notification_preferences = $1, updated_at = NOW() WHERE id = $2 RETURNING id',
+        [preferences, userId]
+    );
+
+    if (result.rows.length === 0) {
+        return false;
+    }
+
+    logAudit({
+        user_id: userId,
+        action: AUDIT_ACTIONS.PREFERENCES_UPDATED,
+        entity_type: 'user',
+        entity_id: userId,
+        description: 'Unsubscribed from all bulk email notifications',
+    }).catch(err => console.error('Audit log error:', err));
+
+    return true;
+};
+
 const requestEmailChange = async (userId, newEmail) => {
     if (!newEmail || !validator.isEmail(newEmail)) {
         throw new Error('Valid email is required');
@@ -309,6 +345,7 @@ module.exports = {
     getAccountSettings,
     updateProfile,
     updatePreferences,
+    unsubscribeAll,
     requestEmailChange,
     confirmEmailChange,
     getNewMemberCountThisMonth
