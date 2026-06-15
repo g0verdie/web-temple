@@ -72,6 +72,33 @@
     margin-top: 1rem;
 }
 
+.btn-primary {
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 0.65rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    min-height: 44px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.btn-primary:hover {
+    background: var(--color-secondary);
+    transform: translateY(-1px);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-primary:focus {
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-offset);
+}
+
 .btn-secondary {
     background: #6c757d;
     color: #fff;
