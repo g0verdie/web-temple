@@ -20,14 +20,20 @@
         </section>
     <% } %>
 
-    <% if (profile.household) { %>
+    <% if (profile.household && profile.household.length > 0) { %>
         <section class="member-section" aria-labelledby="household-heading">
             <h2 id="household-heading">Household</h2>
-            <p><%= profile.household %></p>
+            <ul class="member-household">
+                <% profile.household.forEach(function (person) { %>
+                    <li>
+                        <span class="household-name"><%= person.name %></span><% if (person.relationship) { %> &mdash; <%= person.relationship %><% } %><% if (person.birthday) { %> <span class="household-birthday">(<%= person.birthday %>)</span><% } %>
+                    </li>
+                <% }); %>
+            </ul>
         </section>
     <% } %>
 
-    <% if (profile.email || profile.phone) { %>
+    <% if (profile.email || profile.phone || profile.address) { %>
         <section class="member-section" aria-labelledby="contact-heading">
             <h2 id="contact-heading">Contact</h2>
             <ul class="member-contact">
@@ -36,6 +42,9 @@
                 <% } %>
                 <% if (profile.phone) { %>
                     <li>Phone: <a href="tel:<%= profile.phone %>"><%= profile.phone %></a></li>
+                <% } %>
+                <% if (profile.address) { %>
+                    <li>Address: <%= profile.address %></li>
                 <% } %>
             </ul>
         </section>

@@ -96,6 +96,100 @@
     color: #666;
 }
 
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+.form-label {
+    font-weight: 600;
+}
+
+.btn-secondary {
+    align-self: flex-start;
+    background: #fff;
+    color: var(--color-primary, #1a365d);
+    border: 1px solid var(--color-primary, #1a365d);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-secondary:focus {
+    outline: 3px solid var(--color-gold-focus, #b8860b);
+    outline-offset: 2px;
+}
+
+/* Household members table */
+.household-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.5rem 0;
+}
+
+.household-table th,
+.household-table td {
+    text-align: left;
+    padding: 0.5rem;
+    border-bottom: 1px solid #e0e0e0;
+    font-size: 0.95rem;
+}
+
+.household-table th {
+    color: var(--color-primary, #1a365d);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.household-empty {
+    margin: 0.25rem 0 0.75rem;
+}
+
+/* Add-person modal (toggled via the hidden attribute in JS — CSP-clean) */
+.household-modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(26, 54, 93, 0.45);
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.household-modal[hidden] {
+    display: none;
+}
+
+.household-modal-content {
+    background: #fff;
+    border-radius: 12px;
+    border-top: 4px solid var(--color-gold, #d69e2e);
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+
+.household-modal-content h3 {
+    margin-top: 0;
+    color: var(--color-primary, #1a365d);
+}
+
+.household-modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
 @media (max-width: 768px) {
     .settings-section {
         padding: 1.25rem;

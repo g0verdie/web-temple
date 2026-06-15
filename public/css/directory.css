@@ -75,6 +75,26 @@
     margin-bottom: 1.25rem;
 }
 
+.member-household {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.member-household li {
+    padding: 0.35rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.member-household .household-name {
+    font-weight: 600;
+    color: var(--color-primary, #1a365d);
+}
+
+.member-household .household-birthday {
+    color: #555;
+}
+
 .directory-empty {
     color: #555;
     padding: 1rem 0;

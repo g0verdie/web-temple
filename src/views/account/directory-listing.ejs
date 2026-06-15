@@ -13,9 +13,58 @@
             </div>
 
             <div class="form-row">
-                <label for="household">Household / Family</label>
-                <textarea id="household" name="household" rows="2" maxlength="200" aria-describedby="household-hint"><%= profile.household || '' %></textarea>
+                <label for="address">Address</label>
+                <input type="text" id="address" name="address" value="<%= profile.address || '' %>" autocomplete="street-address" maxlength="200">
+            </div>
+
+            <div class="form-row">
+                <span class="form-label" id="household-label">Household / Family</span>
                 <p class="hint" id="household-hint">Please don't include details about anyone who hasn't agreed to be listed (for example, children).</p>
+                <table class="household-table" id="householdTable" aria-labelledby="household-label" aria-describedby="household-hint">
+                    <thead>
+                        <tr>
+                            <th scope="col">Name</th>
+                            <th scope="col">Relationship</th>
+                            <th scope="col">Birthday</th>
+                            <th scope="col"><span class="sr-only">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="householdRows">
+                        <% (profile.household || []).forEach(function (person) { %>
+                            <tr class="household-row">
+                                <td data-cell="name"><%= person.name %></td>
+                                <td data-cell="relationship"><%= person.relationship || '' %></td>
+                                <td data-cell="birthday"><%= person.birthday || '' %></td>
+                                <td><button type="button" class="link-button household-remove">Remove</button></td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+                <p class="household-empty hint" id="householdEmpty" <%= (profile.household && profile.household.length > 0) ? 'hidden' : '' %>>No household members added yet.</p>
+                <button type="button" class="btn-secondary" id="householdAddBtn" aria-haspopup="dialog">Add person</button>
+            </div>
+
+            <div class="household-modal" id="householdModal" role="dialog" aria-modal="true" aria-labelledby="household-modal-title" hidden>
+                <div class="household-modal-content">
+                    <h3 id="household-modal-title">Add a household member</h3>
+                    <div class="form-row">
+                        <label for="hm-name">Name</label>
+                        <input type="text" id="hm-name" maxlength="80">
+                    </div>
+                    <div class="form-row">
+                        <label for="hm-relationship">Relationship</label>
+                        <input type="text" id="hm-relationship" maxlength="60" placeholder="e.g. Spouse, Child">
+                    </div>
+                    <div class="form-row">
+                        <label for="hm-birthday">Birthday (optional)</label>
+                        <input type="date" id="hm-birthday">
+                    </div>
+                    <p class="form-message error" id="householdModalError" role="alert"></p>
+                    <div class="household-modal-actions">
+                        <button type="button" class="btn-primary" id="householdModalAdd">Add</button>
+                        <button type="button" class="btn-secondary" id="householdModalCancel">Cancel</button>
+                    </div>
+                </div>
             </div>
 
             <div class="form-row">
@@ -35,6 +84,10 @@
                 <label class="checkbox-row">
                     <input type="checkbox" name="show_phone" <%= profile.show_phone ? 'checked' : '' %>>
                     Show my phone
+                </label>
+                <label class="checkbox-row">
+                    <input type="checkbox" name="show_address" <%= profile.show_address ? 'checked' : '' %>>
+                    Show my address
                 </label>
                 <label class="checkbox-row">
                     <input type="checkbox" name="show_email" <%= profile.show_email ? 'checked' : '' %>>

@@ -20,10 +20,11 @@ const FLAG_DEFAULTS = {
     listed: false,
     show_phone: false,
     show_email: false,
-    show_household: false
+    show_household: false,
+    show_address: false
 };
 
-const FIELD_MAX = { phone: 32, household: 200, bio: 500, interests: 200 };
+const FIELD_MAX = { phone: 32, address: 200, bio: 500, interests: 200 };
 
 // Only these columns may be cleared by moderation (allow-list — never trust caller input for column names).
 const MODERATABLE_FIELDS = ['bio', 'interests', 'household_encrypted'];
@@ -48,6 +49,59 @@ const cleanText = (value, max, name) => {
         throw new Error(`${name} must be ${max} characters or fewer`);
     }
     return s;
+};
+
+// Household is a structured list of people: { name, relationship, birthday }.
+// It is stored as an encrypted JSON array (see migration 018 / household_encrypted).
+const HOUSEHOLD_MAX_PEOPLE = 20;
+const HOUSEHOLD_FIELD_MAX = { name: 80, relationship: 60 };
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Normalize caller input (array, or a JSON string the client pre-serialized) into a
+// clean array of people. Trims fields, drops entries with no name, clears non-ISO
+// birthdays, and caps the list length. Returns [] for empty/invalid input.
+const normalizeHousehold = (value) => {
+    let arr = value;
+    if (typeof arr === 'string') {
+        const trimmed = arr.trim();
+        if (!trimmed) return [];
+        try {
+            arr = JSON.parse(trimmed);
+        } catch (e) {
+            // Treat an unparseable string as a single legacy free-text entry.
+            return [{ name: trimmed.slice(0, HOUSEHOLD_FIELD_MAX.name), relationship: '', birthday: '' }];
+        }
+    }
+    if (!Array.isArray(arr)) return [];
+
+    const people = [];
+    for (const entry of arr) {
+        if (!entry || typeof entry !== 'object') continue;
+        const name = String(entry.name || '').trim().slice(0, HOUSEHOLD_FIELD_MAX.name);
+        if (!name) continue; // a person without a name is not a person
+        const relationship = String(entry.relationship || '').trim().slice(0, HOUSEHOLD_FIELD_MAX.relationship);
+        const rawBirthday = String(entry.birthday || '').trim();
+        const birthday = ISO_DATE.test(rawBirthday) ? rawBirthday : '';
+        people.push({ name, relationship, birthday });
+        if (people.length >= HOUSEHOLD_MAX_PEOPLE) break;
+    }
+    return people;
+};
+
+// Decrypted household value → array of people. Backward-compatible: legacy values are
+// encrypted plain text (not JSON), so a parse failure or non-array result is treated as
+// a single free-text entry rather than throwing (KTD2: never crash a render).
+const parseHousehold = (decrypted) => {
+    if (!decrypted) return [];
+    try {
+        const parsed = JSON.parse(decrypted);
+        if (Array.isArray(parsed)) {
+            return normalizeHousehold(parsed);
+        }
+    } catch (e) {
+        // not JSON — fall through to the legacy single-entry path
+    }
+    return [{ name: String(decrypted).slice(0, HOUSEHOLD_FIELD_MAX.name), relationship: '', birthday: '' }];
 };
 
 // Failure-tolerant decrypt: never throw out of a listing render (KTD2).
@@ -86,7 +140,8 @@ const shapeForMember = (row) => {
     };
     if (row.show_phone) shaped.phone = safeDecrypt(row.phone_encrypted);
     if (row.show_email) shaped.email = row.email;
-    if (row.show_household) shaped.household = safeDecrypt(row.household_encrypted);
+    if (row.show_household) shaped.household = parseHousehold(safeDecrypt(row.household_encrypted));
+    if (row.show_address) shaped.address = safeDecrypt(row.address_encrypted);
     return shaped;
 };
 
@@ -97,8 +152,8 @@ const shapeForMember = (row) => {
 const getMyProfile = async (userId) => {
     const result = await db.query(
         `SELECT u.first_name, u.last_name, u.email,
-                mp.listed, mp.show_phone, mp.show_email, mp.show_household,
-                mp.phone_encrypted, mp.household_encrypted, mp.bio, mp.interests
+                mp.listed, mp.show_phone, mp.show_email, mp.show_household, mp.show_address,
+                mp.phone_encrypted, mp.household_encrypted, mp.address_encrypted, mp.bio, mp.interests
          FROM users u
          LEFT JOIN member_profiles mp ON mp.user_id = u.id
          WHERE u.id = $1`,
@@ -116,8 +171,10 @@ const getMyProfile = async (userId) => {
         show_phone: row.show_phone || false,
         show_email: row.show_email || false,
         show_household: row.show_household || false,
+        show_address: row.show_address || false,
         phone: safeDecrypt(row.phone_encrypted) || '',
-        household: safeDecrypt(row.household_encrypted) || '',
+        household: parseHousehold(safeDecrypt(row.household_encrypted)),
+        address: safeDecrypt(row.address_encrypted) || '',
         bio: row.bio || '',
         interests: row.interests || ''
     };
@@ -135,31 +192,38 @@ const saveMyProfile = async (userId, input = {}) => {
     }
 
     const phone = cleanText(input.phone, FIELD_MAX.phone, 'Phone');
-    const household = cleanText(input.household, FIELD_MAX.household, 'Household');
+    const address = cleanText(input.address, FIELD_MAX.address, 'Address');
     const bio = cleanText(input.bio, FIELD_MAX.bio, 'Bio');
     const interests = cleanText(input.interests, FIELD_MAX.interests, 'Interests');
 
+    // Household is a structured people-list serialized to JSON; empty list stores null.
+    const householdPeople = normalizeHousehold(input.household);
+    const householdJson = householdPeople.length > 0 ? JSON.stringify(householdPeople) : null;
+
     const phoneEncrypted = encrypt(phone);
-    const householdEncrypted = encrypt(household);
+    const householdEncrypted = encrypt(householdJson);
+    const addressEncrypted = encrypt(address);
 
     const result = await db.query(
         `INSERT INTO member_profiles
-            (user_id, listed, show_phone, show_email, show_household,
-             phone_encrypted, household_encrypted, bio, interests, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+            (user_id, listed, show_phone, show_email, show_household, show_address,
+             phone_encrypted, household_encrypted, address_encrypted, bio, interests, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
          ON CONFLICT (user_id) DO UPDATE SET
             listed = EXCLUDED.listed,
             show_phone = EXCLUDED.show_phone,
             show_email = EXCLUDED.show_email,
             show_household = EXCLUDED.show_household,
+            show_address = EXCLUDED.show_address,
             phone_encrypted = EXCLUDED.phone_encrypted,
             household_encrypted = EXCLUDED.household_encrypted,
+            address_encrypted = EXCLUDED.address_encrypted,
             bio = EXCLUDED.bio,
             interests = EXCLUDED.interests,
             updated_at = NOW()
          RETURNING user_id`,
-        [userId, flags.listed, flags.show_phone, flags.show_email, flags.show_household,
-            phoneEncrypted, householdEncrypted, bio, interests]
+        [userId, flags.listed, flags.show_phone, flags.show_email, flags.show_household, flags.show_address,
+            phoneEncrypted, householdEncrypted, addressEncrypted, bio, interests]
     );
 
     logAudit({
@@ -195,8 +259,8 @@ const listListedProfiles = async ({ search, page = 1, limit = 20 } = {}) => {
     const countQuery = `SELECT COUNT(*) FROM member_profiles mp JOIN users u ON u.id = mp.user_id ${whereString}`;
     const dataQuery = `
         SELECT mp.user_id, u.first_name, u.last_name, u.email,
-               mp.show_phone, mp.show_email, mp.show_household,
-               mp.phone_encrypted, mp.household_encrypted, mp.bio, mp.interests
+               mp.show_phone, mp.show_email, mp.show_household, mp.show_address,
+               mp.phone_encrypted, mp.household_encrypted, mp.address_encrypted, mp.bio, mp.interests
         FROM member_profiles mp
         JOIN users u ON u.id = mp.user_id
         ${whereString}
@@ -239,8 +303,8 @@ const getListedProfile = async (userId) => {
     }
     const result = await db.query(
         `SELECT mp.user_id, u.first_name, u.last_name, u.email,
-                mp.show_phone, mp.show_email, mp.show_household,
-                mp.phone_encrypted, mp.household_encrypted, mp.bio, mp.interests
+                mp.show_phone, mp.show_email, mp.show_household, mp.show_address,
+                mp.phone_encrypted, mp.household_encrypted, mp.address_encrypted, mp.bio, mp.interests
          FROM member_profiles mp
          JOIN users u ON u.id = mp.user_id
          WHERE mp.user_id = $1 AND mp.listed = true`,
@@ -257,8 +321,8 @@ const getListedProfile = async (userId) => {
 const getProfileForAdmin = async (userId) => {
     const result = await db.query(
         `SELECT u.id AS user_id, u.first_name, u.last_name, u.email,
-                mp.listed, mp.show_phone, mp.show_email, mp.show_household,
-                mp.phone_encrypted, mp.household_encrypted, mp.bio, mp.interests
+                mp.listed, mp.show_phone, mp.show_email, mp.show_household, mp.show_address,
+                mp.phone_encrypted, mp.household_encrypted, mp.address_encrypted, mp.bio, mp.interests
          FROM users u
          LEFT JOIN member_profiles mp ON mp.user_id = u.id
          WHERE u.id = $1`,
@@ -275,8 +339,10 @@ const getProfileForAdmin = async (userId) => {
         show_phone: row.show_phone || false,
         show_email: row.show_email || false,
         show_household: row.show_household || false,
+        show_address: row.show_address || false,
         phone: safeDecrypt(row.phone_encrypted),
-        household: safeDecrypt(row.household_encrypted),
+        household: parseHousehold(safeDecrypt(row.household_encrypted)),
+        address: safeDecrypt(row.address_encrypted),
         bio: row.bio || null,
         interests: row.interests || null
     };
