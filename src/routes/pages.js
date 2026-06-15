@@ -4,6 +4,7 @@ const requireAuth = require('../middleware/requireAuth');
 const sessionTimeout = require('../middleware/sessionTimeout');
 const userService = require('../services/userService');
 const MemberDirectoryService = require('../services/MemberDirectoryService');
+const unsubscribeController = require('../controllers/unsubscribeController');
 
 /**
  * GET /register
@@ -91,6 +92,14 @@ router.get('/account/confirm-email', (req, res) => {
         stylesheets: ['/css/account.css']
     });
 });
+
+/**
+ * GET /unsubscribe
+ * Public one-click email opt-out shell (CAN-SPAM). Token comes from the email
+ * link; deferred external JS auto-POSTs it. Registered here (before the CMS-slug
+ * catch-all) so it isn't swallowed.
+ */
+router.get('/unsubscribe', unsubscribeController.renderPage);
 
 /**
  * GET /account/directory
