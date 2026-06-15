@@ -4,6 +4,15 @@ const userService = require('../../src/services/userService');
 const { signUnsubscribeToken } = require('../../src/utils/unsubscribeToken');
 
 jest.mock('../../src/config/db', () => ({ query: jest.fn() }));
+// Mock Redis so requiring src/server.js doesn't open a real connection whose
+// late 'connect' event logs after tests finish (mirrors peer integration tests).
+jest.mock('../../src/config/redis', () => ({
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn().mockResolvedValue('OK'),
+    setex: jest.fn().mockResolvedValue('OK'),
+    del: jest.fn().mockResolvedValue(1),
+    keys: jest.fn().mockResolvedValue([])
+}));
 jest.mock('../../src/services/userService');
 
 const USER_ID = '11111111-1111-1111-1111-111111111111';
