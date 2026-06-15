@@ -255,6 +255,18 @@ header {
   color: var(--color-primary);
 }
 
+/* Logout: a subtle secondary action, distinct from the gold CTAs */
+.nav-menu a.nav-logout {
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+}
+
+.nav-menu a.nav-logout:hover,
+.nav-menu a.nav-logout:focus {
+  background-color: var(--color-secondary);
+  border-color: var(--color-gold);
+}
+
 /* Main content */
 main {
   max-width: 1200px;

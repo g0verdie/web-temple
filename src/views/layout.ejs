@@ -75,6 +75,7 @@
             <% if (user.role === 'admin' || user.role === 'rabbi') { %>
             <li><a href="/admin" <%=activePath==='/admin' ? 'aria-current="page"' : '' %>>Admin</a></li>
             <% } %>
+            <li><a href="/login" class="nav-logout" id="logout-link">Logout</a></li>
             <% } else { %>
             <li><a href="/login" class="nav-login" <%=activePath==='/login' ? 'aria-current="page"' : '' %>>Login</a></li>
             <% } %>
@@ -102,6 +103,7 @@
   <script src="/js/hamburger.js"></script>
   <% if (typeof user !== 'undefined' && user) { %>
     <script src="/js/sessionWarning.js"></script>
+    <script src="/js/logout.js"></script>
   <% } %>
 </body>
 
