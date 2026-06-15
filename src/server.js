@@ -19,6 +19,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || 'localhost';
 
+// Error monitoring — no-ops unless SENTRY_DSN is set and not in test (see config/sentry.js)
+const sentry = require('./config/sentry');
+sentry.initSentry();
+
 // Trust proxy (required for secure cookies and rate limiting behind Nginx)
 app.enable('trust proxy');
 
@@ -263,6 +267,9 @@ app.use((req, res) => {
   logger.warn(`404 - Not Found - ${req.originalUrl} - ${req.ip}`);
   res.status(404).render('404', { title: '404 - Page Not Found' });
 });
+
+// Sentry error handler — must run before the app error handler (no-op when disabled)
+sentry.attachErrorHandler(app);
 
 // Error handler
 app.use((err, req, res, next) => {
