@@ -19,6 +19,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || 'localhost';
 
+// Error monitoring — no-ops unless SENTRY_DSN is set and not in test (see config/sentry.js)
+const sentry = require('./config/sentry');
+sentry.initSentry();
+
 // Trust proxy (required for secure cookies and rate limiting behind Nginx)
 app.enable('trust proxy');
 
@@ -171,6 +175,16 @@ app.use((req, res, next) => {
   next();
 });
 
+// Absolute site base URL for SEO/social tags (canonical, Open Graph, sitemap).
+// Prefer an explicit env override; otherwise derive from the request.
+const SITE_BASE_URL = process.env.SITE_URL || process.env.APP_BASE_URL || null;
+const resolveBaseUrl = (req) =>
+  SITE_BASE_URL || `${req.protocol}://${req.get('host')}`;
+app.use((req, res, next) => {
+  res.locals.baseUrl = resolveBaseUrl(req);
+  next();
+});
+
 // Routes
 const homeRoutes = require('./routes/home');
 const aboutRoutes = require('./routes/about');
@@ -219,11 +233,43 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', uptime: process.uptime() });
 });
 
+// robots.txt — allow crawling and advertise the sitemap (absolute URL).
+app.get('/robots.txt', (req, res) => {
+  const base = resolveBaseUrl(req);
+  res.type('text/plain');
+  res.send(`User-agent: *\nAllow: /\n\nSitemap: ${base}/sitemap.xml\n`);
+});
+
+// sitemap.xml — main public pages, built with an absolute base URL.
+const SITEMAP_PATHS = [
+  '/',
+  '/about',
+  '/contact',
+  '/calendar',
+  '/watch',
+  '/archive',
+  '/privacy',
+  '/terms',
+  '/accessibility'
+];
+app.get('/sitemap.xml', (req, res) => {
+  const base = resolveBaseUrl(req);
+  const urls = SITEMAP_PATHS.map(
+    (p) => `  <url><loc>${base}${p}</loc></url>`
+  ).join('\n');
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
+  res.type('application/xml');
+  res.send(xml);
+});
+
 // 404 handler
 app.use((req, res) => {
   logger.warn(`404 - Not Found - ${req.originalUrl} - ${req.ip}`);
   res.status(404).render('404', { title: '404 - Page Not Found' });
 });
+
+// Sentry error handler — must run before the app error handler (no-op when disabled)
+sentry.attachErrorHandler(app);
 
 // Error handler
 app.use((err, req, res, next) => {

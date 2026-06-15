@@ -20,6 +20,7 @@ exports.getWatchPage = async (req, res) => {
 
     res.render('layout', {
         title: 'Past Services',
+        description: 'Watch past services and recordings from Temple B\'nai Israel. Catch up on sermons, prayers, and community gatherings.',
         bodyView: 'watch/index',
         stylesheets: ['/css/watch.css'],
         viewData: {

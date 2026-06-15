@@ -17,6 +17,7 @@ const str = (v) => (typeof v === 'string' ? v : '');
 exports.getDonationsPage = (req, res) => {
     res.render('layout', {
         title: "Donate - Temple B'nai Israel",
+        description: 'Support Temple B\'nai Israel with a donation. Your generosity sustains our services, programs, and community in Florence, AL.',
         bodyView: 'donations/index',
         stylesheets: ['/css/donations.css'],
         viewData: { csrfToken: req.csrfToken ? req.csrfToken() : null }

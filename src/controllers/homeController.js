@@ -76,6 +76,7 @@ exports.getHomepage = async (req, res) => {
 
     res.render('layout', {
       title: 'Temple B\'nai Israel - Welcome Home',
+      description: 'Temple B\'nai Israel is a warm, inclusive Jewish community in Florence, AL. Watch live services, see upcoming events, and connect with our congregation.',
       bodyView: 'home',
       stylesheets: ['/css/announcements.css'],
       viewData: {

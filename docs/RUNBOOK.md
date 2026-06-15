@@ -335,6 +335,49 @@ find /opt/temple/logs -name "*.log" -mtime +30 -delete
 find /opt/temple/logs -name "*.log" -mtime +1 -exec gzip {} \;
 ```
 
+### 4.4 Error Monitoring (Sentry)
+
+Server-side errors can be forwarded to [Sentry](https://sentry.io) for alerting
+and aggregation. **Sentry is OFF by default** and only activates when a DSN is
+configured; with no DSN the app behaves exactly as before (errors go to the
+winston logs in section 4.1).
+
+**Enable Sentry (operator task):**
+1. Create a project at sentry.io (platform: Node.js) and copy its DSN.
+2. Set the following in the production `.env` (see `.env.example` for the full
+   notes):
+   ```bash
+   SENTRY_DSN=https://<key>@<org>.ingest.sentry.io/<project>
+   SENTRY_ENVIRONMENT=production
+   # SENTRY_TRACES_SAMPLE_RATE=0   # leave at 0 unless you want perf tracing
+   ```
+3. Restart the app (`pm2 restart web-temple`). On boot the log shows
+   `Sentry error monitoring initialized` when it is active.
+
+**Notes:**
+- Sentry is initialized in `src/config/sentry.js` and wired in `src/server.js`.
+  It is always disabled under `NODE_ENV=test`.
+- The Sentry Express handler runs *before* the application error handler, so
+  unhandled errors are still rendered to users as the 500 page as before.
+
+### 4.5 External Uptime Monitoring
+
+Point an external uptime monitor at the liveness probe so you are alerted when
+the site goes down. **Signing up for an uptime service is an operator task.**
+
+- **Probe URL:** `https://<your-domain>/health`
+- **Expected response:** HTTP `200` with JSON `{"status":"ok","uptime":<seconds>}`.
+- This endpoint is intentionally lightweight (no DB/render), so it reflects
+  "the web process is up" without false negatives from downstream services.
+
+**Setup (operator task):**
+1. Sign up for an uptime monitor (e.g. UptimeRobot, Better Uptime, Pingdom, or a
+   cloud provider health check).
+2. Add an HTTP(S) monitor targeting `https://<your-domain>/health`, checking for
+   a `200` status, at a 1–5 minute interval.
+3. Configure alert contacts (email/SMS) using the emergency contacts in
+   section 8.
+
 ---
 
 ## 5. Database Operations
@@ -461,11 +504,11 @@ erDiagram
 **Critical Issues (System Down):**
 1. **Primary Contact:** Ilya (System Administrator)
    - Email: ilya@temple-domain.com
-   - Phone: [UPDATE WITH ACTUAL PHONE NUMBER]
+   - Phone: _TODO (operator): fill in before production deploy_
 
 2. **Secondary Contact:** Temple Board President
    - Email: president@temple-domain.com
-   - Phone: [UPDATE WITH ACTUAL PHONE NUMBER]
+   - Phone: _TODO (operator): fill in before production deploy_
 
 > [!CRITICAL]
 > **ACTION REQUIRED BEFORE DEPLOYMENT**
@@ -477,8 +520,8 @@ erDiagram
 ### 8.2 External Service Contacts
 
 **Hosting/Infrastructure:**
-- **Internet Provider:** 5G Provider - Contact: [UPDATE WITH ISP SUPPORT NUMBER]
-- **Domain Registrar:** [UPDATE PROVIDER NAME] - Support: [UPDATE WITH SUPPORT CONTACT]
+- **Internet Provider:** 5G Provider - Contact: _TODO (operator): fill in ISP support number_
+- **Domain Registrar:** _TODO (operator): fill in registrar name_ - Support: _TODO (operator): fill in support contact_
 - **AWS Support (Backups):** https://aws.amazon.com/support/
 
 **Third-Party Services:**
@@ -541,5 +584,6 @@ psql -U temple_user -d web_temple  # Connect to DB
 ---
 
 **Document Version History:**
+- v1.2 (2026-06-15): Added Sentry error monitoring + external uptime monitoring (GET /health) subsections; filled emergency-contact placeholders with operator TODOs
 - v1.1 (2026-02-07): Added comprehensive server access, PM2 commands, monitoring, and emergency contacts
 - v1.0 (Initial): Basic backup/restore procedures

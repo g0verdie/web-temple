@@ -31,6 +31,7 @@ router.get('/', async (req, res, next) => {
 
         return res.render('layout', {
           title: fallbackPage.title,
+          description: 'Learn about Temple B\'nai Israel — our values, mission, and inclusive Reform Jewish community in Florence, AL.',
           bodyView: 'about',
           viewData: { page: fallbackPage }
         });
@@ -44,6 +45,7 @@ router.get('/', async (req, res, next) => {
 
     res.render('layout', {
       title: page.title,
+      description: 'Learn about Temple B\'nai Israel — our values, mission, and inclusive Reform Jewish community in Florence, AL.',
       bodyView: 'about',
       viewData: { page },
     });

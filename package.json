@@ -28,6 +28,7 @@
   "license": "UNLICENSED",
   "private": true,
   "dependencies": {
+    "@sentry/node": "^10.58.0",
     "axios": "^1.13.4",
     "bcrypt": "^6.0.0",
     "bull": "^4.16.4",
