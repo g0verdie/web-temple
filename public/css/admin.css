@@ -1,0 +1,183 @@
+/*
+ * admin.css — shared styling for the admin area (dashboard, chat moderation,
+ * audit logs).
+ *
+ * These admin views are authored with Bootstrap-style class names, but the
+ * project ships no Bootstrap and main.css provides only design tokens +
+ * semantic site classes. Without this file the admin content (cards, grids,
+ * tables, buttons) renders unstyled. This defines the subset of Bootstrap-like
+ * classes those views use, built from the site's own tokens (navy + gold,
+ * Cormorant serif) so the admin area matches the "Modern Reverence" design.
+ * Loaded only on admin routes — no global leakage.
+ */
+
+/* ── Layout & responsive grid ────────────────────────────────────────────── */
+.container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+
+.row { display: flex; flex-wrap: wrap; margin-left: -0.5rem; margin-right: -0.5rem; }
+/* Base rule sets gutters ONLY — no width here, or its higher specificity
+   (.row > [class*=col-]) would override the single-class col-* width rules. */
+.row > [class*="col-"] { padding-left: 0.5rem; padding-right: 0.5rem; box-sizing: border-box; }
+.row.g-3 > [class*="col-"] { margin-bottom: 1rem; }
+
+/* md/lg columns stack full-width below their breakpoint. Declared BEFORE .col-6
+   so that tiles combining col-6 + col-md-* resolve to 50% on mobile (later rule
+   of equal specificity wins); media-query rules below override at each breakpoint. */
+.col-md-2, .col-md-3, .col-md-4, .col-md-6, .col-md-12 { flex: 0 0 100%; max-width: 100%; }
+.col-6 { flex: 0 0 50%; max-width: 50%; }
+
+@media (min-width: 768px) {
+  .col-md-2 { flex: 0 0 16.6667%; max-width: 16.6667%; }
+  .col-md-3 { flex: 0 0 25%; max-width: 25%; }
+  .col-md-4 { flex: 0 0 33.3333%; max-width: 33.3333%; }
+  .col-md-6 { flex: 0 0 50%; max-width: 50%; }
+  .col-md-12 { flex: 0 0 100%; max-width: 100%; }
+}
+
+@media (min-width: 992px) {
+  .col-lg-2 { flex: 0 0 16.6667%; max-width: 16.6667%; }
+}
+
+/* ── Cards ───────────────────────────────────────────────────────────────── */
+.card {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(26, 54, 93, 0.06);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+.card.shadow-sm { box-shadow: 0 2px 8px rgba(26, 54, 93, 0.08); }
+.card.border-primary { border-color: var(--color-primary); border-top: 3px solid var(--color-primary); }
+
+.card-header { padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--color-border); background: var(--color-bg-alt); }
+.card-header h2, .card-header h5 { font-family: var(--font-serif); color: var(--color-primary); margin: 0; }
+.card-header.bg-primary, .card-header.bg-secondary, .card-header.bg-info { border-bottom: none; }
+.card-header.bg-primary { background: var(--color-primary); }
+.card-header.bg-secondary { background: var(--color-secondary); }
+.card-header.bg-info { background: var(--color-secondary); }
+.card-header.bg-light { background: var(--color-bg-alt); }
+.card-header.bg-warning { background: var(--color-gold); }
+.card-header.bg-primary h2, .card-header.bg-primary h5,
+.card-header.bg-secondary h2, .card-header.bg-secondary h5,
+.card-header.bg-info h2, .card-header.bg-info h5 { color: #fff; }
+.card-header.bg-warning h2, .card-header.bg-warning h5 { color: var(--color-primary); }
+
+.card-body { padding: 1.25rem; flex: 1 1 auto; }
+.card-body.p-0 { padding: 0; }
+.card-footer { padding: 0.9rem 1.25rem; border-top: 1px solid var(--color-border); background: var(--color-bg-alt); }
+
+a.card.text-decoration-none { text-decoration: none; color: inherit; transition: box-shadow 0.15s ease, transform 0.15s ease; }
+a.card.text-decoration-none:hover { box-shadow: 0 6px 18px rgba(26, 54, 93, 0.12); transform: translateY(-2px); }
+a.card.text-decoration-none:focus-visible { outline: var(--focus-outline); outline-offset: var(--focus-offset); }
+
+.card-body.text-center .h3, .card-body.text-center .h6 { font-family: var(--font-serif); color: var(--color-primary); line-height: 1.1; }
+
+/* ── List group ──────────────────────────────────────────────────────────── */
+.list-group { list-style: none; padding: 0; margin: 0; }
+.list-group-item { padding: 0.75rem 0; border-bottom: 1px solid var(--color-border); }
+.list-group-item:last-child { border-bottom: none; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0.6rem 1.2rem; font-size: 1rem; font-weight: 600;
+  border-radius: 6px; border: 1px solid transparent; cursor: pointer;
+  text-decoration: none; min-height: 44px;
+  transition: background-color 0.2s, color 0.2s, transform 0.1s;
+}
+.btn:active { transform: translateY(1px); }
+.btn:focus-visible { outline: var(--focus-outline); outline-offset: var(--focus-offset); }
+
+.btn-primary { background: var(--color-primary); color: #fff; }
+.btn-primary:hover { background: var(--color-secondary); }
+.btn-secondary { background: var(--color-secondary); color: #fff; }
+.btn-secondary:hover { background: var(--color-primary); }
+.btn-outline-primary { background: transparent; color: var(--color-primary); border-color: var(--color-primary); }
+.btn-outline-primary:hover { background: var(--color-primary); color: #fff; }
+.btn-outline-secondary { background: transparent; color: var(--color-text-light); border-color: var(--color-border); }
+.btn-outline-secondary:hover { background: var(--color-bg-alt); color: var(--color-primary); }
+.btn-outline-info { background: transparent; color: var(--color-secondary); border-color: var(--color-secondary); }
+.btn-outline-info:hover { background: var(--color-secondary); color: #fff; }
+.btn-light { background: #fff; color: var(--color-primary); border-color: var(--color-border); }
+.btn-light:hover { background: var(--color-bg-alt); }
+.btn-warning { background: var(--color-gold-dark); color: #fff; }
+.btn-warning:hover { background: #6f561d; }
+.btn-success { background: #2f7d56; color: #fff; }
+.btn-success:hover { background: #25623f; }
+.btn-danger { background: #b3261e; color: #fff; }
+.btn-danger:hover { background: #8f1d17; }
+.btn-sm { padding: 0.35rem 0.8rem; font-size: 0.85rem; min-height: 36px; }
+.btn.disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+.btn-group { display: inline-flex; gap: 0.5rem; }
+
+/* ── Badges ──────────────────────────────────────────────────────────────── */
+.badge { display: inline-flex; align-items: center; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
+.badge.bg-secondary { background: var(--color-secondary); color: #fff; }
+.badge.bg-warning { background: var(--color-gold); }
+.badge.bg-warning.text-dark { color: var(--color-primary); }
+
+/* ── Alerts ──────────────────────────────────────────────────────────────── */
+.alert { padding: 0.9rem 1.1rem; border-radius: 8px; border-left: 4px solid transparent; }
+.alert-danger { background: #fdecea; color: #8a1c1c; border-color: #b91c1c; }
+.alert-success { background: #eaf6ef; color: #1f6b40; border-color: #2f7d56; }
+.alert-warning { background: #fbf3df; color: #7a5a12; border-color: var(--color-gold-dark); }
+.alert-light { background: var(--color-bg-alt); color: var(--color-text-light); border-color: var(--color-border); }
+
+/* ── Tables ──────────────────────────────────────────────────────────────── */
+.table-responsive { width: 100%; overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; text-align: left; }
+.table th, .table td { padding: 0.65rem 0.8rem; border-bottom: 1px solid var(--color-border); vertical-align: top; }
+.table th { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--color-text-light); }
+.table-sm th, .table-sm td { padding: 0.4rem 0.6rem; }
+.table thead.table-light th, .table .table-light th, tr.table-light th { background: var(--color-bg-alt); }
+.table-hover tbody tr:hover { background: var(--color-bg-alt); }
+.table-striped tbody tr:nth-of-type(odd) { background: rgba(26, 54, 93, 0.025); }
+.align-middle td, .align-middle th { vertical-align: middle; }
+
+/* ── Forms ───────────────────────────────────────────────────────────────── */
+.form-label { display: block; font-weight: 600; margin-bottom: 0.35rem; color: var(--color-text); font-size: 0.9rem; }
+.form-control, .form-select {
+  width: 100%; padding: 0.55rem 0.75rem; font-size: 1rem;
+  border: 1px solid var(--color-border); border-radius: 6px; box-sizing: border-box; background: #fff;
+}
+.form-control:focus, .form-select:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(26, 54, 93, 0.12); }
+
+/* ── Collapse (audit-log detail) ─────────────────────────────────────────────
+   These rows toggle via Bootstrap's data-bs-toggle JS, which the site doesn't
+   ship — so the "View" button is a no-op. Hide the panels (Bootstrap's default)
+   to keep the table clean; making "View" expand them needs a small JS follow-up. */
+.collapse { display: none; }
+.collapse.show { display: table-row; }
+pre { white-space: pre-wrap; word-break: break-word; margin: 0.25rem 0 0; }
+.border { border: 1px solid var(--color-border); }
+.rounded { border-radius: 6px; }
+.bg-light { background: var(--color-bg-alt); }
+.bg-white { background: #fff; }
+
+/* ── Typographic size helpers (applied to non-heading elements) ──────────── */
+.h3 { font-size: 1.8rem; font-weight: 700; }
+.h5 { font-size: 1.1rem; font-weight: 600; }
+.h6 { font-size: 0.95rem; font-weight: 600; }
+
+/* ── Spacing / flex / text utilities ─────────────────────────────────────── */
+.mt-1 { margin-top: 0.25rem; } .mt-2 { margin-top: 0.5rem; } .mt-3 { margin-top: 1rem; }
+.mt-4 { margin-top: 1.5rem; } .mt-5 { margin-top: 2.5rem; }
+.mb-0 { margin-bottom: 0; } .mb-1 { margin-bottom: 0.25rem; } .mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 1rem; } .mb-4 { margin-bottom: 1.5rem; }
+.me-2 { margin-right: 0.5rem; } .ms-1 { margin-left: 0.25rem; }
+.p-0 { padding: 0; } .p-2 { padding: 0.5rem; } .p-3 { padding: 1rem; } .py-4 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+.d-flex { display: flex; } .d-none { display: none; }
+.flex-column { flex-direction: column; }
+.justify-content-between { justify-content: space-between; }
+.align-items-center { align-items: center; } .align-items-end { align-items: flex-end; }
+.text-center { text-align: center; } .text-end { text-align: right; }
+.text-white { color: #fff; } .text-dark { color: var(--color-primary); }
+.text-muted { color: var(--color-text-light); } .text-success { color: #2f7d56; }
+.text-break { word-break: break-word; } .text-wrap { white-space: normal; }
+.text-decoration-none { text-decoration: none; }
+.h-100 { height: 100%; } .w-100 { width: 100%; }
+.shadow-sm { box-shadow: 0 2px 8px rgba(26, 54, 93, 0.08); }
+.u-nowrap { white-space: nowrap; }
