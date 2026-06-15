@@ -53,6 +53,20 @@ const checkIsSpam = (messageText) => {
 };
 
 /**
+ * Whether a guest display name has ever had an approved message (across all
+ * streams). Guests have user_id NULL, so display_name is the only persistent
+ * identifier: once a name's first message is approved, later messages from that
+ * name auto-approve.
+ */
+const guestDisplayNameHasApprovedMessage = async (cleanDisplayName) => {
+    const result = await db.query(
+        "SELECT 1 FROM chat_messages WHERE user_id IS NULL AND display_name = $1 AND status = 'approved' LIMIT 1",
+        [cleanDisplayName]
+    );
+    return result.rows.length > 0;
+};
+
+/**
  * Create a new chat message in the database
  */
 const createMessage = async ({ streamId, userId, displayName, messageText }) => {
@@ -62,9 +76,22 @@ const createMessage = async ({ streamId, userId, displayName, messageText }) => 
 
     validateMessage(cleanStreamId, cleanDisplayName, cleanMessageText);
 
-    // Apply spam checking
+    // Moderation policy:
+    //   spam                                   -> deleted
+    //   registered member (userId set)         -> approved
+    //   guest whose display_name was approved  -> approved
+    //   otherwise (new guest)                  -> pending
     const isSpam = checkIsSpam(cleanMessageText);
-    const status = isSpam ? 'deleted' : 'pending';
+    let status;
+    if (isSpam) {
+        status = 'deleted';
+    } else if (userId) {
+        status = 'approved';
+    } else if (await guestDisplayNameHasApprovedMessage(cleanDisplayName)) {
+        status = 'approved';
+    } else {
+        status = 'pending';
+    }
 
     const query = `
         INSERT INTO chat_messages (

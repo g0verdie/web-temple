@@ -23,20 +23,21 @@ describe('ChatService', () => {
     });
 
     describe('createMessage', () => {
-        it('successfully creates a pending message', async () => {
+        it('successfully creates a pending message for a new guest', async () => {
             const mockMsg = { id: 1, stream_id: 10, display_name: 'David', message_text: 'Hello, World!', status: 'pending' };
+            // 1st query: prior-approved guest lookup -> no rows. 2nd: INSERT.
+            db.query.mockResolvedValueOnce({ rows: [] });
             db.query.mockResolvedValueOnce({ rows: [mockMsg] });
 
             const result = await ChatService.createMessage({
                 streamId: 10,
-                userId: 'user-uuid',
                 displayName: 'David',
                 messageText: 'Hello, World!'
             });
 
             expect(db.query).toHaveBeenCalledWith(
                 expect.stringContaining('INSERT INTO chat_messages'),
-                [10, 'user-uuid', 'David', 'Hello, World!', 'pending']
+                [10, null, 'David', 'Hello, World!', 'pending']
             );
             expect(result).toEqual(mockMsg);
         });
@@ -155,6 +156,95 @@ describe('ChatService', () => {
             });
 
             expect(result).toEqual(mockMsg);
+        });
+
+        it('auto-approves a clean message from a registered member (userId set)', async () => {
+            const mockMsg = { id: 10, stream_id: 10, user_id: 'member-uuid', display_name: 'Member', message_text: 'Shalom everyone', status: 'approved' };
+            db.query.mockResolvedValueOnce({ rows: [mockMsg] });
+
+            const result = await ChatService.createMessage({
+                streamId: 10,
+                userId: 'member-uuid',
+                displayName: 'Member',
+                messageText: 'Shalom everyone'
+            });
+
+            // A member auto-approves without a prior-approved lookup: the only
+            // db.query call is the INSERT.
+            expect(db.query).toHaveBeenCalledTimes(1);
+            expect(db.query).toHaveBeenCalledWith(
+                expect.stringContaining('INSERT INTO chat_messages'),
+                [10, 'member-uuid', 'Member', 'Shalom everyone', 'approved']
+            );
+            expect(result.status).toBe('approved');
+        });
+
+        it('leaves a guest message pending when the display name has no prior approved message', async () => {
+            const mockMsg = { id: 11, stream_id: 10, user_id: null, display_name: 'NewGuest', message_text: 'Hello there', status: 'pending' };
+            // 1st query: prior-approved guest lookup -> no rows.
+            db.query.mockResolvedValueOnce({ rows: [] });
+            // 2nd query: INSERT.
+            db.query.mockResolvedValueOnce({ rows: [mockMsg] });
+
+            const result = await ChatService.createMessage({
+                streamId: 10,
+                displayName: 'NewGuest',
+                messageText: 'Hello there'
+            });
+
+            // Lookup uses the cleaned display name and filters on null user + approved.
+            expect(db.query).toHaveBeenNthCalledWith(1,
+                expect.stringContaining('user_id IS NULL'),
+                ['NewGuest']
+            );
+            expect(db.query).toHaveBeenNthCalledWith(2,
+                expect.stringContaining('INSERT INTO chat_messages'),
+                [10, null, 'NewGuest', 'Hello there', 'pending']
+            );
+            expect(result.status).toBe('pending');
+        });
+
+        it('auto-approves a guest message when the display name has a prior approved message', async () => {
+            const mockMsg = { id: 12, stream_id: 10, user_id: null, display_name: 'KnownGuest', message_text: 'Back again', status: 'approved' };
+            // 1st query: prior-approved guest lookup -> a row exists.
+            db.query.mockResolvedValueOnce({ rows: [{ exists: 1 }] });
+            // 2nd query: INSERT.
+            db.query.mockResolvedValueOnce({ rows: [mockMsg] });
+
+            const result = await ChatService.createMessage({
+                streamId: 10,
+                displayName: 'KnownGuest',
+                messageText: 'Back again'
+            });
+
+            expect(db.query).toHaveBeenNthCalledWith(1,
+                expect.stringContaining('user_id IS NULL'),
+                ['KnownGuest']
+            );
+            expect(db.query).toHaveBeenNthCalledWith(2,
+                expect.stringContaining('INSERT INTO chat_messages'),
+                [10, null, 'KnownGuest', 'Back again', 'approved']
+            );
+            expect(result.status).toBe('approved');
+        });
+
+        it('marks a guest spam message as deleted without running the prior-approved lookup', async () => {
+            const mockMsg = { id: 13, stream_id: 10, user_id: null, display_name: 'KnownGuest', message_text: 'VISIT scam.xyz NOW', status: 'deleted' };
+            db.query.mockResolvedValueOnce({ rows: [mockMsg] });
+
+            const result = await ChatService.createMessage({
+                streamId: 10,
+                displayName: 'KnownGuest',
+                messageText: 'VISIT scam.xyz NOW'
+            });
+
+            // Spam short-circuits: no prior-approved lookup, only the INSERT.
+            expect(db.query).toHaveBeenCalledTimes(1);
+            expect(db.query).toHaveBeenCalledWith(
+                expect.stringContaining('INSERT INTO chat_messages'),
+                [10, null, 'KnownGuest', 'VISIT scam.xyz NOW', 'deleted']
+            );
+            expect(result.status).toBe('deleted');
         });
     });
 
