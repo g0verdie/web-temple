@@ -187,6 +187,18 @@ app.use((req, res, next) => {
   next();
 });
 
+// Keep admin pages out of search indexes. The layout (Stream B, U7) reads
+// res.locals.noindex once and emits <meta name="robots" content="noindex">.
+// Admin pages gate via requireRbac.requireAnyRole (not the orphaned
+// requireAdmin), so a server-level path check is the single injection point
+// that doesn't collide with the admin controllers.
+app.use((req, res, next) => {
+  if (req.path.startsWith('/admin')) {
+    res.locals.noindex = true;
+  }
+  next();
+});
+
 // Absolute site base URL for SEO/social tags (canonical, Open Graph, sitemap).
 // Prefer an explicit env override; otherwise derive from the request.
 const SITE_BASE_URL = process.env.SITE_URL || process.env.APP_BASE_URL || null;
@@ -283,7 +295,7 @@ const SITEMAP_PATHS = [
   '/contact',
   '/calendar',
   '/watch',
-  '/archive',
+  '/donations',
   '/privacy',
   '/terms',
   '/accessibility'
@@ -301,7 +313,7 @@ app.get('/sitemap.xml', (req, res) => {
 // 404 handler
 app.use((req, res) => {
   logger.warn(`404 - Not Found - ${req.originalUrl} - ${req.ip}`);
-  res.status(404).render('404', { title: '404 - Page Not Found' });
+  res.status(404).render('404', { title: '404 - Page Not Found', noindex: true });
 });
 
 // Sentry error handler — must run before the app error handler (no-op when disabled)
@@ -320,7 +332,8 @@ app.use((err, req, res, next) => {
   logger.error(`${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`, { stack: err.stack });
   res.status(500).render('error', {
     title: '500 - Server Error',
-    message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message
+    message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message,
+    noindex: true
   });
 });
 
