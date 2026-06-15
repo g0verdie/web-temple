@@ -164,7 +164,7 @@ describe('Admin Controller - Backup Status', () => {
         await adminController.retryEmailJob(retryReq, retryRes);
 
         expect(retryRes.status).toHaveBeenCalledWith(404);
-        expect(retryRes.render).toHaveBeenCalledWith('error', { error: 'Email job not found' });
+        expect(retryRes.render).toHaveBeenCalledWith('error', { title: '404 - Not Found', message: 'Email job not found.' });
     });
 
     test('should include user onboarding_complete flag in view context for new rabbis', async () => {
