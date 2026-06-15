@@ -208,6 +208,7 @@ exports.getCalendarPage = async (req, res) => {
 
         res.render('layout', {
             title: 'Calendar',
+            description: 'Upcoming services, holidays, and events at Temple B\'nai Israel in Florence, AL. See what\'s happening in our community.',
             bodyView: 'calendar/index',
             stylesheets: CALENDAR_STYLESHEETS,
             viewData: {

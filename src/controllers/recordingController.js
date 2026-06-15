@@ -220,6 +220,7 @@ exports.getArchiveList = async (req, res) => {
 
         res.render('layout', {
             title: 'Recording Archive',
+            description: 'Browse the Temple B\'nai Israel recording archive — past services and events available to members.',
             bodyView: 'recordings/index',
             stylesheets: ['/css/recordings.css'],
             viewData: {

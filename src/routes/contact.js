@@ -20,6 +20,7 @@ const contactPostLimiter = rateLimit({
 router.get('/', (req, res) => {
     res.render('layout', {
         title: 'Contact Us',
+        description: 'Get in touch with Temple B\'nai Israel. Send us a message with questions about membership, services, or visiting our Florence, AL community.',
         bodyView: 'contact',
         viewData: {
             user: req.user || null,

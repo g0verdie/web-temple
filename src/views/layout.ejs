@@ -4,13 +4,40 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="<%= title %> - A warm, inclusive Jewish community in Florence, AL">
+  <%
+    // Per-page meta with a site-wide default. `description` is optional, so every
+    // existing res.render('layout', ...) keeps working untouched.
+    const siteName = "Temple B'nai Israel";
+    const defaultDescription = "Temple B'nai Israel — a warm, inclusive Jewish community in Florence, AL. Join us for services, streaming, events, and community life.";
+    const metaDescription = (typeof description !== 'undefined' && description) ? description : defaultDescription;
+    const siteUrl = (typeof baseUrl !== 'undefined' && baseUrl) ? baseUrl : '';
+    const canonicalPath = (typeof currentPath !== 'undefined' && currentPath) ? currentPath : '';
+    const canonicalUrl = siteUrl + canonicalPath;
+    const ogImage = siteUrl + '/images/tbi-logo.png';
+  %>
+  <meta name="description" content="<%= metaDescription %>">
   <% if (typeof csrfToken !=='undefined' ) { %>
     <meta name="csrf-token" content="<%= csrfToken %>">
     <% } %>
       <title>
         <%= title %>
       </title>
+      <link rel="canonical" href="<%= canonicalUrl %>">
+
+      <!-- Open Graph / Facebook -->
+      <meta property="og:type" content="website">
+      <meta property="og:site_name" content="<%= siteName %>">
+      <meta property="og:title" content="<%= title %>">
+      <meta property="og:description" content="<%= metaDescription %>">
+      <meta property="og:url" content="<%= canonicalUrl %>">
+      <meta property="og:image" content="<%= ogImage %>">
+
+      <!-- Twitter Card -->
+      <meta name="twitter:card" content="summary_large_image">
+      <meta name="twitter:title" content="<%= title %>">
+      <meta name="twitter:description" content="<%= metaDescription %>">
+      <meta name="twitter:image" content="<%= ogImage %>">
+
       <link rel="icon" type="image/svg+xml" href="/favicon.svg">
       <!-- Main CSS -->
       <link rel="stylesheet" href="/css/main.css">
