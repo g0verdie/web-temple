@@ -8,10 +8,6 @@ ADD COLUMN IF NOT EXISTS service_type VARCHAR(50);
 -- Update existing records logically (e.g. if title contains Shabbat) just for safety, or leave null
 UPDATE recordings SET service_type = 'Shabbat' WHERE title ILIKE '%Shabbat%';
 
--- Ensure Rabbi names are non-nullable for AC8 compliance
-ALTER TABLE recordings ALTER COLUMN first_name SET NOT NULL;
-ALTER TABLE recordings ALTER COLUMN last_name SET NOT NULL;
-
 -- Add critical indexes for archive query performance
 CREATE INDEX IF NOT EXISTS idx_recordings_service_date ON recordings(service_date);
 CREATE INDEX IF NOT EXISTS idx_recordings_service_type ON recordings(service_type);
