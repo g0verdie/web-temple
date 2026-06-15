@@ -276,9 +276,18 @@ main {
 
 /* Hero section - Mobile first (375px) */
 .hero {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  /* Temple building photo with a dark navy overlay so the white text/CTA stay
+     WCAG-AA legible over the lighter parts of the image. color-primary is the
+     fallback while the photo loads (or if it 404s). */
+  background-color: var(--color-primary);
+  background-image:
+    linear-gradient(rgba(15, 30, 55, 0.60), rgba(15, 30, 55, 0.72)),
+    url('/images/temple-building.jpg');
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
   color: white;
-  padding: var(--spacing-lg) var(--spacing-sm);
+  padding: var(--spacing-xl) var(--spacing-sm);
   border-radius: 8px;
   text-align: center;
   margin-bottom: var(--spacing-xl);
