@@ -37,6 +37,9 @@
     };
   %>
   <meta name="description" content="<%= metaDescription %>">
+  <% if (typeof noindex !== 'undefined' && noindex) { %>
+    <meta name="robots" content="noindex">
+    <% } %>
   <% if (typeof csrfToken !=='undefined' ) { %>
     <meta name="csrf-token" content="<%= csrfToken %>">
     <% } %>

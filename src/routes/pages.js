@@ -15,6 +15,7 @@ router.get('/register', (req, res) => {
         title: 'Register - Temple B\'nai Israel',
         bodyView: 'register',
         viewData: {},
+        noindex: true,
         stylesheets: ['/css/auth.css']
     });
 });
@@ -28,6 +29,7 @@ router.get('/login', (req, res) => {
         title: 'Login - Temple B\'nai Israel',
         bodyView: 'login',
         viewData: {},
+        noindex: true,
         stylesheets: ['/css/auth.css']
     });
 });
@@ -41,6 +43,7 @@ router.get('/auth/request-password-reset', (req, res) => {
         title: 'Reset Your Password - Temple B\'nai Israel',
         bodyView: 'auth/request-password-reset',
         viewData: {},
+        noindex: true,
         stylesheets: ['/css/auth.css']
     });
 });
@@ -54,6 +57,7 @@ router.get('/auth/reset-password', (req, res) => {
         title: 'Set New Password - Temple B\'nai Israel',
         bodyView: 'auth/reset-password',
         viewData: {},
+        noindex: true,
         stylesheets: ['/css/auth.css']
     });
 });
@@ -69,6 +73,7 @@ router.get('/account/settings', requireAuth, sessionTimeout(), async (req, res) 
             title: 'Account Settings - Temple B\'nai Israel',
             bodyView: 'account/settings',
             viewData: { settings },
+            noindex: true,
             stylesheets: ['/css/account.css']
         });
     } catch (error) {
@@ -89,6 +94,7 @@ router.get('/account/confirm-email', (req, res) => {
         title: 'Confirm Email - Temple B\'nai Israel',
         bodyView: 'account/confirm-email',
         viewData: { token: req.query.token || '' },
+        noindex: true,
         stylesheets: ['/css/account.css']
     });
 });
@@ -112,6 +118,7 @@ router.get('/account/directory', requireAuth, sessionTimeout(), async (req, res)
             title: 'My Directory Listing - Temple B\'nai Israel',
             bodyView: 'account/directory-listing',
             viewData: { profile },
+            noindex: true,
             stylesheets: ['/css/account.css']
         });
     } catch (error) {
