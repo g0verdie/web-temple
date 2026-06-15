@@ -1,5 +1,6 @@
 const auditService = require('../../src/services/auditService');
 const db = require('../../src/config/db');
+const logger = require('../../src/utils/logger');
 
 // Mock db
 jest.mock('../../src/config/db', () => ({
@@ -63,7 +64,7 @@ describe('AuditService', () => {
             const logData = { action: 'FAIL_ACTION' };
             db.query.mockRejectedValue(new Error('DB Error'));
 
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+            const consoleSpy = jest.spyOn(logger, 'error').mockImplementation(() => { });
 
             await expect(auditService.log(logData)).resolves.not.toThrow();
 

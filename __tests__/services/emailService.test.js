@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 const emailService = require('../../src/services/emailService');
+const logger = require('../../src/utils/logger');
 
 jest.mock('nodemailer');
 
@@ -13,7 +14,7 @@ describe('emailService', () => {
 
     it('logs and resolves when SMTP is not configured', async () => {
         delete process.env.SMTP_HOST;
-        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+        const logSpy = jest.spyOn(logger, 'info').mockImplementation(() => {});
 
         await emailService.sendEmail({
             to: 'test@example.com',
@@ -49,7 +50,7 @@ describe('emailService', () => {
 
     it('sendContactNotification builds message', async () => {
         delete process.env.SMTP_HOST;
-        const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+        const logSpy = jest.spyOn(logger, 'info').mockImplementation(() => {});
 
         await emailService.sendContactNotification({
             name: 'Test User',
