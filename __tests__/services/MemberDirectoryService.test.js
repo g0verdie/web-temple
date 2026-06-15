@@ -37,7 +37,9 @@ describe('MemberDirectoryService', () => {
             db.query.mockResolvedValue({ rows: [{ user_id: 'u1' }] });
 
             await svc.saveMyProfile('u1', {
-                phone: '555-1234', household: 'Spouse: Dana', bio: 'Hi', interests: 'choir',
+                phone: '555-1234',
+                household: [{ name: 'Dana', relationship: 'Spouse', birthday: '' }],
+                bio: 'Hi', interests: 'choir',
                 listed: true, show_phone: true
             });
 
@@ -49,7 +51,9 @@ describe('MemberDirectoryService', () => {
             const storedHousehold = params[7];
             expect(storedPhone).not.toBe('555-1234');           // not plaintext
             expect(decrypt(storedPhone)).toBe('555-1234');       // round-trips
-            expect(decrypt(storedHousehold)).toBe('Spouse: Dana');
+            // Household is stored as an encrypted JSON array of {name, relationship, birthday}.
+            expect(JSON.parse(decrypt(storedHousehold)))
+                .toEqual([{ name: 'Dana', relationship: 'Spouse', birthday: '' }]);
             expect(logAudit).toHaveBeenCalledWith(
                 expect.objectContaining({ action: 'DIRECTORY_LISTING_UPDATED', user_id: 'u1' })
             );
@@ -150,19 +154,110 @@ describe('MemberDirectoryService', () => {
         });
     });
 
+    describe('structured household', () => {
+        test('round-trips a household array (JSON-encrypted at rest) for the owner', async () => {
+            const people = [
+                { name: 'Dana', relationship: 'Spouse', birthday: '1980-05-01' },
+                { name: 'Sam', relationship: 'Child', birthday: '' }
+            ];
+            db.query.mockResolvedValue({
+                rows: [{
+                    first_name: 'A', last_name: 'B', email: 'a@b.com',
+                    listed: true, show_phone: false, show_email: false, show_household: false, show_address: false,
+                    phone_encrypted: null, household_encrypted: encrypt(JSON.stringify(people)),
+                    address_encrypted: null, bio: 'hi', interests: 'choir'
+                }]
+            });
+            const p = await svc.getMyProfile('u1');
+            expect(p.household).toEqual(people);
+        });
+
+        test('owner with no household gets an empty array', async () => {
+            db.query.mockResolvedValue({
+                rows: [{
+                    first_name: 'A', last_name: 'B', email: 'a@b.com',
+                    listed: false, show_phone: false, show_email: false, show_household: false, show_address: false,
+                    phone_encrypted: null, household_encrypted: null, address_encrypted: null,
+                    bio: null, interests: null
+                }]
+            });
+            const p = await svc.getMyProfile('u1');
+            expect(p.household).toEqual([]);
+        });
+
+        test('legacy plain-text household decrypts to a single fallback entry (no throw)', async () => {
+            db.query.mockResolvedValue({
+                rows: [{
+                    first_name: 'A', last_name: 'B', email: 'a@b.com',
+                    listed: true, show_phone: false, show_email: false, show_household: false, show_address: false,
+                    phone_encrypted: null, household_encrypted: encrypt('Spouse: Dana, Kids: 2'),
+                    address_encrypted: null, bio: null, interests: null
+                }]
+            });
+            const p = await svc.getMyProfile('u1');
+            expect(p.household).toEqual([{ name: 'Spouse: Dana, Kids: 2', relationship: '', birthday: '' }]);
+        });
+
+        test('member listing exposes household array when show_household is true', async () => {
+            const people = [{ name: 'Dana', relationship: 'Spouse', birthday: '' }];
+            mockClient.query
+                .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+                .mockResolvedValueOnce({
+                    rows: [{
+                        user_id: 'u2', first_name: 'Ada', last_name: 'Lovelace', email: 'ada@x.com',
+                        show_phone: false, show_email: false, show_household: true, show_address: false,
+                        phone_encrypted: null, household_encrypted: encrypt(JSON.stringify(people)),
+                        address_encrypted: null, bio: null, interests: null
+                    }]
+                });
+            const { profiles } = await svc.listListedProfiles({ page: 1, limit: 20 });
+            expect(profiles[0].household).toEqual(people);
+        });
+
+        test('save normalizes and drops blank-name household entries', async () => {
+            db.query.mockResolvedValue({ rows: [{ user_id: 'u1' }] });
+            await svc.saveMyProfile('u1', {
+                household: [
+                    { name: ' Dana ', relationship: ' Spouse ', birthday: '1980-05-01' },
+                    { name: '', relationship: 'Child', birthday: '' },          // dropped (no name)
+                    { name: 'Sam', relationship: '', birthday: 'not-a-date' }    // birthday cleared
+                ]
+            });
+            const stored = JSON.parse(decrypt(db.query.mock.calls[0][1][7]));
+            expect(stored).toEqual([
+                { name: 'Dana', relationship: 'Spouse', birthday: '1980-05-01' },
+                { name: 'Sam', relationship: '', birthday: '' }
+            ]);
+        });
+
+        test('save accepts a JSON string household (client may pre-serialize)', async () => {
+            db.query.mockResolvedValue({ rows: [{ user_id: 'u1' }] });
+            await svc.saveMyProfile('u1', {
+                household: JSON.stringify([{ name: 'Dana', relationship: 'Spouse', birthday: '' }])
+            });
+            const stored = JSON.parse(decrypt(db.query.mock.calls[0][1][7]));
+            expect(stored).toEqual([{ name: 'Dana', relationship: 'Spouse', birthday: '' }]);
+        });
+
+        test('save with empty household stores null (no encrypted blob)', async () => {
+            db.query.mockResolvedValue({ rows: [{ user_id: 'u1' }] });
+            await svc.saveMyProfile('u1', { household: [] });
+            expect(db.query.mock.calls[0][1][7]).toBeNull();
+        });
+    });
+
     describe('getMyProfile', () => {
-        test('round-trips decrypted phone/household for the owner', async () => {
+        test('round-trips decrypted phone for the owner', async () => {
             db.query.mockResolvedValue({
                 rows: [{
                     first_name: 'A', last_name: 'B', email: 'a@b.com',
                     listed: true, show_phone: false, show_email: false, show_household: false,
-                    phone_encrypted: encrypt('555-9999'), household_encrypted: encrypt('Kids: 2'),
+                    phone_encrypted: encrypt('555-9999'), household_encrypted: null,
                     bio: 'hi', interests: 'choir'
                 }]
             });
             const p = await svc.getMyProfile('u1');
             expect(p.phone).toBe('555-9999');
-            expect(p.household).toBe('Kids: 2');
             expect(p.listed).toBe(true);
         });
 

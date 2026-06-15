@@ -24,7 +24,7 @@ const FLAG_DEFAULTS = {
     show_address: false
 };
 
-const FIELD_MAX = { phone: 32, household: 200, address: 200, bio: 500, interests: 200 };
+const FIELD_MAX = { phone: 32, address: 200, bio: 500, interests: 200 };
 
 // Only these columns may be cleared by moderation (allow-list — never trust caller input for column names).
 const MODERATABLE_FIELDS = ['bio', 'interests', 'household_encrypted'];
@@ -49,6 +49,59 @@ const cleanText = (value, max, name) => {
         throw new Error(`${name} must be ${max} characters or fewer`);
     }
     return s;
+};
+
+// Household is a structured list of people: { name, relationship, birthday }.
+// It is stored as an encrypted JSON array (see migration 018 / household_encrypted).
+const HOUSEHOLD_MAX_PEOPLE = 20;
+const HOUSEHOLD_FIELD_MAX = { name: 80, relationship: 60 };
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Normalize caller input (array, or a JSON string the client pre-serialized) into a
+// clean array of people. Trims fields, drops entries with no name, clears non-ISO
+// birthdays, and caps the list length. Returns [] for empty/invalid input.
+const normalizeHousehold = (value) => {
+    let arr = value;
+    if (typeof arr === 'string') {
+        const trimmed = arr.trim();
+        if (!trimmed) return [];
+        try {
+            arr = JSON.parse(trimmed);
+        } catch (e) {
+            // Treat an unparseable string as a single legacy free-text entry.
+            return [{ name: trimmed.slice(0, HOUSEHOLD_FIELD_MAX.name), relationship: '', birthday: '' }];
+        }
+    }
+    if (!Array.isArray(arr)) return [];
+
+    const people = [];
+    for (const entry of arr) {
+        if (!entry || typeof entry !== 'object') continue;
+        const name = String(entry.name || '').trim().slice(0, HOUSEHOLD_FIELD_MAX.name);
+        if (!name) continue; // a person without a name is not a person
+        const relationship = String(entry.relationship || '').trim().slice(0, HOUSEHOLD_FIELD_MAX.relationship);
+        const rawBirthday = String(entry.birthday || '').trim();
+        const birthday = ISO_DATE.test(rawBirthday) ? rawBirthday : '';
+        people.push({ name, relationship, birthday });
+        if (people.length >= HOUSEHOLD_MAX_PEOPLE) break;
+    }
+    return people;
+};
+
+// Decrypted household value → array of people. Backward-compatible: legacy values are
+// encrypted plain text (not JSON), so a parse failure or non-array result is treated as
+// a single free-text entry rather than throwing (KTD2: never crash a render).
+const parseHousehold = (decrypted) => {
+    if (!decrypted) return [];
+    try {
+        const parsed = JSON.parse(decrypted);
+        if (Array.isArray(parsed)) {
+            return normalizeHousehold(parsed);
+        }
+    } catch (e) {
+        // not JSON — fall through to the legacy single-entry path
+    }
+    return [{ name: String(decrypted).slice(0, HOUSEHOLD_FIELD_MAX.name), relationship: '', birthday: '' }];
 };
 
 // Failure-tolerant decrypt: never throw out of a listing render (KTD2).
@@ -87,7 +140,7 @@ const shapeForMember = (row) => {
     };
     if (row.show_phone) shaped.phone = safeDecrypt(row.phone_encrypted);
     if (row.show_email) shaped.email = row.email;
-    if (row.show_household) shaped.household = safeDecrypt(row.household_encrypted);
+    if (row.show_household) shaped.household = parseHousehold(safeDecrypt(row.household_encrypted));
     if (row.show_address) shaped.address = safeDecrypt(row.address_encrypted);
     return shaped;
 };
@@ -120,7 +173,7 @@ const getMyProfile = async (userId) => {
         show_household: row.show_household || false,
         show_address: row.show_address || false,
         phone: safeDecrypt(row.phone_encrypted) || '',
-        household: safeDecrypt(row.household_encrypted) || '',
+        household: parseHousehold(safeDecrypt(row.household_encrypted)),
         address: safeDecrypt(row.address_encrypted) || '',
         bio: row.bio || '',
         interests: row.interests || ''
@@ -139,13 +192,16 @@ const saveMyProfile = async (userId, input = {}) => {
     }
 
     const phone = cleanText(input.phone, FIELD_MAX.phone, 'Phone');
-    const household = cleanText(input.household, FIELD_MAX.household, 'Household');
     const address = cleanText(input.address, FIELD_MAX.address, 'Address');
     const bio = cleanText(input.bio, FIELD_MAX.bio, 'Bio');
     const interests = cleanText(input.interests, FIELD_MAX.interests, 'Interests');
 
+    // Household is a structured people-list serialized to JSON; empty list stores null.
+    const householdPeople = normalizeHousehold(input.household);
+    const householdJson = householdPeople.length > 0 ? JSON.stringify(householdPeople) : null;
+
     const phoneEncrypted = encrypt(phone);
-    const householdEncrypted = encrypt(household);
+    const householdEncrypted = encrypt(householdJson);
     const addressEncrypted = encrypt(address);
 
     const result = await db.query(
@@ -285,7 +341,7 @@ const getProfileForAdmin = async (userId) => {
         show_household: row.show_household || false,
         show_address: row.show_address || false,
         phone: safeDecrypt(row.phone_encrypted),
-        household: safeDecrypt(row.household_encrypted),
+        household: parseHousehold(safeDecrypt(row.household_encrypted)),
         address: safeDecrypt(row.address_encrypted),
         bio: row.bio || null,
         interests: row.interests || null

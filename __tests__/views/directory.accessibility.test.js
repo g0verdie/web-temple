@@ -51,7 +51,9 @@ describe('Member directory accessibility (WCAG AA, R19)', () => {
     it('member profile page has no WCAG AA violations', async () => {
         MemberDirectoryService.getListedProfile.mockResolvedValue({
             user_id: 'u2', first_name: 'Ada', last_name: 'Lovelace', initials: 'AL',
-            bio: 'About Ada', interests: 'choir', household: 'Spouse', email: 'ada@x.com', phone: '555-0001'
+            bio: 'About Ada', interests: 'choir',
+            household: [{ name: 'Charles', relationship: 'Spouse', birthday: '1815-12-10' }],
+            address: '1 Main St', email: 'ada@x.com', phone: '555-0001'
         });
         const res = await request(app).get('/directory/u2').set('Cookie', [`auth_token=${token}`]);
         expect(res.status).toBe(200);
