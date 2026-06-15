@@ -18,7 +18,7 @@
   /* Gold accent system — one canonical gold (plan KTD1/KTD5). Values are
      contrast-verified and provisional pending the visual-review checkpoint. */
   --color-gold: #d69e2e; /* warm gold — fills, large accents, CTA bg (navy-on-gold ~4.6:1) */
-  --color-gold-dark: #8a6d24; /* gold-as-text/links on light surfaces (on white ~5:1, AA) */
+  --color-gold-dark: #856823; /* gold-as-text/links on light surfaces (white 5.25:1, #f7fafc 5.01:1, #f0f0f0 4.60:1 — all AA) */
   --color-gold-focus: #b8860b; /* focus outline — clears 3:1 on white AND navy */
   --color-accent: var(--color-gold); /* alias kept for existing var(--color-accent) usages */
   --color-text: #2d3748; /* Dark gray text */
