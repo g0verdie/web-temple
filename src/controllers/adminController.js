@@ -39,7 +39,7 @@ exports.getAuditLogs = async (req, res) => {
         });
     } catch (error) {
         console.error('Error fetching audit logs:', error);
-        res.status(500).render('error', { error });
+        res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to load audit logs.' });
     }
 };
 
@@ -75,56 +75,68 @@ const gatherLiveMetrics = async () => {
         }
     };
 
+    // Stream/chat count is best-effort; resolve it as a unit so it can run alongside
+    // the other metrics without one failure blanking the rest.
+    const safeStream = async () => {
+        try {
+            const embedMeta = await StreamingService.getPublicEmbedMetadata();
+            if (embedMeta && embedMeta.status === 'live' && embedMeta.id) {
+                return { activeStream: embedMeta, activeChatUsers: chatSocketServer.getActiveConnectionCount(embedMeta.id) };
+            }
+        } catch (e) {
+            // stream/chat count is best-effort
+        }
+        return { activeStream: null, activeChatUsers: 0 };
+    };
+
+    // Each metric is independently guarded, so these run concurrently (NFR-P6 <2s).
     // Use the lightweight MTD-only query (decrypts just this month's donations) on
     // the 30s-polled path — not the full all-time dashboard aggregator.
-    const donationsMtdCents = await safe('donations', () => DonationService.getMtdTotalCents(), 0);
-    const newMembersThisMonth = await safe('newMembers', () => userService.getNewMemberCountThisMonth(), 0);
-    const pendingMessages = await safe('pendingMessages', () => messageService.getNewMessageCount(), 0);
-    const pendingChat = await safe('pendingChat', () => ChatService.getPendingMessageCount(), 0);
-
-    let activeStream = null;
-    let activeChatUsers = 0;
-    try {
-        const embedMeta = await StreamingService.getPublicEmbedMetadata();
-        if (embedMeta && embedMeta.status === 'live' && embedMeta.id) {
-            activeStream = embedMeta;
-            activeChatUsers = chatSocketServer.getActiveConnectionCount(embedMeta.id);
-        }
-    } catch (e) {
-        // stream/chat count is best-effort
-    }
+    const [donationsMtdCents, newMembersThisMonth, pendingMessages, pendingChat, stream] = await Promise.all([
+        safe('donations', () => DonationService.getMtdTotalCents(), 0),
+        safe('newMembers', () => userService.getNewMemberCountThisMonth(), 0),
+        safe('pendingMessages', () => messageService.getNewMessageCount(), 0),
+        safe('pendingChat', () => ChatService.getPendingMessageCount(), 0),
+        safeStream()
+    ]);
 
     return {
         newMembersThisMonth,
         donationsMtdCents,
-        activeChatUsers,
+        activeChatUsers: stream.activeChatUsers,
         pendingMessages,
         pendingChat,
         serverUptimeSeconds: Math.floor(process.uptime()),
-        activeStream
+        activeStream: stream.activeStream
     };
 };
 
 exports.getDashboard = async (req, res) => {
     try {
-        // Backup + email-queue reads can throw → surfaced as a 500 (they back the
-        // status cards and preserve the existing error-handling contract).
-        const lastBackup = await backupLogService.getLastSuccessfulBackup();
-        const latestAttempt = await backupLogService.getLastBackupAttempt();
-        const emailQueue = await emailQueueService.getQueueStats();
-
-        const m = await gatherLiveMetrics();
-
         // Today's Priorities (Story 9.3): upcoming events in the next 7 days.
-        let upcomingEvents = [];
-        try {
-            const EventService = require('../services/EventService');
-            const evts = await EventService.getUpcomingEvents(20);
-            const cutoff = Date.now() + 7 * 24 * 60 * 60 * 1000;
-            upcomingEvents = evts.filter(e => e.date && e.date.getTime() <= cutoff);
-        } catch (err) {
-            logger.error(`Dashboard upcoming-events failed: ${err.message}`);
-        }
+        // Self-degrading to [] so it can run alongside the status-card reads.
+        const upcomingEventsPromise = (async () => {
+            try {
+                const EventService = require('../services/EventService');
+                const evts = await EventService.getUpcomingEvents(20);
+                const cutoff = Date.now() + 7 * 24 * 60 * 60 * 1000;
+                return evts.filter(e => e.date && e.date.getTime() <= cutoff);
+            } catch (err) {
+                logger.error(`Dashboard upcoming-events failed: ${err.message}`);
+                return [];
+            }
+        })();
+
+        // Backup + email-queue reads can throw → surfaced as a 500 (they back the
+        // status cards and preserve the existing error-handling contract). All the
+        // independent reads run concurrently to meet NFR-P6 (<2s dashboard load).
+        const [lastBackup, latestAttempt, emailQueue, m, upcomingEvents] = await Promise.all([
+            backupLogService.getLastSuccessfulBackup(),
+            backupLogService.getLastBackupAttempt(),
+            emailQueueService.getQueueStats(),
+            gatherLiveMetrics(),
+            upcomingEventsPromise
+        ]);
 
         const alerts = {
             backupFailed: !!(latestAttempt && latestAttempt.status !== 'SUCCESS'),
@@ -159,7 +171,7 @@ exports.getDashboard = async (req, res) => {
         });
     } catch (error) {
         logger.error(`Error loading dashboard: ${error.message}`);
-        res.status(500).render('error', { error });
+        res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to load the dashboard.' });
     }
 };
 
@@ -197,12 +209,12 @@ exports.retryEmailJob = async (req, res) => {
         const success = await emailQueueService.retryFailedJob(id);
 
         if (!success) {
-            return res.status(404).render('error', { error: 'Email job not found' });
+            return res.status(404).render('error', { title: '404 - Not Found', message: 'Email job not found.' });
         }
 
         return res.redirect('/admin');
     } catch (error) {
         console.error('Error retrying email job:', error);
-        res.status(500).render('error', { error });
+        res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to retry the email job.' });
     }
 };

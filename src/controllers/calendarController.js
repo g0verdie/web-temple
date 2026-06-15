@@ -33,7 +33,7 @@ exports.listEvents = async (req, res) => {
         });
     } catch (error) {
         logger.error('Error listing calendar events:', error);
-        res.status(500).render('error', { error });
+        res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to load calendar events.' });
     }
 };
 
@@ -77,7 +77,7 @@ exports.renderEditForm = async (req, res) => {
         });
     } catch (error) {
         logger.error('Error rendering edit form:', error);
-        res.status(500).render('error', { error });
+        res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to load the edit form.' });
     }
 };
 
@@ -134,7 +134,7 @@ exports.renderArchive = async (req, res) => {
         });
     } catch (error) {
         logger.error('Error listing archived events:', error);
-        res.status(500).render('error', { error });
+        res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to load archived events.' });
     }
 };
 

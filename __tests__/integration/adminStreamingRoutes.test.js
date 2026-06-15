@@ -92,6 +92,17 @@ describe('Admin Streaming Routes Integration', () => {
         });
     });
 
+    describe('error page payload (Item 10)', () => {
+        it('renders a usable 500 page with a real message when the service throws', async () => {
+            StreamingService.getScheduledStreams.mockRejectedValueOnce(new Error('db down'));
+
+            const res = await request(app).get('/admin/streaming');
+
+            expect(res.statusCode).toBe(500);
+            expect(res.text).toContain('Unable to load livestreams.');
+        });
+    });
+
     describe('GET /admin/streaming/new', () => {
         it('renders the creation form with calendar events', async () => {
             const mockEvents = [{ id: 1, title: 'Event 1', date: new Date().toISOString() }];

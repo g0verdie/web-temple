@@ -5,7 +5,7 @@ jest.mock('../../src/config/db', () => ({ query: jest.fn(), pool: { connect: jes
 jest.mock('../../src/services/DonationService', () => ({ getMtdTotalCents: jest.fn() }));
 jest.mock('../../src/services/userService', () => ({ getNewMemberCountThisMonth: jest.fn() }));
 jest.mock('../../src/services/messageService', () => ({ getNewMessageCount: jest.fn() }));
-jest.mock('../../src/services/ChatService', () => ({ getPendingMessageCount: jest.fn() }));
+jest.mock('../../src/services/ChatService', () => ({ getPendingMessageCount: jest.fn(), getPendingMessages: jest.fn() }));
 jest.mock('../../src/services/EventService', () => ({ getUpcomingEvents: jest.fn() }));
 jest.mock('../../src/services/backupLogService', () => ({ getLastSuccessfulBackup: jest.fn(), getLastBackupAttempt: jest.fn() }));
 jest.mock('../../src/services/emailQueueService', () => ({ getQueueStats: jest.fn(), retryFailedJob: jest.fn() }));
@@ -76,6 +76,42 @@ describe('Admin dashboard routes (Story 9.1)', () => {
             expect(res.status).toBe(200);
             expect(res.text).toContain('Admin Dashboard');
             expect(res.text).toContain('Today\'s Priorities');
+        });
+    });
+
+    describe('error page payload (Item 10)', () => {
+        beforeEach(() => {
+            db.query.mockResolvedValue({ rows: [{ id: 'admin-1', token_version: 1, role: 'admin', email: 'admin-1@x.com' }] });
+        });
+
+        test('email-queue retry → 404 with a real message when the job is missing', async () => {
+            emailQueueService.retryFailedJob.mockResolvedValueOnce(false);
+            const res = await request(app)
+                .post('/admin/email-queue/999/retry')
+                .set('Cookie', [`auth_token=${adminToken}`]);
+            expect(res.status).toBe(404);
+            expect(res.text).toContain('Email job not found.');
+            // The error page heading must reflect the real status, not a generic 500.
+            expect(res.text).toContain('<h1>404 - Not Found</h1>');
+            expect(res.text).not.toContain('<h1>500 - Server Error</h1>');
+        });
+
+        test('chat moderation → 500 with a real message when the service throws', async () => {
+            ChatService.getPendingMessages.mockRejectedValueOnce(new Error('db down'));
+            const res = await request(app)
+                .get('/admin/chat-moderation')
+                .set('Cookie', [`auth_token=${adminToken}`]);
+            expect(res.status).toBe(500);
+            expect(res.text).toContain('Unable to load chat moderation.');
+        });
+
+        // Item 9 safety net: a failing backup/email-queue read must still surface as a
+        // 500 after the metric reads are parallelized — error semantics must not change.
+        test('dashboard → 500 when a backup read throws', async () => {
+            backupLogService.getLastSuccessfulBackup.mockRejectedValueOnce(new Error('backup down'));
+            const res = await request(app).get('/admin').set('Cookie', [`auth_token=${adminToken}`]);
+            expect(res.status).toBe(500);
+            expect(res.text).toContain('Unable to load the dashboard.');
         });
     });
 });
