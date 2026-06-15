@@ -143,12 +143,32 @@ header {
 }
 
 .site-title {
-  font-size: 1.25rem;
-  font-weight: 700;
   margin: 0;
   min-height: 44px;
   display: flex;
   align-items: center;
+}
+
+/* Brand logo in the header. The wordmark is dark on a transparent ground, so it
+   sits on a white panel to stay legible over the navy header (same treatment as
+   the hero). Links home. */
+.site-logo-link {
+  display: inline-flex;
+  align-items: center;
+  background: #fff;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+}
+
+.site-logo-link:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 2px;
+}
+
+.site-logo {
+  display: block;
+  height: 40px;
+  width: auto;
 }
 
 /* Hamburger menu button - 44px touch target */
@@ -296,19 +316,6 @@ main {
 .hero-content {
   max-width: 800px;
   margin: 0 auto;
-}
-
-/* Logo on a light panel so the dark wordmark stays legible over the navy hero.
-   600px source shown ~280px wide = ~2.1x on Retina (crisp). */
-.hero-logo {
-  display: block;
-  width: min(280px, 78%);
-  height: auto;
-  margin: 0 auto var(--spacing-md);
-  padding: 0.75rem 1.1rem;
-  background: rgba(255, 255, 255, 0.94);
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
 }
 
 .hero-headline {
