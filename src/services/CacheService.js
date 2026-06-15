@@ -50,6 +50,28 @@ class CacheService {
         }
     }
 
+    /**
+     * Atomically set a key only if absent (SET key value NX EX ttl). Returns true
+     * when this caller set the key ("won"), false when it already existed. Used as a
+     * single-flight refresh lock and a fire-once alert guard.
+     *
+     * On a backend error the result depends on the desired failure mode:
+     *  - default (fail OPEN, returns true): correct for the refresh lock — a Redis
+     *    outage should let the caller proceed and fetch rather than stall.
+     *  - { failClosed: true } (returns false): correct for the alert dedupe — a Redis
+     *    outage must NOT be read as "first alert" or every request would email the
+     *    operator during an incident.
+     */
+    async acquireLock(key, ttlSeconds, options = {}) {
+        try {
+            const result = await redis.set(this.prefix + key, '1', 'EX', ttlSeconds, 'NX');
+            return result === 'OK';
+        } catch (error) {
+            winston.error(`Cache acquireLock error for key ${key}:`, error);
+            return options.failClosed ? false : true;
+        }
+    }
+
     async flush() {
         try {
             const keys = await redis.keys(this.prefix + '*');

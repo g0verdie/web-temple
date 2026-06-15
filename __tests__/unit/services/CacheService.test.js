@@ -86,6 +86,38 @@ describe('CacheService', () => {
         });
     });
 
+    describe('acquireLock', () => {
+        it('sets the key with NX + EX and returns true when redis replies OK', async () => {
+            redis.set.mockResolvedValue('OK');
+
+            const result = await CacheService.acquireLock('refreshing', 10);
+
+            expect(redis.set).toHaveBeenCalledWith('cache:refreshing', '1', 'EX', 10, 'NX');
+            expect(result).toBe(true);
+        });
+
+        it('returns false when the key already exists (redis returns null)', async () => {
+            redis.set.mockResolvedValue(null);
+
+            const result = await CacheService.acquireLock('refreshing', 10);
+            expect(result).toBe(false);
+        });
+
+        it('fails open (true) on a backend error by default — correct for the refresh lock', async () => {
+            redis.set.mockRejectedValue(new Error('Redis error'));
+
+            const result = await CacheService.acquireLock('refreshing', 10);
+            expect(result).toBe(true);
+        });
+
+        it('fails closed (false) on a backend error when failClosed is set — correct for the alert guard', async () => {
+            redis.set.mockRejectedValue(new Error('Redis error'));
+
+            const result = await CacheService.acquireLock('alerted', 3600, { failClosed: true });
+            expect(result).toBe(false);
+        });
+    });
+
     describe('flush', () => {
         it('should flush all keys with prefix', async () => {
             redis.keys.mockResolvedValue(['cache:key1', 'cache:key2']);

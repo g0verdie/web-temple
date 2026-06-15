@@ -1,0 +1,43 @@
+<section class="watch-page" aria-labelledby="watch-heading">
+    <div class="container">
+        <h1 id="watch-heading">Past Services</h1>
+        <p class="watch-intro">Watch recent services and videos from Temple B'nai Israel.</p>
+
+        <% if (videos && videos.length) { %>
+            <% if (degraded) { %>
+                <p class="watch-notice" role="status">Showing saved past services — our live video list is temporarily unavailable.</p>
+            <% } %>
+
+            <div class="watch-player" id="watch-player" role="region" aria-label="Video player" tabindex="-1">
+                <div class="watch-player__frame">
+                    <iframe id="watch-iframe" src="<%= videos[0].embedUrl %>" title="<%= videos[0].title %>" allowfullscreen loading="lazy"></iframe>
+                </div>
+                <h2 class="watch-player__title" id="watch-now-playing"><%= videos[0].title %></h2>
+            </div>
+
+            <ul class="watch-grid">
+                <% videos.forEach((video, i) => { %>
+                    <% const displayDate = (video.date && !isNaN(new Date(video.date).getTime())) ? new Date(video.date).toLocaleDateString() : ''; %>
+                    <li class="watch-card">
+                        <button type="button" class="watch-card__btn"
+                            data-embed-url="<%= video.embedUrl %>"
+                            data-title="<%= video.title %>"
+                            aria-label="Play <%= video.title %><%= displayDate ? ', ' + displayDate : '' %>"
+                            <%= i === 0 ? 'aria-current="true"' : '' %>>
+                            <img class="watch-card__thumb" src="<%= video.thumbnailUrl || '/images/video-placeholder.svg' %>" alt="" loading="lazy">
+                            <span class="watch-card__title"><%= video.title %></span>
+                            <% if (displayDate) { %><span class="watch-card__date"><%= displayDate %></span><% } %>
+                        </button>
+                    </li>
+                <% }) %>
+            </ul>
+        <% } else { %>
+            <div class="watch-empty">
+                <p>There are no past services to show here just yet.</p>
+                <p><a class="watch-empty__link" href="<%= facebookPageUrl %>" target="_blank" rel="noopener">Watch on our Facebook page</a></p>
+            </div>
+        <% } %>
+    </div>
+</section>
+
+<script defer src="/js/watch.js"></script>

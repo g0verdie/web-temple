@@ -459,3 +459,8 @@ class StreamingService {
 }
 
 module.exports = new StreamingService();
+// Exported for reuse by the past-videos sources (src/services/pastVideos): the embed
+// builder keeps live + past-video embeds identical and CSP-safe; the URL validator
+// gates curated entries to facebook.com / fb.watch.
+module.exports.convertToEmbedUrl = convertToEmbedUrl;
+module.exports.isAllowedProviderUrl = isAllowedProviderUrl;
