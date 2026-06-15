@@ -13,6 +13,7 @@
     "lint": "eslint src/**/*.js",
     "lint:fix": "eslint src/**/*.js --fix",
     "migrate": "node scripts/migrate.js",
+    "seed": "node scripts/seed-demo.js",
     "create-admin": "node scripts/create-admin.js",
     "test:performance": "lhci autorun"
   },
