@@ -1,6 +1,7 @@
 const EventService = require('../services/EventService');
 const StreamingService = require('../services/StreamingService');
 const AnnouncementService = require('../services/AnnouncementService');
+const logger = require('../utils/logger');
 
 function getTimeUntilService(serviceDate) {
   const now = new Date();
@@ -97,8 +98,11 @@ exports.getHomepage = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error rendering homepage:', error);
-    res.status(500).send('Internal Server Error');
+    logger.error(`Error rendering homepage: ${error.message}`, { stack: error.stack });
+    res.status(500).render('error', {
+      title: '500 - Server Error',
+      message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : error.message
+    });
   }
 };
 

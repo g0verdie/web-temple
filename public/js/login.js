@@ -56,9 +56,15 @@ if (form) {
       // On login failure, show generic error message WITHOUT setting aria-invalid
       // This prevents revealing which field caused the failure (security requirement)
       errorDiv.textContent = result.message || 'Login failed. Please try again.';
+      // Move focus to the live region so screen-reader + keyboard users land on
+      // the failure message (mirror contact-form.js).
+      errorDiv.setAttribute('tabindex', '-1');
+      errorDiv.focus();
       // Note: Do NOT set aria-invalid on fields for authentication failures
     } catch (error) {
       errorDiv.textContent = 'Network error. Please try again.';
+      errorDiv.setAttribute('tabindex', '-1');
+      errorDiv.focus();
       console.error('Login error:', error);
     }
   });
