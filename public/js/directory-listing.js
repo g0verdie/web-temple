@@ -59,11 +59,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const body = {
             phone: form.elements.phone.value.trim(),
+            address: form.elements.address.value.trim(),
             household: form.elements.household.value.trim(),
             bio: form.elements.bio.value.trim(),
             interests: form.elements.interests.value.trim(),
             listed,
             show_phone: form.elements.show_phone.checked,
+            show_address: form.elements.show_address.checked,
             show_email: form.elements.show_email.checked,
             show_household: showHousehold,
             household_consent: householdConsent

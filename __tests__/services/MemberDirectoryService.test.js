@@ -43,9 +43,10 @@ describe('MemberDirectoryService', () => {
 
             const [sql, params] = db.query.mock.calls[0];
             expect(sql).toContain('INSERT INTO member_profiles');
-            // params: [userId, listed, show_phone, show_email, show_household, phone_enc, household_enc, bio, interests]
-            const storedPhone = params[5];
-            const storedHousehold = params[6];
+            // params: [userId, listed, show_phone, show_email, show_household, show_address,
+            //          phone_enc, household_enc, address_enc, bio, interests]
+            const storedPhone = params[6];
+            const storedHousehold = params[7];
             expect(storedPhone).not.toBe('555-1234');           // not plaintext
             expect(decrypt(storedPhone)).toBe('555-1234');       // round-trips
             expect(decrypt(storedHousehold)).toBe('Spouse: Dana');
@@ -77,6 +78,75 @@ describe('MemberDirectoryService', () => {
             const result = await svc.saveMyProfile('u1', { listed: 'yes', evil: true });
             expect(result.listed).toBe(false); // 'yes' is not boolean → default false
             expect(result).not.toHaveProperty('evil');
+        });
+    });
+
+    describe('member address', () => {
+        test('encrypts address at rest, round-trips it, and stores show_address', async () => {
+            db.query.mockResolvedValue({ rows: [{ user_id: 'u1' }] });
+
+            await svc.saveMyProfile('u1', {
+                address: '1 Main St, Springfield', show_address: true, listed: true
+            });
+
+            const [sql, params] = db.query.mock.calls[0];
+            expect(sql).toContain('address_encrypted');
+            expect(sql).toContain('show_address');
+            // The encrypted address is somewhere in the params; find it by decrypting.
+            const storedAddress = params.find((p) => {
+                if (typeof p !== 'string') return false;
+                try { return decrypt(p) === '1 Main St, Springfield'; } catch (e) { return false; }
+            });
+            expect(storedAddress).toBeTruthy();
+            expect(storedAddress).not.toBe('1 Main St, Springfield'); // not plaintext
+        });
+
+        test('omits address from a member listing when show_address is false', async () => {
+            mockClient.query
+                .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+                .mockResolvedValueOnce({
+                    rows: [{
+                        user_id: 'u2', first_name: 'Ada', last_name: 'Lovelace', email: 'ada@x.com',
+                        show_phone: false, show_email: false, show_household: false, show_address: false,
+                        phone_encrypted: null, household_encrypted: null,
+                        address_encrypted: encrypt('1 Main St'),
+                        bio: null, interests: null
+                    }]
+                });
+
+            const { profiles } = await svc.listListedProfiles({ page: 1, limit: 20 });
+            expect(profiles[0]).not.toHaveProperty('address');
+        });
+
+        test('exposes decrypted address on a member listing when show_address is true', async () => {
+            mockClient.query
+                .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+                .mockResolvedValueOnce({
+                    rows: [{
+                        user_id: 'u2', first_name: 'Ada', last_name: 'Lovelace', email: 'ada@x.com',
+                        show_phone: false, show_email: false, show_household: false, show_address: true,
+                        phone_encrypted: null, household_encrypted: null,
+                        address_encrypted: encrypt('1 Main St'),
+                        bio: null, interests: null
+                    }]
+                });
+
+            const { profiles } = await svc.listListedProfiles({ page: 1, limit: 20 });
+            expect(profiles[0].address).toBe('1 Main St');
+        });
+
+        test('owner profile round-trips decrypted address and show_address', async () => {
+            db.query.mockResolvedValue({
+                rows: [{
+                    first_name: 'A', last_name: 'B', email: 'a@b.com',
+                    listed: true, show_phone: false, show_email: false, show_household: false, show_address: true,
+                    phone_encrypted: null, household_encrypted: null, address_encrypted: encrypt('5 Elm Ave'),
+                    bio: null, interests: null
+                }]
+            });
+            const p = await svc.getMyProfile('u1');
+            expect(p.address).toBe('5 Elm Ave');
+            expect(p.show_address).toBe(true);
         });
     });
 

@@ -27,7 +27,7 @@
         </section>
     <% } %>
 
-    <% if (profile.email || profile.phone) { %>
+    <% if (profile.email || profile.phone || profile.address) { %>
         <section class="member-section" aria-labelledby="contact-heading">
             <h2 id="contact-heading">Contact</h2>
             <ul class="member-contact">
@@ -36,6 +36,9 @@
                 <% } %>
                 <% if (profile.phone) { %>
                     <li>Phone: <a href="tel:<%= profile.phone %>"><%= profile.phone %></a></li>
+                <% } %>
+                <% if (profile.address) { %>
+                    <li>Address: <%= profile.address %></li>
                 <% } %>
             </ul>
         </section>

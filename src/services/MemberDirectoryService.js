@@ -20,10 +20,11 @@ const FLAG_DEFAULTS = {
     listed: false,
     show_phone: false,
     show_email: false,
-    show_household: false
+    show_household: false,
+    show_address: false
 };
 
-const FIELD_MAX = { phone: 32, household: 200, bio: 500, interests: 200 };
+const FIELD_MAX = { phone: 32, household: 200, address: 200, bio: 500, interests: 200 };
 
 // Only these columns may be cleared by moderation (allow-list — never trust caller input for column names).
 const MODERATABLE_FIELDS = ['bio', 'interests', 'household_encrypted'];
@@ -87,6 +88,7 @@ const shapeForMember = (row) => {
     if (row.show_phone) shaped.phone = safeDecrypt(row.phone_encrypted);
     if (row.show_email) shaped.email = row.email;
     if (row.show_household) shaped.household = safeDecrypt(row.household_encrypted);
+    if (row.show_address) shaped.address = safeDecrypt(row.address_encrypted);
     return shaped;
 };
 
@@ -97,8 +99,8 @@ const shapeForMember = (row) => {
 const getMyProfile = async (userId) => {
     const result = await db.query(
         `SELECT u.first_name, u.last_name, u.email,
-                mp.listed, mp.show_phone, mp.show_email, mp.show_household,
-                mp.phone_encrypted, mp.household_encrypted, mp.bio, mp.interests
+                mp.listed, mp.show_phone, mp.show_email, mp.show_household, mp.show_address,
+                mp.phone_encrypted, mp.household_encrypted, mp.address_encrypted, mp.bio, mp.interests
          FROM users u
          LEFT JOIN member_profiles mp ON mp.user_id = u.id
          WHERE u.id = $1`,
@@ -116,8 +118,10 @@ const getMyProfile = async (userId) => {
         show_phone: row.show_phone || false,
         show_email: row.show_email || false,
         show_household: row.show_household || false,
+        show_address: row.show_address || false,
         phone: safeDecrypt(row.phone_encrypted) || '',
         household: safeDecrypt(row.household_encrypted) || '',
+        address: safeDecrypt(row.address_encrypted) || '',
         bio: row.bio || '',
         interests: row.interests || ''
     };
@@ -136,30 +140,34 @@ const saveMyProfile = async (userId, input = {}) => {
 
     const phone = cleanText(input.phone, FIELD_MAX.phone, 'Phone');
     const household = cleanText(input.household, FIELD_MAX.household, 'Household');
+    const address = cleanText(input.address, FIELD_MAX.address, 'Address');
     const bio = cleanText(input.bio, FIELD_MAX.bio, 'Bio');
     const interests = cleanText(input.interests, FIELD_MAX.interests, 'Interests');
 
     const phoneEncrypted = encrypt(phone);
     const householdEncrypted = encrypt(household);
+    const addressEncrypted = encrypt(address);
 
     const result = await db.query(
         `INSERT INTO member_profiles
-            (user_id, listed, show_phone, show_email, show_household,
-             phone_encrypted, household_encrypted, bio, interests, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+            (user_id, listed, show_phone, show_email, show_household, show_address,
+             phone_encrypted, household_encrypted, address_encrypted, bio, interests, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
          ON CONFLICT (user_id) DO UPDATE SET
             listed = EXCLUDED.listed,
             show_phone = EXCLUDED.show_phone,
             show_email = EXCLUDED.show_email,
             show_household = EXCLUDED.show_household,
+            show_address = EXCLUDED.show_address,
             phone_encrypted = EXCLUDED.phone_encrypted,
             household_encrypted = EXCLUDED.household_encrypted,
+            address_encrypted = EXCLUDED.address_encrypted,
             bio = EXCLUDED.bio,
             interests = EXCLUDED.interests,
             updated_at = NOW()
          RETURNING user_id`,
-        [userId, flags.listed, flags.show_phone, flags.show_email, flags.show_household,
-            phoneEncrypted, householdEncrypted, bio, interests]
+        [userId, flags.listed, flags.show_phone, flags.show_email, flags.show_household, flags.show_address,
+            phoneEncrypted, householdEncrypted, addressEncrypted, bio, interests]
     );
 
     logAudit({
@@ -195,8 +203,8 @@ const listListedProfiles = async ({ search, page = 1, limit = 20 } = {}) => {
     const countQuery = `SELECT COUNT(*) FROM member_profiles mp JOIN users u ON u.id = mp.user_id ${whereString}`;
     const dataQuery = `
         SELECT mp.user_id, u.first_name, u.last_name, u.email,
-               mp.show_phone, mp.show_email, mp.show_household,
-               mp.phone_encrypted, mp.household_encrypted, mp.bio, mp.interests
+               mp.show_phone, mp.show_email, mp.show_household, mp.show_address,
+               mp.phone_encrypted, mp.household_encrypted, mp.address_encrypted, mp.bio, mp.interests
         FROM member_profiles mp
         JOIN users u ON u.id = mp.user_id
         ${whereString}
@@ -239,8 +247,8 @@ const getListedProfile = async (userId) => {
     }
     const result = await db.query(
         `SELECT mp.user_id, u.first_name, u.last_name, u.email,
-                mp.show_phone, mp.show_email, mp.show_household,
-                mp.phone_encrypted, mp.household_encrypted, mp.bio, mp.interests
+                mp.show_phone, mp.show_email, mp.show_household, mp.show_address,
+                mp.phone_encrypted, mp.household_encrypted, mp.address_encrypted, mp.bio, mp.interests
          FROM member_profiles mp
          JOIN users u ON u.id = mp.user_id
          WHERE mp.user_id = $1 AND mp.listed = true`,
@@ -257,8 +265,8 @@ const getListedProfile = async (userId) => {
 const getProfileForAdmin = async (userId) => {
     const result = await db.query(
         `SELECT u.id AS user_id, u.first_name, u.last_name, u.email,
-                mp.listed, mp.show_phone, mp.show_email, mp.show_household,
-                mp.phone_encrypted, mp.household_encrypted, mp.bio, mp.interests
+                mp.listed, mp.show_phone, mp.show_email, mp.show_household, mp.show_address,
+                mp.phone_encrypted, mp.household_encrypted, mp.address_encrypted, mp.bio, mp.interests
          FROM users u
          LEFT JOIN member_profiles mp ON mp.user_id = u.id
          WHERE u.id = $1`,
@@ -275,8 +283,10 @@ const getProfileForAdmin = async (userId) => {
         show_phone: row.show_phone || false,
         show_email: row.show_email || false,
         show_household: row.show_household || false,
+        show_address: row.show_address || false,
         phone: safeDecrypt(row.phone_encrypted),
         household: safeDecrypt(row.household_encrypted),
+        address: safeDecrypt(row.address_encrypted),
         bio: row.bio || null,
         interests: row.interests || null
     };
