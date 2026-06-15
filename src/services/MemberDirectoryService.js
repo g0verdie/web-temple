@@ -21,7 +21,8 @@ const FLAG_DEFAULTS = {
     show_phone: false,
     show_email: false,
     show_household: false,
-    show_address: false
+    show_address: false,
+    show_birthday: false
 };
 
 const FIELD_MAX = { phone: 32, address: 200, bio: 500, interests: 200 };
@@ -104,6 +105,39 @@ const parseHousehold = (decrypted) => {
     return [{ name: String(decrypted).slice(0, HOUSEHOLD_FIELD_MAX.name), relationship: '', birthday: '' }];
 };
 
+// Birthday: stored as a full ISO date (YYYY-MM-DD), encrypted at rest, but only the
+// month and day are ever shown to other members (the year/age stays private — KTD3).
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'];
+
+// Validate caller input into an ISO date string or null. Rejects malformed and
+// future dates. Parsed from the page's <input type="date">, so well-formed in practice.
+const cleanBirthday = (value) => {
+    if (value === undefined || value === null) return null;
+    const s = String(value).trim();
+    if (s.length === 0) return null;
+    if (!validator.isDate(s, { format: 'YYYY-MM-DD', strictMode: true })) {
+        throw new Error('Birthday must be a valid date');
+    }
+    // Lexical ISO compare is timezone-agnostic and good enough for a birthday guard.
+    const todayIso = new Date().toISOString().slice(0, 10);
+    if (s > todayIso) {
+        throw new Error('Birthday cannot be in the future');
+    }
+    return s;
+};
+
+// Member-facing display: month + day only, never the year. Parsed straight from the
+// ISO string (no Date object) to avoid any timezone shift. Returns null on bad input.
+const formatBirthdayMonthDay = (iso) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+    if (!m) return null;
+    const month = parseInt(m[2], 10);
+    const day = parseInt(m[3], 10);
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    return `${MONTH_NAMES[month - 1]} ${day}`;
+};
+
 // Failure-tolerant decrypt: never throw out of a listing render (KTD2).
 const safeDecrypt = (value) => {
     if (!value) return null;
@@ -142,6 +176,7 @@ const shapeForMember = (row) => {
     if (row.show_email) shaped.email = row.email;
     if (row.show_household) shaped.household = parseHousehold(safeDecrypt(row.household_encrypted));
     if (row.show_address) shaped.address = safeDecrypt(row.address_encrypted);
+    if (row.show_birthday) shaped.birthday = formatBirthdayMonthDay(safeDecrypt(row.birthday_encrypted));
     return shaped;
 };
 
@@ -152,8 +187,8 @@ const shapeForMember = (row) => {
 const getMyProfile = async (userId) => {
     const result = await db.query(
         `SELECT u.first_name, u.last_name, u.email,
-                mp.listed, mp.show_phone, mp.show_email, mp.show_household, mp.show_address,
-                mp.phone_encrypted, mp.household_encrypted, mp.address_encrypted, mp.bio, mp.interests
+                mp.listed, mp.show_phone, mp.show_email, mp.show_household, mp.show_address, mp.show_birthday,
+                mp.phone_encrypted, mp.household_encrypted, mp.address_encrypted, mp.birthday_encrypted, mp.bio, mp.interests
          FROM users u
          LEFT JOIN member_profiles mp ON mp.user_id = u.id
          WHERE u.id = $1`,
@@ -172,9 +207,11 @@ const getMyProfile = async (userId) => {
         show_email: row.show_email || false,
         show_household: row.show_household || false,
         show_address: row.show_address || false,
+        show_birthday: row.show_birthday || false,
         phone: safeDecrypt(row.phone_encrypted) || '',
         household: parseHousehold(safeDecrypt(row.household_encrypted)),
         address: safeDecrypt(row.address_encrypted) || '',
+        birthday: safeDecrypt(row.birthday_encrypted) || '',
         bio: row.bio || '',
         interests: row.interests || ''
     };
@@ -193,6 +230,7 @@ const saveMyProfile = async (userId, input = {}) => {
 
     const phone = cleanText(input.phone, FIELD_MAX.phone, 'Phone');
     const address = cleanText(input.address, FIELD_MAX.address, 'Address');
+    const birthday = cleanBirthday(input.birthday);
     const bio = cleanText(input.bio, FIELD_MAX.bio, 'Bio');
     const interests = cleanText(input.interests, FIELD_MAX.interests, 'Interests');
 
@@ -203,12 +241,14 @@ const saveMyProfile = async (userId, input = {}) => {
     const phoneEncrypted = encrypt(phone);
     const householdEncrypted = encrypt(householdJson);
     const addressEncrypted = encrypt(address);
+    const birthdayEncrypted = encrypt(birthday);
 
     const result = await db.query(
         `INSERT INTO member_profiles
             (user_id, listed, show_phone, show_email, show_household, show_address,
-             phone_encrypted, household_encrypted, address_encrypted, bio, interests, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+             phone_encrypted, household_encrypted, address_encrypted, bio, interests,
+             show_birthday, birthday_encrypted, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
          ON CONFLICT (user_id) DO UPDATE SET
             listed = EXCLUDED.listed,
             show_phone = EXCLUDED.show_phone,
@@ -220,10 +260,13 @@ const saveMyProfile = async (userId, input = {}) => {
             address_encrypted = EXCLUDED.address_encrypted,
             bio = EXCLUDED.bio,
             interests = EXCLUDED.interests,
+            show_birthday = EXCLUDED.show_birthday,
+            birthday_encrypted = EXCLUDED.birthday_encrypted,
             updated_at = NOW()
          RETURNING user_id`,
         [userId, flags.listed, flags.show_phone, flags.show_email, flags.show_household, flags.show_address,
-            phoneEncrypted, householdEncrypted, addressEncrypted, bio, interests]
+            phoneEncrypted, householdEncrypted, addressEncrypted, bio, interests,
+            flags.show_birthday, birthdayEncrypted]
     );
 
     logAudit({
@@ -259,8 +302,8 @@ const listListedProfiles = async ({ search, page = 1, limit = 20 } = {}) => {
     const countQuery = `SELECT COUNT(*) FROM member_profiles mp JOIN users u ON u.id = mp.user_id ${whereString}`;
     const dataQuery = `
         SELECT mp.user_id, u.first_name, u.last_name, u.email,
-               mp.show_phone, mp.show_email, mp.show_household, mp.show_address,
-               mp.phone_encrypted, mp.household_encrypted, mp.address_encrypted, mp.bio, mp.interests
+               mp.show_phone, mp.show_email, mp.show_household, mp.show_address, mp.show_birthday,
+               mp.phone_encrypted, mp.household_encrypted, mp.address_encrypted, mp.birthday_encrypted, mp.bio, mp.interests
         FROM member_profiles mp
         JOIN users u ON u.id = mp.user_id
         ${whereString}
@@ -303,8 +346,8 @@ const getListedProfile = async (userId) => {
     }
     const result = await db.query(
         `SELECT mp.user_id, u.first_name, u.last_name, u.email,
-                mp.show_phone, mp.show_email, mp.show_household, mp.show_address,
-                mp.phone_encrypted, mp.household_encrypted, mp.address_encrypted, mp.bio, mp.interests
+                mp.show_phone, mp.show_email, mp.show_household, mp.show_address, mp.show_birthday,
+                mp.phone_encrypted, mp.household_encrypted, mp.address_encrypted, mp.birthday_encrypted, mp.bio, mp.interests
          FROM member_profiles mp
          JOIN users u ON u.id = mp.user_id
          WHERE mp.user_id = $1 AND mp.listed = true`,
@@ -321,8 +364,8 @@ const getListedProfile = async (userId) => {
 const getProfileForAdmin = async (userId) => {
     const result = await db.query(
         `SELECT u.id AS user_id, u.first_name, u.last_name, u.email,
-                mp.listed, mp.show_phone, mp.show_email, mp.show_household, mp.show_address,
-                mp.phone_encrypted, mp.household_encrypted, mp.address_encrypted, mp.bio, mp.interests
+                mp.listed, mp.show_phone, mp.show_email, mp.show_household, mp.show_address, mp.show_birthday,
+                mp.phone_encrypted, mp.household_encrypted, mp.address_encrypted, mp.birthday_encrypted, mp.bio, mp.interests
          FROM users u
          LEFT JOIN member_profiles mp ON mp.user_id = u.id
          WHERE u.id = $1`,
@@ -340,9 +383,11 @@ const getProfileForAdmin = async (userId) => {
         show_email: row.show_email || false,
         show_household: row.show_household || false,
         show_address: row.show_address || false,
+        show_birthday: row.show_birthday || false,
         phone: safeDecrypt(row.phone_encrypted),
         household: parseHousehold(safeDecrypt(row.household_encrypted)),
         address: safeDecrypt(row.address_encrypted),
+        birthday: safeDecrypt(row.birthday_encrypted),
         bio: row.bio || null,
         interests: row.interests || null
     };

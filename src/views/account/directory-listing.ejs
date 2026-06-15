@@ -18,6 +18,12 @@
             </div>
 
             <div class="form-row">
+                <label for="birthday">Birthday</label>
+                <input type="date" id="birthday" name="birthday" value="<%= profile.birthday || '' %>" autocomplete="bday" aria-describedby="birthday-hint">
+                <p class="hint" id="birthday-hint">Other members see only the month and day &mdash; never the year.</p>
+            </div>
+
+            <div class="form-row">
                 <span class="form-label" id="household-label">Household / Family</span>
                 <p class="hint" id="household-hint">Please don't include details about anyone who hasn't agreed to be listed (for example, children).</p>
                 <table class="household-table" id="householdTable" aria-labelledby="household-label" aria-describedby="household-hint">
@@ -88,6 +94,10 @@
                 <label class="checkbox-row">
                     <input type="checkbox" name="show_address" <%= profile.show_address ? 'checked' : '' %>>
                     Show my address
+                </label>
+                <label class="checkbox-row">
+                    <input type="checkbox" name="show_birthday" <%= profile.show_birthday ? 'checked' : '' %>>
+                    Show my birthday (month &amp; day)
                 </label>
                 <label class="checkbox-row">
                     <input type="checkbox" name="show_email" <%= profile.show_email ? 'checked' : '' %>>

@@ -160,12 +160,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const body = {
             phone: form.elements.phone.value.trim(),
             address: form.elements.address.value.trim(),
+            birthday: form.elements.birthday.value,
             household: household.getPeople(),
             bio: form.elements.bio.value.trim(),
             interests: form.elements.interests.value.trim(),
             listed,
             show_phone: form.elements.show_phone.checked,
             show_address: form.elements.show_address.checked,
+            show_birthday: form.elements.show_birthday.checked,
             show_email: form.elements.show_email.checked,
             show_household: showHousehold,
             household_consent: householdConsent

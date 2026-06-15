@@ -33,6 +33,13 @@
         </section>
     <% } %>
 
+    <% if (profile.birthday) { %>
+        <section class="member-section" aria-labelledby="birthday-heading">
+            <h2 id="birthday-heading">Birthday</h2>
+            <p><%= profile.birthday %></p>
+        </section>
+    <% } %>
+
     <% if (profile.email || profile.phone || profile.address) { %>
         <section class="member-section" aria-labelledby="contact-heading">
             <h2 id="contact-heading">Contact</h2>
