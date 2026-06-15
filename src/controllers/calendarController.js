@@ -209,9 +209,28 @@ exports.getCalendarPage = async (req, res) => {
         nextAnchor.setUTCMonth(nextAnchor.getUTCMonth() + 1);
         const monthStr = (d) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
 
+        // Event structured data (schema.org) for the upcoming events in view. Passed
+        // as a top-level layout render local (U6) — viewData keys never reach <head>.
+        const jsonLd = upcoming.length ? {
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            itemListElement: upcoming.map((e, i) => ({
+                '@type': 'ListItem',
+                position: i + 1,
+                item: {
+                    '@type': 'Event',
+                    name: e.title,
+                    startDate: e.date instanceof Date ? e.date.toISOString() : undefined,
+                    description: e.description || undefined,
+                    location: e.location ? { '@type': 'Place', name: e.location } : undefined
+                }
+            }))
+        } : undefined;
+
         res.render('layout', {
             title: 'Calendar',
             description: 'Upcoming services, holidays, and events at Temple B\'nai Israel in Florence, AL. See what\'s happening in our community.',
+            jsonLd,
             bodyView: 'calendar/index',
             stylesheets: CALENDAR_STYLESHEETS,
             viewData: {

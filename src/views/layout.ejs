@@ -13,28 +13,52 @@
     const siteUrl = (typeof baseUrl !== 'undefined' && baseUrl) ? baseUrl : '';
     const canonicalPath = (typeof currentPath !== 'undefined' && currentPath) ? currentPath : '';
     const canonicalUrl = siteUrl + canonicalPath;
-    const ogImage = siteUrl + '/images/tbi-logo.png';
+    const ogImage = siteUrl + '/images/og-share.jpg';
+    // Brand the title with the site name unless the page already includes it
+    // (auth pages suffix the brand themselves — avoid double-branding).
+    const brandedTitle = title.includes(siteName) ? title : `${title} · ${siteName}`;
+    // Sitewide structured data (schema.org PlaceOfWorship), always emitted.
+    const siteJsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'PlaceOfWorship',
+      name: siteName,
+      url: siteUrl || undefined,
+      logo: siteUrl + '/images/tbi-logo.png',
+      image: ogImage,
+      description: defaultDescription,
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: '201 E Hawthorne St',
+        addressLocality: 'Florence',
+        addressRegion: 'AL',
+        postalCode: '35630',
+        addressCountry: 'US'
+      }
+    };
   %>
   <meta name="description" content="<%= metaDescription %>">
+  <% if (typeof noindex !== 'undefined' && noindex) { %>
+    <meta name="robots" content="noindex">
+    <% } %>
   <% if (typeof csrfToken !=='undefined' ) { %>
     <meta name="csrf-token" content="<%= csrfToken %>">
     <% } %>
       <title>
-        <%= title %>
+        <%= brandedTitle %>
       </title>
       <link rel="canonical" href="<%= canonicalUrl %>">
 
       <!-- Open Graph / Facebook -->
       <meta property="og:type" content="website">
       <meta property="og:site_name" content="<%= siteName %>">
-      <meta property="og:title" content="<%= title %>">
+      <meta property="og:title" content="<%= brandedTitle %>">
       <meta property="og:description" content="<%= metaDescription %>">
       <meta property="og:url" content="<%= canonicalUrl %>">
       <meta property="og:image" content="<%= ogImage %>">
 
       <!-- Twitter Card -->
       <meta name="twitter:card" content="summary_large_image">
-      <meta name="twitter:title" content="<%= title %>">
+      <meta name="twitter:title" content="<%= brandedTitle %>">
       <meta name="twitter:description" content="<%= metaDescription %>">
       <meta name="twitter:image" content="<%= ogImage %>">
 
@@ -46,6 +70,12 @@
           <link rel="stylesheet" href="<%= stylesheet %>">
           <% }) %>
             <% } %>
+
+              <!-- Structured data (schema.org). Server-built JSON, not executable script — CSP-safe as data. -->
+              <script type="application/ld+json"><%- JSON.stringify(siteJsonLd) %></script>
+              <% if (typeof jsonLd !== 'undefined' && jsonLd) { %>
+                <script type="application/ld+json"><%- JSON.stringify(jsonLd) %></script>
+                <% } %>
 </head>
 
 <body>

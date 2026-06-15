@@ -36,7 +36,10 @@ function resourceUrlAllowed(url) {
 
 function findViolations(content) {
     const violations = [];
-    if (/<script(?![^>]*\ssrc=)[^>]*>/i.test(content)) violations.push('inline <script> (no src)');
+    // An inline <script> with no src is a violation UNLESS it is structured-data
+    // (type="application/ld+json"), which browsers treat as data, not executable
+    // script — so the strict CSP permits it without a nonce (KTD9).
+    if (/<script(?![^>]*\ssrc=)(?![^>]*\stype=["']application\/ld\+json["'])[^>]*>/i.test(content)) violations.push('inline <script> (no src)');
     if (/<style[\s>]/i.test(content)) violations.push('<style> block');
     if (/\sstyle\s*=\s*["']/i.test(content)) violations.push('inline style= attribute');
     if (/\son[a-z]+\s*=\s*["']/i.test(content)) violations.push('inline on*= event handler');
@@ -81,6 +84,12 @@ describe('CSP view-compliance guard (U7)', () => {
             expect(findViolations('<iframe src="https://www.google.com/maps/embed"></iframe>')).toEqual([]);
             expect(findViolations('<button data-onboarding-complete="false" data-confirm="Sure?">x</button>')).toEqual([]);
             expect(findViolations('<iframe src="<%= activeStream.facebookLiveUrl %>"></iframe>')).toEqual([]);
+        });
+
+        test('passes structured-data application/ld+json scripts (CSP-safe data, KTD9)', () => {
+            expect(findViolations('<script type="application/ld+json">{"@context":"https://schema.org"}</script>')).toEqual([]);
+            // …but a bare inline script is still flagged.
+            expect(findViolations('<script type="text/javascript">alert(1)</script>')).toContain('inline <script> (no src)');
         });
     });
 
