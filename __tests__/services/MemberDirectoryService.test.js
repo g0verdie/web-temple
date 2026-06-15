@@ -154,6 +154,85 @@ describe('MemberDirectoryService', () => {
         });
     });
 
+    describe('member birthday', () => {
+        test('encrypts the full date at rest and stores show_birthday', async () => {
+            db.query.mockResolvedValue({ rows: [{ user_id: 'u1' }] });
+
+            const result = await svc.saveMyProfile('u1', {
+                birthday: '1985-06-15', show_birthday: true, listed: true
+            });
+
+            const [sql, params] = db.query.mock.calls[0];
+            expect(sql).toContain('birthday_encrypted');
+            expect(sql).toContain('show_birthday');
+            const storedBirthday = params.find((p) => {
+                if (typeof p !== 'string') return false;
+                try { return decrypt(p) === '1985-06-15'; } catch (e) { return false; }
+            });
+            expect(storedBirthday).toBeTruthy();
+            expect(storedBirthday).not.toBe('1985-06-15'); // not plaintext
+            expect(result.show_birthday).toBe(true);
+        });
+
+        test('rejects a malformed or future birthday', async () => {
+            await expect(svc.saveMyProfile('u1', { birthday: '2025-13-40' }))
+                .rejects.toThrow(/valid date/i);
+            await expect(svc.saveMyProfile('u1', { birthday: '2999-01-01' }))
+                .rejects.toThrow(/future/i);
+            expect(db.query).not.toHaveBeenCalled();
+        });
+
+        test('shows only month + day to members (never the year) when show_birthday is true', async () => {
+            mockClient.query
+                .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+                .mockResolvedValueOnce({
+                    rows: [{
+                        user_id: 'u2', first_name: 'Ada', last_name: 'Lovelace', email: 'ada@x.com',
+                        show_phone: false, show_email: false, show_household: false, show_address: false, show_birthday: true,
+                        phone_encrypted: null, household_encrypted: null, address_encrypted: null,
+                        birthday_encrypted: encrypt('1985-06-15'),
+                        bio: null, interests: null
+                    }]
+                });
+
+            const { profiles } = await svc.listListedProfiles({ page: 1, limit: 20 });
+            expect(profiles[0].birthday).toBe('June 15');
+            expect(profiles[0].birthday).not.toMatch(/1985/);
+        });
+
+        test('omits birthday from a member listing when show_birthday is false', async () => {
+            mockClient.query
+                .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+                .mockResolvedValueOnce({
+                    rows: [{
+                        user_id: 'u2', first_name: 'Ada', last_name: 'Lovelace', email: 'ada@x.com',
+                        show_phone: false, show_email: false, show_household: false, show_address: false, show_birthday: false,
+                        phone_encrypted: null, household_encrypted: null, address_encrypted: null,
+                        birthday_encrypted: encrypt('1985-06-15'),
+                        bio: null, interests: null
+                    }]
+                });
+
+            const { profiles } = await svc.listListedProfiles({ page: 1, limit: 20 });
+            expect(profiles[0]).not.toHaveProperty('birthday');
+        });
+
+        test('owner profile round-trips the full ISO birthday and show_birthday', async () => {
+            db.query.mockResolvedValue({
+                rows: [{
+                    first_name: 'A', last_name: 'B', email: 'a@b.com',
+                    listed: true, show_phone: false, show_email: false, show_household: false,
+                    show_address: false, show_birthday: true,
+                    phone_encrypted: null, household_encrypted: null, address_encrypted: null,
+                    birthday_encrypted: encrypt('1990-03-09'), bio: null, interests: null
+                }]
+            });
+            const p = await svc.getMyProfile('u1');
+            expect(p.birthday).toBe('1990-03-09'); // owner sees the full date to edit
+            expect(p.show_birthday).toBe(true);
+        });
+    });
+
     describe('structured household', () => {
         test('round-trips a household array (JSON-encrypted at rest) for the owner', async () => {
             const people = [
