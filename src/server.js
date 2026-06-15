@@ -15,6 +15,11 @@ const csurf = require('csurf');
 const jwt = require('jsonwebtoken');
 const sessionTimeout = require('./middleware/sessionTimeout');
 
+// Downstream resources + chat-socket teardown, used by graceful shutdown (U1).
+const { pool } = require('./config/db');
+const redis = require('./config/redis');
+const { closeAllConnections } = require('./services/chatSocketServer');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || 'localhost';
@@ -31,12 +36,17 @@ if (process.env.NODE_ENV !== 'test') {
   metricsService.start();
 }
 
+// Worker stop handles, captured for graceful shutdown. Absent under
+// NODE_ENV==='test' (workers aren't started), so shutdown no-ops on undefined.
+let emailWorker;
+let reminderWorker;
+
 if (process.env.NODE_ENV !== 'test' && process.env.EMAIL_WORKER_ENABLED !== 'false') {
-  startEmailQueueWorker();
+  emailWorker = startEmailQueueWorker();
 }
 
 if (process.env.NODE_ENV !== 'test' && process.env.REMINDER_WORKER_ENABLED !== 'false') {
-  startReminderWorker();
+  reminderWorker = startReminderWorker();
 }
 
 // Request ID middleware - must be first
@@ -288,14 +298,121 @@ app.use((err, req, res, next) => {
   });
 });
 
+// HTTP server + chat WebSocket server handles, captured at module scope so the
+// exported shutdown() can drain and close them. Populated only when this module
+// is the entrypoint (real server); left undefined under tests (which inject
+// mock handles via _setShutdownHandles).
+let server;
+let wss;
+
+const SHUTDOWN_TIMEOUT_MS = 10000;
+let shuttingDown = false;
+
+/**
+ * Graceful shutdown (drain-first), per KTD7. Directly callable by tests.
+ *
+ * Sequence: await server.close()'s drain → detach the upgrade listener +
+ * wss.close() (stop new upgrades) → closeAllConnections() (close live client
+ * sockets) → pool.end() → redis.quit() → worker stop() handles. Each step
+ * tolerates an absent handle (test mode / not-yet-listening). Races a non-unref
+ * process.exit timeout so a hung close can't wedge a deploy.
+ *
+ * Idempotent against duplicate SIGTERM/SIGINT (the shuttingDown guard); the
+ * crash path (U2) does not rely on this guard and arms its own force-exit first.
+ *
+ * @param {string} signal - the originating signal/cause, for logging.
+ * @returns {Promise<void>}
+ */
+async function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.info(`Received ${signal}, starting graceful shutdown`);
+
+  const forceExit = setTimeout(() => {
+    logger.error('Graceful shutdown timed out; forcing exit');
+    process.exit(1);
+  }, SHUTDOWN_TIMEOUT_MS);
+
+  try {
+    // 1. Stop accepting new HTTP requests; await the drain of in-flight ones.
+    if (server) {
+      await new Promise((resolve) => server.close(() => resolve()));
+    }
+
+    // 2. Stop new WS upgrades, then close the upgrade-handling server.
+    if (server && typeof server.removeAllListeners === 'function') {
+      server.removeAllListeners('upgrade');
+    }
+    if (wss && typeof wss.close === 'function') {
+      await new Promise((resolve) => wss.close(() => resolve()));
+    }
+
+    // 3. Close live client sockets (existing chat-socket export).
+    closeAllConnections();
+
+    // 4. Tear down downstream resources, only after requests have drained.
+    if (pool && typeof pool.end === 'function') {
+      await pool.end();
+    }
+    if (redis && typeof redis.quit === 'function') {
+      await redis.quit();
+    }
+
+    // 5. Stop background workers (absent in test mode → skip).
+    if (emailWorker && typeof emailWorker.stop === 'function') {
+      await emailWorker.stop();
+    }
+    if (reminderWorker && typeof reminderWorker.stop === 'function') {
+      await reminderWorker.stop();
+    }
+
+    logger.info('Graceful shutdown complete');
+    clearTimeout(forceExit);
+  } catch (err) {
+    logger.error('Error during graceful shutdown', { error: err && err.message, stack: err && err.stack });
+    clearTimeout(forceExit);
+    throw err;
+  }
+}
+
+/**
+ * Test seam (mirrors the _reset/_inject convention elsewhere in src/): inject
+ * mock runtime handles so the exported shutdown() can be exercised without
+ * binding a real port or starting real workers. Returns the previous handles.
+ */
+function _setShutdownHandles(handles = {}) {
+  ({ server, wss, emailWorker, reminderWorker } = {
+    server: handles.server,
+    wss: handles.wss,
+    emailWorker: handles.emailWorker,
+    reminderWorker: handles.reminderWorker
+  });
+  if (Object.prototype.hasOwnProperty.call(handles, 'shuttingDown')) {
+    shuttingDown = handles.shuttingDown;
+  }
+}
+
 // Start server
-if (require.main === module) {
-  const server = app.listen(PORT, HOST, () => {
+if (process.env.NODE_ENV !== 'test' && require.main === module) {
+  server = app.listen(PORT, HOST, () => {
     logger.info(`✅ Server running at http://${HOST}:${PORT}`);
     logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
   });
   const { initChatSocketServer } = require('./services/chatSocketServer');
-  initChatSocketServer(server);
+  wss = initChatSocketServer(server);
+
+  const onSignal = (signal) => {
+    shutdown(signal)
+      .then(() => process.exit(0))
+      .catch((err) => {
+        logger.error('Graceful shutdown failed', { error: err && err.message });
+        process.exit(1);
+      });
+  };
+  process.on('SIGTERM', () => onSignal('SIGTERM'));
+  process.on('SIGINT', () => onSignal('SIGINT'));
 }
 
 module.exports = app;
+module.exports.shutdown = shutdown;
+module.exports._setShutdownHandles = _setShutdownHandles;
