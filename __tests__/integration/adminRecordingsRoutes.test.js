@@ -72,6 +72,15 @@ describe('Admin Recordings Routes', () => {
         expect(RecordingService.listPendingRecordings).toHaveBeenCalled();
     });
 
+    it('renders a usable 500 page with a real message when the service throws (Item 10)', async () => {
+        RecordingService.listPendingRecordings.mockRejectedValueOnce(new Error('db down'));
+
+        const response = await request(app).get('/admin/recordings');
+
+        expect(response.statusCode).toBe(500);
+        expect(response.text).toContain('Unable to load recordings.');
+    });
+
     it('blocks members from the admin recordings page', async () => {
         const requireAuth = require('../../src/middleware/requireAuth');
         requireAuth.mockImplementationOnce((req, res, next) => {

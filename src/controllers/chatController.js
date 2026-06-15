@@ -188,6 +188,6 @@ exports.getPendingMessagesPage = async (req, res) => {
         });
     } catch (error) {
         logger.error(`Error loading chat moderation page: ${error.message}`);
-        res.status(500).render('error', { error });
+        res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to load chat moderation.' });
     }
 };

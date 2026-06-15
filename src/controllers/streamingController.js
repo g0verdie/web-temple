@@ -25,7 +25,7 @@ exports.listStreams = async (req, res) => {
         });
     } catch (error) {
         logger.error('Error listing streams:', error);
-        res.status(500).render('error', { error });
+        res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to load livestreams.' });
     }
 };
 
@@ -44,7 +44,7 @@ exports.renderCreateForm = async (req, res) => {
         });
     } catch (error) {
         logger.error('Error rendering create form:', error);
-        res.status(500).render('error', { error });
+        res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to load the schedule form.' });
     }
 };
 
@@ -78,7 +78,7 @@ exports.createStream = async (req, res) => {
         }
     } catch (error) {
         logger.error('Error creating stream:', error);
-        res.status(500).render('error', { error });
+        res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to schedule the livestream.' });
     }
 };
 
@@ -104,7 +104,7 @@ exports.renderEditForm = async (req, res) => {
         });
     } catch (error) {
         logger.error('Error rendering edit form:', error);
-        res.status(500).render('error', { error });
+        res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to load the edit form.' });
     }
 };
 
@@ -144,7 +144,7 @@ exports.updateStream = async (req, res) => {
         }
     } catch (error) {
         logger.error('Error updating stream:', error);
-        res.status(500).render('error', { error });
+        res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to update the livestream.' });
     }
 };
 

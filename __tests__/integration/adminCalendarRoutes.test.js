@@ -62,6 +62,13 @@ describe('Admin calendar routes (U3)', () => {
             expect(res.text).toContain('Shabbat');
             expect(EventService.getEvents).toHaveBeenCalledWith(true);
         });
+
+        it('renders a usable 500 page with a real message when the service throws (Item 10)', async () => {
+            EventService.getEvents.mockRejectedValueOnce(new Error('db down'));
+            const res = await request(app).get('/admin/calendar').set('Cookie', [`auth_token=${adminToken}`]);
+            expect(res.status).toBe(500);
+            expect(res.text).toContain('Unable to load calendar events.');
+        });
     });
 
     describe('create', () => {
