@@ -189,11 +189,13 @@ const recordingsRoutes = require('./routes/recordings');
 const calendarRoutes = require('./routes/calendar');
 const directoryRoutes = require('./routes/directory');
 const donationRoutes = require('./routes/donations');
+const watchRoutes = require('./routes/watch');
 
 app.use('/', homeRoutes);
 app.use('/about', aboutRoutes);
 app.use('/contact', contactRoutes);
 app.use('/calendar', calendarRoutes);
+app.use('/watch', watchRoutes);
 app.use('/', pagesRoutes);
 app.use('/admin', adminDashboardRoutes);
 app.use('/admin/pages', adminPagesRoutes);
