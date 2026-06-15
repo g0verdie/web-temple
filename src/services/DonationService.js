@@ -12,6 +12,19 @@ const db = require('../config/db');
 const logger = require('../utils/logger');
 const { encrypt, decrypt } = require('../utils/encryptionHelper');
 const { logAudit, AUDIT_ACTIONS } = require('./auditService');
+const CacheService = require('./CacheService');
+
+// Aggregate-metrics cache (U9/KTD5). ONLY scalar totals are cached — never the
+// decrypted donor rows from listDonations — so Redis holds no PII at rest.
+const CACHE_KEY_MTD = 'donations:metrics:mtd';
+const CACHE_KEY_DASHBOARD = 'donations:metrics:dashboard';
+const METRICS_CACHE_TTL = 90; // seconds
+
+/** Invalidate BOTH metrics keys. Called whenever a completed donation lands. */
+const bustMetricsCache = () => Promise.all([
+    CacheService.del(CACHE_KEY_MTD),
+    CacheService.del(CACHE_KEY_DASHBOARD)
+]).catch((err) => logger.error('Donation metrics cache bust error:', err));
 
 const VALID_TYPES = new Set(['one-time', 'recurring']);
 const VALID_CURRENCIES = new Set(['USD']);
@@ -97,6 +110,9 @@ const finalize = async (id, { transactionId } = {}) => {
     );
     if (result.rows.length === 0) return null; // already finalized or unknown — caller skips side-effects
     const row = result.rows[0];
+    // A new completed donation invalidates both cached metric aggregates (U9/KTD5),
+    // so the next poll/load reflects it rather than a stale tile.
+    await bustMetricsCache();
     // Audit carries id + status only — no plaintext amount or donor PII (KTD10).
     logAudit({
         action: AUDIT_ACTIONS.DONATION_RECEIVED,
@@ -136,8 +152,11 @@ const recordFailure = async ({ amountCents, donationType = 'one-time', isAnonymo
     return result.rows[0];
 };
 
-/** Dashboard metrics — decrypt + aggregate in app (KTD6). */
+/** Dashboard metrics — decrypt + aggregate in app (KTD6), cached 90s (U9). */
 const getDashboardMetrics = async () => {
+    const cached = await CacheService.get(CACHE_KEY_DASHBOARD);
+    if (cached) return cached;
+
     const { rows } = await db.query(
         `SELECT encrypted_amount_cents, encrypted_donor_email, donation_type, is_anonymous, created_at
          FROM donations WHERE status = 'completed' ORDER BY created_at ASC`
@@ -175,7 +194,7 @@ const getDashboardMetrics = async () => {
     }
 
     const mrr = Array.from(recurringByDonor.values()).reduce((s, v) => s + v, 0) + anonymousRecurringCents;
-    return {
+    const metrics = {
         totalAllTimeCents: allTime,
         totalYtdCents: ytd,
         totalMtdCents: mtd,
@@ -184,6 +203,8 @@ const getDashboardMetrics = async () => {
         recurringDonorCount: recurringByDonor.size + anonymousRecurringCount,
         monthlyRecurringRevenueCents: mrr
     };
+    await CacheService.set(CACHE_KEY_DASHBOARD, metrics, METRICS_CACHE_TTL);
+    return metrics;
 };
 
 /**
@@ -193,6 +214,11 @@ const getDashboardMetrics = async () => {
  * boundary computed in JS to match the local zone node-pg parses created_at into.
  */
 const getMtdTotalCents = async () => {
+    // A cached 0 is a valid total (no donations yet this month), so null-check
+    // rather than truthiness — CacheService.get returns null on miss or error.
+    const cached = await CacheService.get(CACHE_KEY_MTD);
+    if (cached !== null) return cached;
+
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const { rows } = await db.query(
@@ -203,6 +229,7 @@ const getMtdTotalCents = async () => {
     for (const r of rows) {
         total += Number(safeDecrypt(r.encrypted_amount_cents)) || 0;
     }
+    await CacheService.set(CACHE_KEY_MTD, total, METRICS_CACHE_TTL);
     return total;
 };
 
