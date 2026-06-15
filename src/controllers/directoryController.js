@@ -1,4 +1,5 @@
 const MemberDirectoryService = require('../services/MemberDirectoryService');
+const logger = require('../utils/logger');
 
 // Normalize query values to strings to avoid array/object edge cases (mirrors recordingController).
 const queryString = (value) => (typeof value === 'string' ? value : '');
@@ -48,7 +49,7 @@ exports.getDirectory = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Error loading member directory:', error);
+        logger.error('Error loading member directory', { error });
         res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to load the directory.' });
     }
 };
@@ -70,7 +71,7 @@ exports.getProfile = async (req, res) => {
             viewData: { profile }
         });
     } catch (error) {
-        console.error('Error loading member profile:', error);
+        logger.error('Error loading member profile', { error });
         res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to load this profile.' });
     }
 };
@@ -85,7 +86,7 @@ exports.dismissNudge = async (req, res) => {
             await MemberDirectoryService.dismissNudge(req.user.id);
         }
     } catch (error) {
-        console.error('Error dismissing directory nudge:', error);
+        logger.error('Error dismissing directory nudge', { error });
     }
     res.redirect('/directory');
 };

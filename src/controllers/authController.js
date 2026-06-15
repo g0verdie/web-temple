@@ -5,6 +5,7 @@ const { renderTemplate } = require('../services/emailTemplateService');
 const { logAudit, AUDIT_ACTIONS } = require('../services/auditService');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const logger = require('../utils/logger');
 
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'test' ? 'test-jwt-secret' : null);
 const JWT_EXPIRES_IN = '30d'; // 30 days for members
@@ -82,7 +83,7 @@ const register = async (req, res) => {
             text: emailContent.text,
             priority: 2 // Medium priority
         }).catch(err => {
-            console.error('Failed to queue welcome email:', err);
+            logger.error('Failed to queue welcome email', { error: err });
             // Don't fail registration if email fails
         });
 
@@ -101,7 +102,7 @@ const register = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Registration error:', error);
+        logger.error('Registration error', { error });
 
         // Handle specific error messages
         if (error.message === 'Email already registered') {
@@ -123,7 +124,7 @@ const register = async (req, res) => {
             action: AUDIT_ACTIONS.USER_REGISTRATION_FAILED,
             description: `Failed registration attempt: ${error.message} (${email})`,
             ip_address: req.ip || req.connection.remoteAddress,
-        }).catch(err => console.error('Audit log error:', err));
+        }).catch(err => logger.error('Audit log error', { error: err }));
 
         res.status(500).json({
             success: false,
@@ -189,7 +190,7 @@ const login = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Login error:', error);
+        logger.error('Login error', { error });
 
         if (error.message.includes('Account is temporarily locked')) {
             return res.status(403).json({
@@ -224,7 +225,7 @@ const logout = async (req, res) => {
                 exp = decoded.exp;
             }
         } catch (e) {
-            console.warn('Failed to decode token during logout:', e);
+            logger.warn('Failed to decode token during logout', { error: e });
         }
     } else if (req.cookies && req.cookies.auth_token) {
         // If user was populated by middleware, we still need jti and exp
@@ -235,7 +236,7 @@ const logout = async (req, res) => {
                 exp = decoded.exp;
             }
         } catch (e) {
-            console.warn('Failed to decode token during logout:', e);
+            logger.warn('Failed to decode token during logout', { error: e });
         }
     }
 
@@ -278,7 +279,7 @@ const requestPasswordReset = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Password reset request error:', error);
+        logger.error('Password reset request error', { error });
         res.status(500).json({
             success: false,
             message: 'An error occurred. Please try again later.'
@@ -313,7 +314,7 @@ const resetPassword = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Password reset error:', error);
+        logger.error('Password reset error', { error });
 
         // Return 400 for known errors to help frontend
         if (error.message.includes('Invalid') || error.message.includes('expired') || error.message.includes('Password') || error.message.includes('password')) {

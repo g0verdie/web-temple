@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const db = require('../config/db');
 const redis = require('../config/redis');
+const logger = require('../utils/logger');
 
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'test' ? 'test-jwt-secret' : null);
 
@@ -78,7 +79,7 @@ const requireAuth = async (req, res, next) => {
         next();
 
     } catch (error) {
-        console.error('requireAuth catch error:', error);
+        logger.error('requireAuth catch error', { error });
         // Clear invalid cookie
         res.clearCookie('auth_token');
 

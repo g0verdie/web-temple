@@ -9,6 +9,7 @@ const { requirePermission } = require('../../middleware/requireRbac');
 const requireAuth = require('../../middleware/requireAuth');
 const sessionTimeout = require('../../middleware/sessionTimeout');
 const { Permissions } = require('../../config/roles-permissions');
+const logger = require('../../utils/logger');
 
 const router = express.Router();
 
@@ -44,7 +45,7 @@ router.get('/:slug', requirePageManagementAccess, async (req, res, next) => {
       viewData: { page, versions, slug },
     });
   } catch (error) {
-    console.error('Error loading admin edit page:', error);
+    logger.error('Error loading admin edit page', { error });
     next(error);
   }
 });
@@ -72,7 +73,7 @@ router.post('/:slug', requirePageManagementAccess, async (req, res, next) => {
       message: 'Page updated successfully',
     });
   } catch (error) {
-    console.error('Error updating page:', error);
+    logger.error('Error updating page', { error });
     res.status(500).json({
       error: 'Failed to update page',
       message: error.message,
@@ -103,7 +104,7 @@ router.post('/:slug/publish', requirePageManagementAccess, async (req, res, next
       message: `Page ${published ? 'published' : 'unpublished'} successfully`,
     });
   } catch (error) {
-    console.error('Error publishing page:', error);
+    logger.error('Error publishing page', { error });
     res.status(500).json({
       error: 'Failed to publish page',
       message: error.message,
@@ -125,7 +126,7 @@ router.get('/:slug/versions', requirePageManagementAccess, async (req, res, next
       versions,
     });
   } catch (error) {
-    console.error('Error fetching version history:', error);
+    logger.error('Error fetching version history', { error });
     res.status(500).json({
       error: 'Failed to fetch version history',
       message: error.message,
@@ -153,7 +154,7 @@ router.post('/:slug/restore/:versionNumber', requirePageManagementAccess, async 
       message: `Page restored to version ${versionNumber}`,
     });
   } catch (error) {
-    console.error('Error restoring version:', error);
+    logger.error('Error restoring version', { error });
     res.status(500).json({
       error: 'Failed to restore version',
       message: error.message,

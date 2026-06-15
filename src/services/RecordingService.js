@@ -44,7 +44,7 @@ const listPendingRecordings = async () => {
         const result = await db.query(query, []);
         return result.rows;
     } catch (error) {
-        console.error('Error listing pending recordings:', error);
+        logger.error('Error listing pending recordings', { error });
         throw error;
     }
 };
@@ -140,7 +140,7 @@ const saveDraft = async (recording, userId) => {
             updatedAt: saved.updated_at
         };
     } catch (error) {
-        console.error('Error saving recording draft:', error);
+        logger.error('Error saving recording draft', { error });
         throw error;
     }
 };
@@ -269,7 +269,7 @@ const publishRecording = async (recording, context) => {
                 html: emailContent.html,
                 text: emailContent.text,
                 priority: 2
-            }).catch(e => console.error('Failed to queue email for recording:', e));
+            }).catch(e => logger.error('Failed to queue email for recording', { error: e }));
         }
 
         // 5. Invalidate archive cache after successful publish
@@ -289,7 +289,7 @@ const publishRecording = async (recording, context) => {
         };
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error('Error publishing recording:', error);
+        logger.error('Error publishing recording', { error });
         throw error;
     } finally {
         client.release();
@@ -382,7 +382,7 @@ const getArchiveRecordings = async (filters, page = 1, limit = 20) => {
             currentPage: page
         };
     } catch (error) {
-        console.error('Error fetching archive recordings:', error);
+        logger.error('Error fetching archive recordings', { error });
         throw error;
     } finally {
         client.release();

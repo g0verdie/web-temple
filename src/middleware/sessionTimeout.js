@@ -17,6 +17,7 @@ const redis = require('../config/redis');
 const { Roles } = require('../config/roles-permissions');
 const sessionService = require('../services/sessionService');
 const jwt = require('jsonwebtoken');
+const logger = require('../utils/logger');
 
 const ADMIN_TIMEOUT_MINUTES = 30;
 const MEMBER_TIMEOUT_MINUTES = 30 * 24 * 60; // 30 days in minutes
@@ -72,7 +73,7 @@ const sessionTimeout = (options = {}) => {
                 lastActivityStr = await redis.get(sessionKey);
             } catch (redisError) {
                 // Redis error - fail-secure: deny access
-                console.error('Session timeout check failed:', redisError);
+                logger.error('Session timeout check failed', { error: redisError });
                 return respondWithError(res, 401, 'Session check failed', req);
             }
 
@@ -100,7 +101,7 @@ const sessionTimeout = (options = {}) => {
                             await sessionService.invalidateSession(null, { jti: decoded.jti, exp: decoded.exp });
                         }
                     } catch (e) {
-                        console.warn('Failed to decode token on session timeout:', e);
+                        logger.warn('Failed to decode token on session timeout', { error: e });
                     }
                 }
                 res.clearCookie('auth_token');
@@ -109,7 +110,7 @@ const sessionTimeout = (options = {}) => {
                 try {
                     await redis.del(sessionKey);
                 } catch (delError) {
-                    console.warn('Failed to delete expired session key:', delError);
+                    logger.warn('Failed to delete expired session key', { error: delError });
                     // Don't fail the response - session is still invalid
                 }
 
@@ -121,7 +122,7 @@ const sessionTimeout = (options = {}) => {
                 await redis.setex(sessionKey, ttlSeconds, String(now));
             } catch (setexError) {
                 // Log but don't fail - allow request with warning
-                console.warn('Failed to refresh session timeout:', setexError);
+                logger.warn('Failed to refresh session timeout', { error: setexError });
             }
 
             // Session is valid, proceed
@@ -129,7 +130,7 @@ const sessionTimeout = (options = {}) => {
 
         } catch (error) {
             // Unexpected error - fail-secure: deny access
-            console.error('Session timeout middleware error:', error);
+            logger.error('Session timeout middleware error', { error });
             return respondWithError(res, 401, 'Session validation error', req);
         }
     };

@@ -4,6 +4,7 @@ const validator = require('validator');
 const { enqueueEmail } = require('./emailQueueService');
 const { renderTemplate } = require('./emailTemplateService');
 const { logAudit, AUDIT_ACTIONS } = require('./auditService');
+const logger = require('../utils/logger');
 
 const DEFAULT_NOTIFICATION_PREFERENCES = {
     announcements: true,
@@ -77,7 +78,7 @@ const updateProfile = async (userId, { first_name, last_name }) => {
         entity_type: 'user',
         entity_id: userId,
         description: 'Profile information updated',
-    }).catch(err => console.error('Audit log error:', err));
+    }).catch(err => logger.error('Audit log error', { error: err }));
 
     return true;
 };
@@ -119,7 +120,7 @@ const updatePreferences = async (userId, preferences) => {
         entity_type: 'user',
         entity_id: userId,
         description: 'Notification preferences updated',
-    }).catch(err => console.error('Audit log error:', err));
+    }).catch(err => logger.error('Audit log error', { error: err }));
 
     return merged;
 };
@@ -155,7 +156,7 @@ const unsubscribeAll = async (userId) => {
         entity_type: 'user',
         entity_id: userId,
         description: 'Unsubscribed from all bulk email notifications',
-    }).catch(err => console.error('Audit log error:', err));
+    }).catch(err => logger.error('Audit log error', { error: err }));
 
     return true;
 };
@@ -228,7 +229,7 @@ const requestEmailChange = async (userId, newEmail) => {
         html: emailContent.html,
         text: emailContent.text,
         priority: 1
-    }).catch((err) => console.error('Failed to queue email change confirmation:', err));
+    }).catch((err) => logger.error('Failed to queue email change confirmation', { error: err }));
 
     logAudit({
         user_id: userId,
@@ -236,7 +237,7 @@ const requestEmailChange = async (userId, newEmail) => {
         entity_type: 'user',
         entity_id: userId,
         description: `Email change requested to: ${newEmail}`,
-    }).catch(err => console.error('Audit log error:', err));
+    }).catch(err => logger.error('Audit log error', { error: err }));
 
     return true;
 };
@@ -318,7 +319,7 @@ const confirmEmailChange = async (token) => {
         entity_type: 'user',
         entity_id: confirmedUserId,
         description: `Email changed to: ${confirmedEmail}`,
-    }).catch(err => console.error('Audit log error:', err));
+    }).catch(err => logger.error('Audit log error', { error: err }));
 
     return true;
 };

@@ -8,6 +8,7 @@
 
 const { hasPermission } = require('../config/roles-permissions');
 const { logAudit } = require('../services/auditService');
+const logger = require('../utils/logger');
 
 /**
  * Create middleware that checks if user has a specific role
@@ -36,7 +37,7 @@ const requireRole = (requiredRole) => {
                 entity_type: 'role_check',
                 description: `Unauthorized access attempt - required role: ${requiredRole}, user role: ${user?.role || 'none'}`,
                 ip_address: req.ip || req.connection?.remoteAddress,
-            }).catch(err => console.error('Audit log error:', err));
+            }).catch(err => logger.error('Audit log error', { error: err }));
 
             if (req.accepts('json')) {
                 return res.status(statusCode).json({
@@ -80,7 +81,7 @@ const requirePermission = (requiredPermission) => {
                 entity_type: 'permission_check',
                 description: `Unauthorized access attempt - required permission: ${requiredPermission}, user role: ${user?.role || 'none'}`,
                 ip_address: req.ip || req.connection?.remoteAddress,
-            }).catch(err => console.error('Audit log error:', err));
+            }).catch(err => logger.error('Audit log error', { error: err }));
 
             if (req.accepts('json')) {
                 return res.status(statusCode).json({
@@ -124,7 +125,7 @@ const requireAnyRole = (allowedRoles) => {
                 entity_type: 'role_check',
                 description: `Unauthorized access attempt - allowed roles: ${allowedRoles.join(', ')}, user role: ${user?.role || 'none'}`,
                 ip_address: req.ip || req.connection?.remoteAddress,
-            }).catch(err => console.error('Audit log error:', err));
+            }).catch(err => logger.error('Audit log error', { error: err }));
 
             if (req.accepts('json')) {
                 return res.status(statusCode).json({
@@ -168,7 +169,7 @@ const requireAnyPermission = (allowedPermissions) => {
                 entity_type: 'permission_check',
                 description: `Unauthorized access attempt - allowed permissions: ${allowedPermissions.join(', ')}, user role: ${user?.role || 'none'}`,
                 ip_address: req.ip || req.connection?.remoteAddress,
-            }).catch(err => console.error('Audit log error:', err));
+            }).catch(err => logger.error('Audit log error', { error: err }));
 
             if (req.accepts('json')) {
                 return res.status(statusCode).json({
@@ -194,7 +195,7 @@ const requireAnyPermission = (allowedPermissions) => {
                 entity_type: 'permission_check',
                 description: `Unauthorized access attempt - allowed permissions: ${allowedPermissions.join(', ')}, user role: ${user.role}`,
                 ip_address: req.ip || req.connection?.remoteAddress,
-            }).catch(err => console.error('Audit log error:', err));
+            }).catch(err => logger.error('Audit log error', { error: err }));
 
             if (req.accepts('json')) {
                 return res.status(statusCode).json({

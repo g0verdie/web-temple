@@ -12,6 +12,7 @@ const userController = require('../controllers/userController');
 const unsubscribeController = require('../controllers/unsubscribeController');
 const authRoutes = require('./auth');
 const StreamingService = require('../services/StreamingService');
+const logger = require('../utils/logger');
 
 // GET /api/stream/status - Public endpoint for homepage polling
 router.get('/stream/status', async (req, res) => {
@@ -19,7 +20,7 @@ router.get('/stream/status', async (req, res) => {
         const stream = await StreamingService.getPublicEmbedMetadata();
         res.json(stream);
     } catch (err) {
-        console.error('API Error (stream status):', err);
+        logger.error('API Error (stream status)', { error: err });
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
@@ -140,7 +141,7 @@ router.get('/admin/backups/status', requireSuperAdminAccess, async (req, res) =>
 
 
     } catch (error) {
-        console.error('API Error:', error);
+        logger.error('API Error', { error });
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });
@@ -169,7 +170,7 @@ router.get('/admin/audit-logs', requireSuperAdminAccess, async (req, res) => {
             offset: parsedOffset
         });
     } catch (error) {
-        console.error('API Error (audit logs):', error);
+        logger.error('API Error (audit logs)', { error });
         res.status(500).json({ error: 'Internal Server Error' });
     }
 });

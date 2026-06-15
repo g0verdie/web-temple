@@ -1,14 +1,15 @@
 const nodemailer = require('nodemailer');
+const logger = require('../utils/logger');
 
 const sendEmail = async (options) => {
     // Basic mock if no SMTP configuration is present
     if (!process.env.SMTP_HOST) {
-        console.log('---------------------------------------------------');
-        console.log('MOCK EMAIL NOTIFICATION');
-        console.log(`To: ${options.to}`);
-        console.log(`Subject: ${options.subject}`);
-        console.log(`Message: ${options.text || options.html}`);
-        console.log('---------------------------------------------------');
+        logger.info('---------------------------------------------------');
+        logger.info('MOCK EMAIL NOTIFICATION');
+        logger.info(`To: ${options.to}`);
+        logger.info(`Subject: ${options.subject}`);
+        logger.info(`Message: ${options.text || options.html}`);
+        logger.info('---------------------------------------------------');
         return Promise.resolve();
     }
 
@@ -29,10 +30,10 @@ const sendEmail = async (options) => {
         };
 
         const info = await transporter.sendMail(mailOptions);
-        console.log('Email sent: %s', info.messageId);
+        logger.info(`Email sent: ${info.messageId}`);
         return info;
     } catch (error) {
-        console.error('Error sending email:', error);
+        logger.error('Error sending email', { error });
         // Do not throw, just log.
         return Promise.resolve();
     }

@@ -7,6 +7,7 @@
 const db = require('../config/db');
 const { sanitizeHtml } = require('../utils/sanitizeHtml');
 const CacheService = require('../services/CacheService');
+const logger = require('../utils/logger');
 
 /**
  * Retrieve a published page by slug
@@ -41,7 +42,7 @@ async function getPublishedPage(slug) {
 
     return page;
   } catch (error) {
-    console.error(`Error retrieving page ${slug}:`, error);
+    logger.error(`Error retrieving page ${slug}`, { error });
     throw error;
   }
 }
@@ -77,7 +78,7 @@ async function getPageForAdmin(slug) {
     page.versions = versionsResult.rows;
     return page;
   } catch (error) {
-    console.error(`Error retrieving page for admin ${slug}:`, error);
+    logger.error(`Error retrieving page for admin ${slug}`, { error });
     throw error;
   }
 }
@@ -157,7 +158,7 @@ async function updatePage(slug, pageData, userId) {
     return updateResult.rows[0];
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error(`Error updating page ${slug}:`, error);
+    logger.error(`Error updating page ${slug}`, { error });
     throw error;
   } finally {
     client.release();
@@ -195,7 +196,7 @@ async function publishPage(slug, published, userId) {
 
     return result.rows[0];
   } catch (error) {
-    console.error(`Error publishing page ${slug}:`, error);
+    logger.error(`Error publishing page ${slug}`, { error });
     throw error;
   }
 }
@@ -217,7 +218,7 @@ async function getVersionHistory(slug) {
     const result = await db.query(query, [slug]);
     return result.rows;
   } catch (error) {
-    console.error(`Error retrieving version history for ${slug}:`, error);
+    logger.error(`Error retrieving version history for ${slug}`, { error });
     throw error;
   }
 }
@@ -288,7 +289,7 @@ async function restoreVersion(slug, versionNumber, userId) {
     };
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error(`Error restoring version for ${slug}:`, error);
+    logger.error(`Error restoring version for ${slug}`, { error });
     throw error;
   } finally {
     client.release();

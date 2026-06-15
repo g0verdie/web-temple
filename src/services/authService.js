@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const { hashPassword, comparePassword } = require('../utils/authHelper');
 const { logAudit, AUDIT_ACTIONS } = require('./auditService');
+const logger = require('../utils/logger');
 
 const LOCKOUT_DURATION_MINUTES = 15;
 
@@ -74,7 +75,7 @@ const registerUser = async (userData) => {
         entity_id: user.id,
         description: `User registered: ${email}`,
         ip_address,
-    }).catch(err => console.error('Audit log error:', err));
+    }).catch(err => logger.error('Audit log error', { error: err }));
 
     return user;
 };
@@ -107,7 +108,7 @@ const authenticateUser = async (credentials) => {
             action: AUDIT_ACTIONS.USER_LOGIN,
             description: `Failed login attempt: user not found (${email})`,
             ip_address,
-        }).catch(err => console.error('Audit log error:', err));
+        }).catch(err => logger.error('Audit log error', { error: err }));
         throw new Error('Invalid email or password');
     }
 
@@ -125,7 +126,7 @@ const authenticateUser = async (credentials) => {
             action: AUDIT_ACTIONS.USER_LOGIN,
             description: `Locked account login attempt: ${email} (locked for ${minutesRemaining} more minutes)`,
             ip_address,
-        }).catch(err => console.error('Audit log error:', err));
+        }).catch(err => logger.error('Audit log error', { error: err }));
 
         throw new Error(`Account is temporarily locked. Please try again in ${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''} (until ${resetTime}).`);
     }
@@ -148,7 +149,7 @@ const authenticateUser = async (credentials) => {
                 action: AUDIT_ACTIONS.USER_LOGIN,
                 description: `Account locked after 5 failed attempts: ${email}`,
                 ip_address,
-            }).catch(err => console.error('Audit log error:', err));
+            }).catch(err => logger.error('Audit log error', { error: err }));
         }
 
         updateQuery += ' WHERE id = $' + (queryParams.length + 1);
@@ -162,7 +163,7 @@ const authenticateUser = async (credentials) => {
             action: AUDIT_ACTIONS.USER_LOGIN,
             description: `Failed login attempt: incorrect password`,
             ip_address,
-        }).catch(err => console.error('Audit log error:', err));
+        }).catch(err => logger.error('Audit log error', { error: err }));
         throw new Error('Invalid email or password');
     }
 
@@ -178,7 +179,7 @@ const authenticateUser = async (credentials) => {
         action: AUDIT_ACTIONS.USER_LOGIN,
         description: `User logged in: ${email}`,
         ip_address,
-    }).catch(err => console.error('Audit log error:', err));
+    }).catch(err => logger.error('Audit log error', { error: err }));
 
     // Return user without password hash
     return {
@@ -245,7 +246,7 @@ const changePassword = async (options) => {
             action: AUDIT_ACTIONS.PASSWORD_CHANGED,
             description: 'Failed password change: current password incorrect',
             ip_address,
-        }).catch(err => console.error('Audit log error:', err));
+        }).catch(err => logger.error('Audit log error', { error: err }));
         throw new Error('Current password is incorrect');
     }
 
@@ -298,7 +299,7 @@ const changePassword = async (options) => {
         entity_id: user_id,
         description: `Password changed for user: ${user.email}`,
         ip_address,
-    }).catch(err => console.error('Audit log error:', err));
+    }).catch(err => logger.error('Audit log error', { error: err }));
 };
 
 /**
@@ -326,7 +327,7 @@ const requestPasswordReset = async (options) => {
             action: AUDIT_ACTIONS.PASSWORD_RESET_REQUESTED,
             description: `Password reset requested for non-existent email: ${email}`,
             ip_address,
-        }).catch(err => console.error('Audit log error:', err));
+        }).catch(err => logger.error('Audit log error', { error: err }));
         return { message: 'If an account exists with this email, a reset link will be sent' };
     }
 
@@ -355,7 +356,7 @@ const requestPasswordReset = async (options) => {
         entity_id: user.id,
         description: `Password reset requested for: ${email}`,
         ip_address,
-    }).catch(err => console.error('Audit log error:', err));
+    }).catch(err => logger.error('Audit log error', { error: err }));
 
     // Send reset email via queue
     const { enqueueEmail } = require('./emailQueueService');
@@ -374,7 +375,7 @@ const requestPasswordReset = async (options) => {
         html: emailContent.html,
         text: emailContent.text,
         priority: 1 // High priority
-    }).catch(err => console.error('Failed to queue reset email:', err));
+    }).catch(err => logger.error('Failed to queue reset email', { error: err }));
 
     return {
         message: 'If an account exists with this email, a reset link will be sent'
@@ -410,7 +411,7 @@ const resetPassword = async (options) => {
             action: AUDIT_ACTIONS.PASSWORD_RESET,
             description: 'Password reset failed: invalid token',
             ip_address,
-        }).catch(err => console.error('Audit log error:', err));
+        }).catch(err => logger.error('Audit log error', { error: err }));
         throw new Error('Invalid or expired password reset token');
     }
 
@@ -423,7 +424,7 @@ const resetPassword = async (options) => {
             action: AUDIT_ACTIONS.PASSWORD_RESET,
             description: 'Password reset failed: token already used',
             ip_address,
-        }).catch(err => console.error('Audit log error:', err));
+        }).catch(err => logger.error('Audit log error', { error: err }));
         throw new Error('Invalid or expired password reset token');
     }
 
@@ -434,7 +435,7 @@ const resetPassword = async (options) => {
             action: AUDIT_ACTIONS.PASSWORD_RESET,
             description: 'Password reset failed: token expired',
             ip_address,
-        }).catch(err => console.error('Audit log error:', err));
+        }).catch(err => logger.error('Audit log error', { error: err }));
         throw new Error('Invalid or expired password reset token');
     }
 
@@ -504,7 +505,7 @@ const resetPassword = async (options) => {
             entity_id: resetRequest.user_id,
             description: `Password reset successful for: ${resetRequest.email}`,
             ip_address,
-        }).catch(err => console.error('Audit log error:', err));
+        }).catch(err => logger.error('Audit log error', { error: err }));
 
         // Send confirmation email
         const { enqueueEmail } = require('./emailQueueService');
@@ -519,7 +520,7 @@ const resetPassword = async (options) => {
             html: emailContent.html,
             text: emailContent.text,
             priority: 1
-        }).catch(err => console.error('Failed to queue confirmation email:', err));
+        }).catch(err => logger.error('Failed to queue confirmation email', { error: err }));
 
         return { success: true };
 
