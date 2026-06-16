@@ -6,6 +6,11 @@ const logger = require('../utils/logger');
 const CACHE_KEY = 'stream:public-embed';
 const CACHE_TTL_SECONDS = 30;
 const DEFAULT_TITLE = "Temple B'nai Israel Live Service";
+// Auto-expiry safety net: an 'active' stream is only treated as live for this many
+// hours after the admin took it live (live_started_at). Past the window a forgotten
+// 'active' row stops showing "LIVE NOW" — Facebook embeds can't be health-probed, so
+// the honest live signal is admin-asserted AND time-bounded. Override per-deploy.
+const DEFAULT_MAX_LIVE_HOURS = 4;
 const DEFAULT_FALLBACK_URL = "https://www.facebook.com/share/18jfSPTgMw/";
 
 const parseBoolean = (value) => typeof value === 'string' && value.toLowerCase() === 'true';
@@ -121,9 +126,15 @@ class StreamingService {
         } else {
             // Check database first for an active or upcoming scheduled stream
             try {
-                // Find active stream
+                // Find a genuinely-live stream: status='active' AND taken live (live_started_at)
+                // within the live window. A stale/forgotten 'active' row (NULL or expired
+                // live_started_at) is NOT live — this is the auto-expiry safety net. The cutoff
+                // is computed in SQL relative to NOW() (passing only the hours as a number) so
+                // it stays correct regardless of the Node process / DB session timezone.
+                const maxLiveHours = Number(process.env.STREAM_MAX_LIVE_HOURS) || DEFAULT_MAX_LIVE_HOURS;
                 const activeResult = await db.query(
-                    "SELECT * FROM scheduled_streams WHERE status = 'active' ORDER BY updated_at DESC LIMIT 1"
+                    "SELECT * FROM scheduled_streams WHERE status = 'active' AND live_started_at IS NOT NULL AND live_started_at > NOW() - ($1::double precision * INTERVAL '1 hour') ORDER BY live_started_at DESC LIMIT 1",
+                    [maxLiveHours]
                 );
                 
                 if (activeResult.rows.length > 0) {
@@ -387,9 +398,11 @@ class StreamingService {
             }
         }
 
+        // live_started_at stamps the explicit "Go Live" moment; the public homepage
+        // requires it to be within STREAM_MAX_LIVE_HOURS to show the stream as live.
         const query = `
             UPDATE scheduled_streams
-            SET status = 'active', updated_at = NOW()
+            SET status = 'active', live_started_at = NOW(), updated_at = NOW()
             WHERE id = $1
             RETURNING *
         `;
