@@ -177,7 +177,17 @@ const createTagStack = () => {
         const btn = event.target.closest('.tag-chip-remove');
         if (!btn) return;
         const index = parseInt(btn.dataset.index, 10);
-        if (!Number.isNaN(index)) { tags.splice(index, 1); render(); }
+        if (Number.isNaN(index)) return;
+        tags.splice(index, 1);
+        render();
+        // Keep keyboard focus sensible after the chip is gone: land on the chip that
+        // shifted into its place (or the last one), else the entry input.
+        const removeButtons = stack.querySelectorAll('.tag-chip-remove');
+        if (removeButtons.length === 0) {
+            if (entry) entry.focus();
+        } else {
+            removeButtons[Math.min(index, removeButtons.length - 1)].focus();
+        }
     });
 
     if (entry) {

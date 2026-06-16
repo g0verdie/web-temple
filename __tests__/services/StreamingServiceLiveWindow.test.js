@@ -53,7 +53,7 @@ describe('getPublicEmbedMetadata live window (items 1 & 2)', () => {
         const [sql, params] = db.query.mock.calls[0];
         expect(sql).toMatch(/live_started_at IS NOT NULL/);
         expect(sql).toMatch(/live_started_at > NOW\(\)/);
-        expect(params).toEqual([4]); // default STREAM_MAX_LIVE_HOURS
+        expect(params).toEqual([8]); // default STREAM_MAX_LIVE_HOURS
     });
 
     it('is offline when the window query returns no row (stale/expired active stream filtered out)', async () => {

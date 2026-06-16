@@ -174,3 +174,14 @@
 .member-card.is-hidden {
     display: none;
 }
+
+/* Shown only when the listing exceeds the single-page browse cap (rare). */
+.directory-truncated-note {
+    margin: 0.5rem 0 1rem;
+    padding: 0.6rem 0.9rem;
+    background: #fff8e1;
+    border: 1px solid var(--color-gold, #d69e2e);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: var(--color-text, #2d3748);
+}

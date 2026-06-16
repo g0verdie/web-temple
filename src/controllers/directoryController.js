@@ -56,6 +56,8 @@ exports.getDirectory = async (req, res) => {
                 currentPage: result.currentPage,
                 totalPages: result.totalPages,
                 totalCount: result.totalCount,
+                truncated: result.totalCount > BROWSE_LIMIT,
+                browseLimit: BROWSE_LIMIT,
                 filters: { search },
                 showNudge,
                 csrfToken: req.csrfToken ? req.csrfToken() : null

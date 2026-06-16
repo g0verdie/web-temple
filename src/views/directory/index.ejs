@@ -23,6 +23,10 @@
         <p class="directory-search-status" id="directorySearchStatus" role="status" aria-live="polite"></p>
     </div>
 
+    <% if (typeof truncated !== 'undefined' && truncated) { %>
+        <p class="directory-truncated-note" role="status">Showing the first <%= browseLimit %> members. Some listings aren't shown here — use a more specific search to find a member.</p>
+    <% } %>
+
     <div class="directory-results">
         <% if (profiles && profiles.length > 0) { %>
             <ul class="member-list" id="memberList">

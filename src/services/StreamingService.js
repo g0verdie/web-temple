@@ -9,8 +9,14 @@ const DEFAULT_TITLE = "Temple B'nai Israel Live Service";
 // Auto-expiry safety net: an 'active' stream is only treated as live for this many
 // hours after the admin took it live (live_started_at). Past the window a forgotten
 // 'active' row stops showing "LIVE NOW" — Facebook embeds can't be health-probed, so
-// the honest live signal is admin-asserted AND time-bounded. Override per-deploy.
-const DEFAULT_MAX_LIVE_HOURS = 4;
+// the honest live signal is admin-asserted AND time-bounded.
+// The window must exceed the longest CONTINUOUS broadcast (so a real service is never
+// dropped mid-stream) while still clearing a forgotten stream the same night. 8h covers
+// even a long High Holy Day service yet clears an overnight-forgotten row by morning.
+// Override per-deploy via STREAM_MAX_LIVE_HOURS for unusually long broadcasts. (A
+// stream that genuinely runs past the window can be recovered by starting a fresh one,
+// which auto-completes the stale row — see activateScheduledStream.)
+const DEFAULT_MAX_LIVE_HOURS = 8;
 const DEFAULT_FALLBACK_URL = "https://www.facebook.com/share/18jfSPTgMw/";
 
 const parseBoolean = (value) => typeof value === 'string' && value.toLowerCase() === 'true';

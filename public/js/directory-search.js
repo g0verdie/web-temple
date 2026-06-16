@@ -6,8 +6,25 @@
  */
 document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('directorySearchInput');
+
+    // If we arrived via a server-side ?search= (no-JS fallback or a shared link), only the
+    // matching subset was rendered. Re-fetch the full directory so live filtering owns the
+    // whole list, carrying the term across the reload so it stays applied.
+    const serverSearch = new URLSearchParams(window.location.search).get('search');
+    if (input && serverSearch) {
+        try { sessionStorage.setItem('directorySearch', serverSearch); } catch (e) { /* sessionStorage unavailable */ }
+        window.location.replace('/directory');
+        return;
+    }
+
     const list = document.getElementById('memberList');
     if (!input || !list) return; // empty directory or no-results page: nothing to filter
+
+    // Restore a term carried across the redirect above and let the client filter apply it.
+    try {
+        const carried = sessionStorage.getItem('directorySearch');
+        if (carried) { sessionStorage.removeItem('directorySearch'); input.value = carried; }
+    } catch (e) { /* sessionStorage unavailable */ }
 
     const status = document.getElementById('directorySearchStatus');
     const emptyMsg = document.getElementById('directoryLiveEmpty');

@@ -539,5 +539,35 @@ describe('MemberDirectoryService', () => {
             expect(json[0].Phone).toBe('555-9999');
             expect(json[0].Email).toBe(''); // hidden → empty, not the real value
         });
+
+        test('flattens a shown household to "Name (Relationship); …" in the export', async () => {
+            const household = JSON.stringify([
+                { name: 'Dana', relationship: 'Spouse', birthday: '' },
+                { name: 'Sam', relationship: '', birthday: '' }
+            ]);
+            db.query.mockResolvedValue({ rows: [{
+                user_id: 'u1', first_name: 'Lin', last_name: 'Listed', email: 'lin@x.com',
+                show_phone: false, show_email: false, show_household: true, show_address: false, show_birthday: false,
+                phone_encrypted: null, household_encrypted: encrypt(household), address_encrypted: null, birthday_encrypted: null,
+                bio: null, interests: null
+            }] });
+
+            const profiles = await svc.listAllForExport();
+            expect(svc.toExportJson(profiles)[0].Household).toBe('Dana (Spouse); Sam');
+            expect(svc.toCsv(profiles)).toContain('Dana (Spouse); Sam');
+        });
+
+        test('omits a hidden household from the export', async () => {
+            db.query.mockResolvedValue({ rows: [{
+                user_id: 'u2', first_name: 'Pat', last_name: 'Private', email: 'pat@x.com',
+                show_phone: false, show_email: false, show_household: false, show_address: false, show_birthday: false,
+                phone_encrypted: null,
+                household_encrypted: encrypt(JSON.stringify([{ name: 'Secret', relationship: 'Spouse', birthday: '' }])),
+                address_encrypted: null, birthday_encrypted: null, bio: null, interests: null
+            }] });
+
+            const json = svc.toExportJson(await svc.listAllForExport());
+            expect(json[0].Household).toBe('');
+        });
     });
 });
