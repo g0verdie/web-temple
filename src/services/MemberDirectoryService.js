@@ -110,30 +110,45 @@ const parseHousehold = (decrypted) => {
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
 
-// Validate caller input into an ISO date string or null. Rejects malformed and
-// future dates. Parsed from the page's <input type="date">, so well-formed in practice.
+// Validate caller input into a stored birthday string or null. The YEAR IS OPTIONAL:
+//  - 'YYYY-MM-DD' (full date) — validated strictly and rejected if in the future.
+//  - 'MM-DD'      (month + day only, year omitted) — validated against a leap year so
+//                 Feb 29 is allowed; no future check (a month/day has no year to compare).
+// Members only ever see the month + day, so omitting the year keeps the age private by
+// construction. Parsed from the page's month/day/(optional year) fields.
 const cleanBirthday = (value) => {
     if (value === undefined || value === null) return null;
     const s = String(value).trim();
     if (s.length === 0) return null;
-    if (!validator.isDate(s, { format: 'YYYY-MM-DD', strictMode: true })) {
-        throw new Error('Birthday must be a valid date');
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+        if (!validator.isDate(s, { format: 'YYYY-MM-DD', strictMode: true })) {
+            throw new Error('Birthday must be a valid date');
+        }
+        // Lexical ISO compare is timezone-agnostic and good enough for a birthday guard.
+        const todayIso = new Date().toISOString().slice(0, 10);
+        if (s > todayIso) {
+            throw new Error('Birthday cannot be in the future');
+        }
+        return s;
     }
-    // Lexical ISO compare is timezone-agnostic and good enough for a birthday guard.
-    const todayIso = new Date().toISOString().slice(0, 10);
-    if (s > todayIso) {
-        throw new Error('Birthday cannot be in the future');
+    if (/^\d{2}-\d{2}$/.test(s)) {
+        // 2000 is a leap year, so a Feb 29 birthday (year unknown) is accepted.
+        if (!validator.isDate(`2000-${s}`, { format: 'YYYY-MM-DD', strictMode: true })) {
+            throw new Error('Birthday must be a valid date');
+        }
+        return s;
     }
-    return s;
+    throw new Error('Birthday must be a valid date');
 };
 
-// Member-facing display: month + day only, never the year. Parsed straight from the
-// ISO string (no Date object) to avoid any timezone shift. Returns null on bad input.
-const formatBirthdayMonthDay = (iso) => {
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+// Member-facing display: month + day only, never the year. Accepts both the full
+// 'YYYY-MM-DD' and the year-less 'MM-DD' stored forms. Parsed straight from the string
+// (no Date object) to avoid any timezone shift. Returns null on bad input.
+const formatBirthdayMonthDay = (value) => {
+    const m = /^(?:\d{4}-)?(\d{2})-(\d{2})$/.exec(String(value || ''));
     if (!m) return null;
-    const month = parseInt(m[2], 10);
-    const day = parseInt(m[3], 10);
+    const month = parseInt(m[1], 10);
+    const day = parseInt(m[2], 10);
     if (month < 1 || month > 12 || day < 1 || day > 31) return null;
     return `${MONTH_NAMES[month - 1]} ${day}`;
 };

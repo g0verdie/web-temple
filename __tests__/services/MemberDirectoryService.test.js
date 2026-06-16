@@ -182,6 +182,39 @@ describe('MemberDirectoryService', () => {
             expect(db.query).not.toHaveBeenCalled();
         });
 
+        test('accepts a year-less MM-DD birthday (year is optional) and stores it encrypted', async () => {
+            db.query.mockResolvedValue({ rows: [{ user_id: 'u1' }] });
+            await svc.saveMyProfile('u1', { birthday: '02-29', show_birthday: true, listed: true });
+            const [, params] = db.query.mock.calls[0];
+            const stored = params.find((p) => {
+                if (typeof p !== 'string') return false;
+                try { return decrypt(p) === '02-29'; } catch (e) { return false; }
+            });
+            expect(stored).toBeTruthy(); // Feb 29 allowed (leap-year validated), year omitted
+            expect(stored).not.toBe('02-29'); // not plaintext
+        });
+
+        test('rejects an invalid year-less birthday (e.g. month 13)', async () => {
+            await expect(svc.saveMyProfile('u1', { birthday: '13-01' }))
+                .rejects.toThrow(/valid date/i);
+            expect(db.query).not.toHaveBeenCalled();
+        });
+
+        test('shows month + day for a year-less stored birthday', async () => {
+            mockClient.query
+                .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+                .mockResolvedValueOnce({
+                    rows: [{
+                        user_id: 'u3', first_name: 'Bea', last_name: 'Day', email: 'bea@x.com',
+                        show_phone: false, show_email: false, show_household: false, show_address: false, show_birthday: true,
+                        phone_encrypted: null, household_encrypted: null, address_encrypted: null,
+                        birthday_encrypted: encrypt('06-15'), bio: null, interests: null
+                    }]
+                });
+            const { profiles } = await svc.listListedProfiles({ page: 1, limit: 20 });
+            expect(profiles[0].birthday).toBe('June 15');
+        });
+
         test('shows only month + day to members (never the year) when show_birthday is true', async () => {
             mockClient.query
                 .mockResolvedValueOnce({ rows: [{ count: '1' }] })
