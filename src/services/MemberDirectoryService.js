@@ -56,11 +56,14 @@ const cleanText = (value, max, name) => {
 // It is stored as an encrypted JSON array (see migration 018 / household_encrypted).
 const HOUSEHOLD_MAX_PEOPLE = 20;
 const HOUSEHOLD_FIELD_MAX = { name: 80, relationship: 60 };
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+// A household member's birthday, like the member's own, may omit the year: accept either
+// 'YYYY-MM-DD' (full) or 'MM-DD' (year omitted). Members only ever see month + day.
+const HOUSEHOLD_BIRTHDAY = /^(?:\d{4}-)?\d{2}-\d{2}$/;
 
 // Normalize caller input (array, or a JSON string the client pre-serialized) into a
-// clean array of people. Trims fields, drops entries with no name, clears non-ISO
-// birthdays, and caps the list length. Returns [] for empty/invalid input.
+// clean array of people. Trims fields, drops entries with no name, clears malformed
+// birthdays (keeps year-optional 'MM-DD' or full 'YYYY-MM-DD'), and caps the list
+// length. Returns [] for empty/invalid input.
 const normalizeHousehold = (value) => {
     let arr = value;
     if (typeof arr === 'string') {
@@ -82,7 +85,7 @@ const normalizeHousehold = (value) => {
         if (!name) continue; // a person without a name is not a person
         const relationship = String(entry.relationship || '').trim().slice(0, HOUSEHOLD_FIELD_MAX.relationship);
         const rawBirthday = String(entry.birthday || '').trim();
-        const birthday = ISO_DATE.test(rawBirthday) ? rawBirthday : '';
+        const birthday = HOUSEHOLD_BIRTHDAY.test(rawBirthday) ? rawBirthday : '';
         people.push({ name, relationship, birthday });
         if (people.length >= HOUSEHOLD_MAX_PEOPLE) break;
     }
@@ -189,7 +192,12 @@ const shapeForMember = (row) => {
     };
     if (row.show_phone) shaped.phone = safeDecrypt(row.phone_encrypted);
     if (row.show_email) shaped.email = row.email;
-    if (row.show_household) shaped.household = parseHousehold(safeDecrypt(row.household_encrypted));
+    if (row.show_household) {
+        // Other members see each household member's month + day only — never the year
+        // (mirrors the member's own birthday). The owner/admin views keep the raw value.
+        shaped.household = parseHousehold(safeDecrypt(row.household_encrypted))
+            .map((person) => ({ ...person, birthday: formatBirthdayMonthDay(person.birthday) || '' }));
+    }
     if (row.show_address) shaped.address = safeDecrypt(row.address_encrypted);
     if (row.show_birthday) shaped.birthday = formatBirthdayMonthDay(safeDecrypt(row.birthday_encrypted));
     return shaped;

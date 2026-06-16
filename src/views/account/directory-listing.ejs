@@ -72,8 +72,18 @@
                         <input type="text" id="hm-relationship" maxlength="60" placeholder="e.g. Spouse, Child">
                     </div>
                     <div class="form-row">
-                        <label for="hm-birthday">Birthday (optional)</label>
-                        <input type="date" id="hm-birthday">
+                        <span class="form-label" id="hm-birthday-label">Birthday (optional)</span>
+                        <div class="birthday-fields" role="group" aria-labelledby="hm-birthday-label">
+                            <select id="hm-birthday-month" aria-label="Birth month">
+                                <option value="">Month</option>
+                                <% ['January','February','March','April','May','June','July','August','September','October','November','December'].forEach(function (name, i) { %><option value="<%= String(i + 1).padStart(2, '0') %>"><%= name %></option><% }); %>
+                            </select>
+                            <select id="hm-birthday-day" aria-label="Birth day">
+                                <option value="">Day</option>
+                                <% for (let d = 1; d <= 31; d++) { %><option value="<%= String(d).padStart(2, '0') %>"><%= d %></option><% } %>
+                            </select>
+                            <input type="number" id="hm-birthday-year" inputmode="numeric" min="1900" max="<%= new Date().getFullYear() %>" placeholder="Year (optional)" aria-label="Birth year (optional)">
+                        </div>
                     </div>
                     <p class="form-message error" id="householdModalError" role="alert"></p>
                     <div class="household-modal-actions">

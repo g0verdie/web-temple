@@ -30,6 +30,24 @@ const showMessage = (element, message, type) => {
     element.className = `form-message ${type}`;
 };
 
+// Compose month/day/(optional year) fields into the stored birthday form — '' (none),
+// 'MM-DD' (year omitted), or 'YYYY-MM-DD' (full). Throws a friendly message on a partial
+// entry. Shared by the member's own birthday and each household member's birthday.
+const composeBirthday = (monthRaw, dayRaw, yearRaw) => {
+    const month = (monthRaw || '').trim();
+    const day = (dayRaw || '').trim();
+    const year = (yearRaw || '').trim();
+    if (!month && !day && !year) return '';
+    if (!month || !day) {
+        throw new Error('Please choose both a month and a day for the birthday (the year is optional).');
+    }
+    if (year) {
+        if (!/^\d{4}$/.test(year)) throw new Error('Please enter a 4-digit birth year, or leave it blank.');
+        return `${year}-${month}-${day}`;
+    }
+    return `${month}-${day}`;
+};
+
 // Structured household editor: an in-memory array of { name, relationship, birthday }
 // rendered into a table, edited through a modal, and serialized into a hidden input
 // on submit. All DOM text goes through textContent — no HTML injection, CSP-clean.
@@ -89,7 +107,9 @@ const createHouseholdEditor = () => {
     const cancelBtn = document.getElementById('householdModalCancel');
     const nameInput = document.getElementById('hm-name');
     const relInput = document.getElementById('hm-relationship');
-    const bdayInput = document.getElementById('hm-birthday');
+    const bdayMonth = document.getElementById('hm-birthday-month');
+    const bdayDay = document.getElementById('hm-birthday-day');
+    const bdayYear = document.getElementById('hm-birthday-year');
     const modalError = document.getElementById('householdModalError');
 
     const closeModal = () => {
@@ -99,7 +119,9 @@ const createHouseholdEditor = () => {
     const openModal = () => {
         if (nameInput) nameInput.value = '';
         if (relInput) relInput.value = '';
-        if (bdayInput) bdayInput.value = '';
+        if (bdayMonth) bdayMonth.value = '';
+        if (bdayDay) bdayDay.value = '';
+        if (bdayYear) bdayYear.value = '';
         if (modalError) modalError.textContent = '';
         if (modal) modal.removeAttribute('hidden');
         if (nameInput) nameInput.focus();
@@ -114,10 +136,17 @@ const createHouseholdEditor = () => {
                 if (modalError) modalError.textContent = 'Please enter a name.';
                 return;
             }
+            let birthday;
+            try {
+                birthday = composeBirthday(bdayMonth?.value, bdayDay?.value, bdayYear?.value);
+            } catch (err) {
+                if (modalError) modalError.textContent = err.message;
+                return;
+            }
             people.push({
                 name,
                 relationship: (relInput?.value || '').trim(),
-                birthday: (bdayInput?.value || '').trim()
+                birthday
             });
             render();
             closeModal();
@@ -210,20 +239,11 @@ const createTagStack = () => {
 // Birthday (item 3): year is OPTIONAL. Compose the month/day/(optional year) fields into
 // the stored form — '' (none), 'MM-DD' (year omitted), or 'YYYY-MM-DD' (full). Throws a
 // friendly message on a partial entry (month or day missing).
-const readBirthday = () => {
-    const month = (document.getElementById('birthday_month')?.value || '').trim();
-    const day = (document.getElementById('birthday_day')?.value || '').trim();
-    const year = (document.getElementById('birthday_year')?.value || '').trim();
-    if (!month && !day && !year) return '';
-    if (!month || !day) {
-        throw new Error('Please choose both a month and a day for your birthday (the year is optional).');
-    }
-    if (year) {
-        if (!/^\d{4}$/.test(year)) throw new Error('Please enter a 4-digit birth year, or leave it blank.');
-        return `${year}-${month}-${day}`;
-    }
-    return `${month}-${day}`;
-};
+const readBirthday = () => composeBirthday(
+    document.getElementById('birthday_month')?.value,
+    document.getElementById('birthday_day')?.value,
+    document.getElementById('birthday_year')?.value
+);
 
 // Populate the birthday fields from the stored value ('YYYY-MM-DD' or 'MM-DD').
 const seedBirthday = () => {

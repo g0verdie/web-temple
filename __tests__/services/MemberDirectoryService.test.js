@@ -326,6 +326,38 @@ describe('MemberDirectoryService', () => {
             expect(profiles[0].household).toEqual(people);
         });
 
+        test('keeps a year-less MM-DD household birthday on save (year optional)', async () => {
+            db.query.mockResolvedValue({ rows: [{ user_id: 'u1' }] });
+            await svc.saveMyProfile('u1', {
+                household: [{ name: 'Dana', relationship: 'Spouse', birthday: '05-01' }]
+            });
+            const stored = JSON.parse(decrypt(db.query.mock.calls[0][1][7]));
+            expect(stored).toEqual([{ name: 'Dana', relationship: 'Spouse', birthday: '05-01' }]);
+        });
+
+        test('member listing shows household birthdays as month + day only (year hidden)', async () => {
+            const people = [
+                { name: 'Dana', relationship: 'Spouse', birthday: '1980-05-01' }, // full date → May 1
+                { name: 'Sam', relationship: 'Child', birthday: '12-25' }         // year-less → December 25
+            ];
+            mockClient.query
+                .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+                .mockResolvedValueOnce({
+                    rows: [{
+                        user_id: 'u2', first_name: 'Ada', last_name: 'Lovelace', email: 'ada@x.com',
+                        show_phone: false, show_email: false, show_household: true, show_address: false,
+                        phone_encrypted: null, household_encrypted: encrypt(JSON.stringify(people)),
+                        address_encrypted: null, bio: null, interests: null
+                    }]
+                });
+            const { profiles } = await svc.listListedProfiles({ page: 1, limit: 20 });
+            expect(profiles[0].household).toEqual([
+                { name: 'Dana', relationship: 'Spouse', birthday: 'May 1' },
+                { name: 'Sam', relationship: 'Child', birthday: 'December 25' }
+            ]);
+            expect(JSON.stringify(profiles[0].household)).not.toContain('1980'); // year never leaks
+        });
+
         test('save normalizes and drops blank-name household entries', async () => {
             db.query.mockResolvedValue({ rows: [{ user_id: 'u1' }] });
             await svc.saveMyProfile('u1', {
