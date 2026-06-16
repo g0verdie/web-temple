@@ -2,10 +2,14 @@ const request = require('supertest');
 const app = require('../../src/server');
 const db = require('../../src/config/db');
 const MemberDirectoryService = require('../../src/services/MemberDirectoryService');
+const userService = require('../../src/services/userService');
 const jwt = require('jsonwebtoken');
 
 jest.mock('../../src/config/db', () => ({ query: jest.fn() }));
 jest.mock('../../src/services/MemberDirectoryService');
+// The directory editor now lives on /account/settings, which also loads account
+// settings — mock that service so the merged-page render test is deterministic.
+jest.mock('../../src/services/userService');
 
 const fullProfile = {
     first_name: 'Member', last_name: 'One', email: 'm@x.com',
@@ -28,6 +32,10 @@ describe('Account directory routes', () => {
     beforeEach(() => {
         // requireAuth token_version check
         db.query.mockResolvedValue({ rows: [{ id: 'member-1', token_version: 1, role: 'member', email: 'm@x.com' }] });
+        userService.getAccountSettings.mockResolvedValue({
+            email: 'm@x.com', first_name: 'Member', last_name: 'One',
+            notification_preferences: { announcements: true, calendar_events: true, messages: true, recordings: true }
+        });
     });
 
     describe('GET /api/account/directory', () => {
@@ -79,17 +87,31 @@ describe('Account directory routes', () => {
         });
     });
 
-    describe('GET /account/directory (edit page renders)', () => {
-        test('renders the directory listing form', async () => {
-            MemberDirectoryService.getMyProfile.mockResolvedValue(fullProfile);
+    describe('GET /account/directory (consolidated — 301 redirect)', () => {
+        test('permanently redirects into the settings directory section', async () => {
             const res = await request(app)
                 .get('/account/directory')
+                .set('Cookie', [`auth_token=${memberToken}`]);
+            expect(res.status).toBe(301);
+            expect(res.headers.location).toBe('/account/settings#directory-listing');
+        });
+    });
+
+    describe('GET /account/settings (directory editor merged in)', () => {
+        test('renders the directory listing form as a section of the settings page', async () => {
+            MemberDirectoryService.getMyProfile.mockResolvedValue(fullProfile);
+            const res = await request(app)
+                .get('/account/settings')
                 .set('Cookie', [`auth_token=${memberToken}`]);
             expect(res.status).toBe(200);
             expect(res.text).toContain('id="directoryForm"');
             expect(res.text).toContain('name="listed"');
             expect(res.text).toContain('name="household_consent"');
             expect(res.text).toContain('/js/directory-listing.js');
+            // Collapsed by default: the disclosure carries no `open` attribute.
+            expect(res.text).toMatch(/<details[^>]*id="directory-listing"(?![^>]*\sopen)/);
+            // The jump-nav exposes the section anchor.
+            expect(res.text).toContain('href="#directory-listing"');
         });
     });
 });

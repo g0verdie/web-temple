@@ -289,3 +289,76 @@
         opacity: 1;
     }
 }
+
+/* In-page jump nav for the consolidated Account Settings sections. */
+.settings-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.25rem;
+    margin: 0 0 2rem;
+    padding: 0.6rem 0.9rem;
+    background: var(--color-bg-alt, #f7fafc);
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: 8px;
+    font-size: 0.92rem;
+}
+
+.settings-nav a {
+    color: var(--color-primary, #1a365d);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.settings-nav a:hover,
+.settings-nav a:focus-visible {
+    text-decoration: underline;
+}
+
+/* The directory editor is a collapsible section; its <summary> reads like a section header. */
+.directory-disclosure > summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.4rem 0.75rem;
+}
+
+.directory-disclosure > summary::-webkit-details-marker {
+    display: none;
+}
+
+.directory-disclosure > summary:focus-visible {
+    outline: 3px solid var(--color-gold-focus, #b8860b);
+    outline-offset: 2px;
+}
+
+.directory-summary-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--color-primary, #1a365d);
+}
+
+.directory-summary-state {
+    font-size: 0.9rem;
+    color: var(--color-text-light, #4a5568);
+}
+
+.directory-disclosure[open] > summary {
+    margin-bottom: 1.25rem;
+}
+
+/* The visibility fieldset used to carry .settings-section; give it its own light frame
+   so it still reads as a grouped sub-panel without nesting a full settings box. */
+.visibility-fieldset {
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin: 0.5rem 0;
+}
+
+.visibility-fieldset legend h2 {
+    font-size: 1.1rem;
+    margin: 0;
+}

@@ -70,10 +70,22 @@ router.get('/auth/reset-password', (req, res) => {
 router.get('/account/settings', requireAuth, sessionTimeout(), async (req, res) => {
     try {
         const settings = await userService.getAccountSettings(req.user.id);
+        // The directory-listing editor now lives on this page (consolidated from the
+        // former /account/directory). Load the member's own profile too — but a
+        // directory-load failure must NOT take down the whole settings page (Profile,
+        // Notifications, Password), so it degrades to a notice in that one section.
+        let profile = null;
+        let directoryError = false;
+        try {
+            profile = await MemberDirectoryService.getMyProfile(req.user.id);
+        } catch (dirErr) {
+            logger.error('Error loading directory profile for settings page', { error: dirErr });
+            directoryError = true;
+        }
         res.render('layout', {
             title: 'Account Settings - Temple B\'nai Israel',
             bodyView: 'account/settings',
-            viewData: { settings },
+            viewData: { settings, profile, directoryError },
             noindex: true,
             stylesheets: ['/css/account.css']
         });
@@ -110,25 +122,13 @@ router.get('/unsubscribe', unsubscribeController.renderPage);
 
 /**
  * GET /account/directory
- * Display the member's own directory-listing edit page
+ * The member's own directory-listing editor has been consolidated into the
+ * "Directory Listing & Privacy" section of /account/settings. Permanently
+ * redirect (301) so registration opt-in, the R20 nudge, bookmarks, and emailed
+ * links keep working; the #anchor auto-expands the section client-side.
  */
-router.get('/account/directory', requireAuth, sessionTimeout(), async (req, res) => {
-    try {
-        const profile = await MemberDirectoryService.getMyProfile(req.user.id);
-        res.render('layout', {
-            title: 'My Directory Listing - Temple B\'nai Israel',
-            bodyView: 'account/directory-listing',
-            viewData: { profile },
-            noindex: true,
-            stylesheets: ['/css/account.css']
-        });
-    } catch (error) {
-        logger.error('Error loading directory listing page', { error });
-        res.status(500).render('error', {
-            title: '500 - Server Error',
-            message: 'Unable to load your directory listing.'
-        });
-    }
+router.get('/account/directory', requireAuth, sessionTimeout(), (req, res) => {
+    res.redirect(301, '/account/settings#directory-listing');
 });
 
 module.exports = router;

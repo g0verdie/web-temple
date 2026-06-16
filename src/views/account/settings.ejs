@@ -1,10 +1,17 @@
 <div class="container account-settings">
     <h1>Account Settings</h1>
-    <p class="subtitle">Manage your profile, notifications, and password.</p>
+    <p class="subtitle">Manage your profile, notifications, directory listing, and password.</p>
+
+    <nav class="settings-nav" aria-label="Account settings sections">
+        <a href="#profile">Profile</a>
+        <a href="#notifications">Notifications</a>
+        <a href="#directory-listing">Directory Listing</a>
+        <a href="#password">Password</a>
+    </nav>
 
     <div id="settingsAlert" class="alert d-none" role="alert"></div>
 
-    <section class="settings-section" aria-labelledby="profile-heading">
+    <section class="settings-section" id="profile" aria-labelledby="profile-heading">
         <h2 id="profile-heading">Profile Information</h2>
         <form id="profileForm" class="settings-form" novalidate>
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -26,7 +33,7 @@
         </form>
     </section>
 
-    <section class="settings-section" aria-labelledby="notifications-heading">
+    <section class="settings-section" id="notifications" aria-labelledby="notifications-heading">
         <h2 id="notifications-heading">Notification Preferences</h2>
         <form id="preferencesForm" class="settings-form" novalidate>
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -51,7 +58,22 @@
         </form>
     </section>
 
-    <section class="settings-section" aria-labelledby="password-heading">
+    <% const dirErr = (typeof directoryError !== 'undefined') && directoryError; %>
+    <% const dirShown = []; if (profile) { if (profile.show_phone) dirShown.push('phone'); if (profile.show_email) dirShown.push('email'); if (profile.show_address) dirShown.push('address'); if (profile.show_birthday) dirShown.push('birthday'); if (profile.show_household) dirShown.push('household'); } %>
+    <% const dirSummary = dirErr ? 'Unavailable — try refreshing' : ((profile && profile.listed) ? ('Listed' + (dirShown.length ? ' — shows ' + dirShown.join(', ') : '')) : 'Not listed (tap to manage)'); %>
+    <details class="settings-section directory-disclosure" id="directory-listing" <%= dirErr ? 'open' : '' %>>
+        <summary class="directory-summary">
+            <span class="directory-summary-title">Directory Listing &amp; Privacy</span>
+            <span class="directory-summary-state"><%= dirSummary %></span>
+        </summary>
+        <% if (dirErr || !profile) { %>
+            <p class="form-message error">We couldn't load your directory listing right now. Please refresh the page to try again.</p>
+        <% } else { %>
+            <%- include('partials/directory-listing-section') %>
+        <% } %>
+    </details>
+
+    <section class="settings-section" id="password" aria-labelledby="password-heading">
         <h2 id="password-heading">Change Password</h2>
         <form id="passwordForm" class="settings-form" novalidate>
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -74,3 +96,4 @@
 </div>
 
 <script src="/js/account-settings.js" defer></script>
+<script src="/js/directory-listing.js" defer></script>

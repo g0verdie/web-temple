@@ -3,9 +3,12 @@ const jwt = require('jsonwebtoken');
 const app = require('../../src/server');
 const db = require('../../src/config/db');
 const MemberDirectoryService = require('../../src/services/MemberDirectoryService');
+const userService = require('../../src/services/userService');
 
 jest.mock('../../src/config/db', () => ({ query: jest.fn() }));
 jest.mock('../../src/services/MemberDirectoryService');
+// The editor is now a section of /account/settings, which also loads account settings.
+jest.mock('../../src/services/userService');
 
 describe('Directory listing edit view: structured household markup', () => {
     let token;
@@ -21,10 +24,14 @@ describe('Directory listing edit view: structured household markup', () => {
 
     beforeEach(() => {
         db.query.mockResolvedValue({ rows: [{ id: 'member-1', token_version: 1, role: 'member', email: 'm@x.com' }] });
+        userService.getAccountSettings.mockResolvedValue({
+            email: 'm@x.com', first_name: 'Member', last_name: 'One',
+            notification_preferences: { announcements: true, calendar_events: true, messages: true, recordings: true }
+        });
     });
 
     const render = async () =>
-        request(app).get('/account/directory').set('Cookie', [`auth_token=${token}`]);
+        request(app).get('/account/settings').set('Cookie', [`auth_token=${token}`]);
 
     test('renders the household table and the add-person modal (no textarea)', async () => {
         MemberDirectoryService.getMyProfile.mockResolvedValue({

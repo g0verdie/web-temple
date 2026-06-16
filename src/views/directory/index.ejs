@@ -1,12 +1,12 @@
 <div class="directory-container">
     <h1>Member Directory</h1>
-    <p class="subtitle">Connect with fellow members. <a href="/account/directory">Manage your own listing</a>.</p>
+    <p class="subtitle">Connect with fellow members. <a href="/account/settings#directory-listing">Manage your own listing</a>.</p>
 
     <% if (typeof showNudge !== 'undefined' && showNudge) { %>
         <div class="directory-nudge" role="status">
             <p>You're not listed in the member directory yet. Add your listing so other members can find you.</p>
             <div class="directory-nudge-actions">
-                <a href="/account/directory" class="btn-primary">Add my listing</a>
+                <a href="/account/settings#directory-listing" class="btn-primary">Add my listing</a>
                 <form method="POST" action="/directory/nudge/dismiss" class="nudge-dismiss">
                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                     <button type="submit" class="link-button">Dismiss</button>
@@ -49,7 +49,7 @@
         <% } else if (filters.search) { %>
             <p class="directory-empty">No members match "<%= filters.search %>". Try a different name or interest.</p>
         <% } else { %>
-            <p class="directory-empty">No members are listed in the directory yet. <a href="/account/directory">Be the first to add your listing.</a></p>
+            <p class="directory-empty">No members are listed in the directory yet. <a href="/account/settings#directory-listing">Be the first to add your listing.</a></p>
         <% } %>
     </div>
 </div>

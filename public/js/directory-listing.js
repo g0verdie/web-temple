@@ -1,3 +1,9 @@
+// Wrapped in an IIFE so this script's top-level helpers (getCsrfToken / requestJson /
+// showMessage) don't collide with the identically-named ones in account-settings.js —
+// both load as classic defer scripts on /account/settings, sharing one global scope, and
+// a duplicate top-level `const` would throw "Identifier already declared", leaving the
+// directory editor inert.
+(function () {
 const getCsrfToken = () => {
     const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     if (metaToken) return metaToken;
@@ -115,6 +121,8 @@ const createHouseholdEditor = () => {
     const closeModal = () => {
         if (modal) modal.setAttribute('hidden', '');
         if (modalError) modalError.textContent = '';
+        // Return focus to the trigger so keyboard/SR users aren't dropped at body.
+        if (openBtn) openBtn.focus();
     };
     const openModal = () => {
         if (nameInput) nameInput.value = '';
@@ -129,6 +137,33 @@ const createHouseholdEditor = () => {
 
     if (openBtn) openBtn.addEventListener('click', openModal);
     if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+    // Modal a11y: Escape closes it, and Tab is trapped within its controls so focus
+    // can't slip into the settings page behind the overlay. The listener is inert while
+    // the modal is `hidden` (display:none removes its children from the tab order).
+    if (modal) {
+        modal.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                closeModal();
+                return;
+            }
+            if (event.key !== 'Tab') return;
+            const focusable = Array.from(
+                modal.querySelectorAll('input, select, button, [tabindex]:not([tabindex="-1"])')
+            ).filter((el) => !el.disabled && el.offsetParent !== null);
+            if (focusable.length === 0) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        });
+    }
     if (addBtn) {
         addBtn.addEventListener('click', () => {
             const name = (nameInput?.value || '').trim();
@@ -269,7 +304,48 @@ const wireVisibilityToggle = () => {
     sync(); // initial state on load (no flash)
 };
 
+// Open + scroll to + focus the directory section. Used when arriving via the 301 from
+// /account/directory, a /directory entry link, or the in-page jump-nav — none of which
+// re-fire DOMContentLoaded for a same-page #anchor, so a plain anchor would leave the
+// <details> collapsed.
+const expandDirectorySection = () => {
+    const section = document.getElementById('directory-listing');
+    if (!section) return;
+    section.open = true;
+    section.setAttribute('tabindex', '-1');
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    section.focus({ preventScroll: true });
+};
+
+const wireDirectoryExpand = () => {
+    const section = document.getElementById('directory-listing');
+    if (!section) return;
+    if (window.location.hash === '#directory-listing') expandDirectorySection();
+    window.addEventListener('hashchange', () => {
+        if (window.location.hash === '#directory-listing') expandDirectorySection();
+    });
+    const navLink = document.querySelector('.settings-nav a[href="#directory-listing"]');
+    if (navLink) navLink.addEventListener('click', () => expandDirectorySection());
+};
+
+// Refresh the collapsed <summary> state line from the values just saved, so the header
+// isn't stale until the next page load.
+const updateDirectorySummary = (saved) => {
+    const stateEl = document.querySelector('.directory-summary-state');
+    if (!stateEl) return;
+    if (!saved.listed) { stateEl.textContent = 'Not listed (tap to manage)'; return; }
+    const shown = [];
+    if (saved.show_phone) shown.push('phone');
+    if (saved.show_email) shown.push('email');
+    if (saved.show_address) shown.push('address');
+    if (saved.show_birthday) shown.push('birthday');
+    if (saved.show_household) shown.push('household');
+    stateEl.textContent = 'Listed' + (shown.length ? ' — shows ' + shown.join(', ') : '');
+};
+
 document.addEventListener('DOMContentLoaded', () => {
+    // The disclosure exists even in the degraded (no-form) state, so wire expand first.
+    wireDirectoryExpand();
     const form = document.getElementById('directoryForm');
     if (!form) return;
 
@@ -327,11 +403,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             await requestJson('/api/account/directory', 'PUT', body);
-            // Item 7: a successful self-service save returns to the public directory page.
-            showMessage(message, 'Saved — taking you to the directory…', 'success');
-            window.location.href = '/directory';
+            // The editor now lives on /account/settings, so a save stays in place and reads
+            // back like the other settings forms — no redirect to /directory. Keep the
+            // section open, re-baseline the listed state (so a re-save doesn't re-prompt),
+            // and refresh the collapsed summary line.
+            form.dataset.initialListed = String(listed);
+            showMessage(message, 'Saved — your directory listing is up to date.', 'success');
+            const section = document.getElementById('directory-listing');
+            if (section) section.open = true;
+            updateDirectorySummary(body);
         } catch (error) {
             showMessage(message, error.message || 'Unable to save your listing.', 'error');
         }
     });
 });
+})();

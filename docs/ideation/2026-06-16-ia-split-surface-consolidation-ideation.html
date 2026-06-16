@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ideation: Consolidating Split Surfaces (web-temple IA)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&display=swap">
+<style>
+  :root {
+    --navy: #1a365d; --navy-2: #2c5282; --gold: #d69e2e; --gold-dark: #856823;
+    --gold-focus: #b8860b; --text: #2d3748; --muted: #5a6678; --bg: #faf8f3;
+    --card: #ffffff; --border: #e6e1d6; --border-2: #e2e8f0;
+    --navy-soft: #eef2f8; --gold-soft: #fbf3e0; --green-soft: #eaf5ee; --green-text: #1b6e3c;
+    --red-soft: #fbecec; --red-text: #9b2c2c;
+    --serif: 'Cormorant Garamond', 'Hoefler Text', Georgia, 'Times New Roman', serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans);
+    font-size: 16px; line-height: 1.6; }
+  .wrap { max-width: 900px; margin-inline: auto; padding: 2.5rem 1.25rem 4rem; }
+  p, li { max-width: 72ch; }
+  h1 { font-family: var(--serif); font-weight: 700; color: var(--navy); font-size: 2.6rem;
+    line-height: 1.1; margin: 0 0 0.5rem; letter-spacing: 0.2px; }
+  h2 { font-family: var(--serif); font-weight: 600; color: var(--navy); font-size: 1.7rem;
+    margin: 2.6rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 2px solid var(--gold); }
+  h3 { font-family: var(--serif); font-weight: 600; color: var(--navy); font-size: 1.35rem; margin: 0 0 0.4rem; }
+  a { color: var(--gold-dark); }
+  a:focus-visible { outline: 3px solid var(--gold-focus); outline-offset: 2px; }
+  .eyebrow { text-transform: uppercase; letter-spacing: 1.5px; font-size: 0.72rem;
+    font-weight: 700; color: var(--gold-dark); margin: 0 0 0.4rem; }
+  .lede { font-size: 1.12rem; color: var(--text); }
+  .meta { font-size: 0.9rem; color: var(--muted); margin: 0.4rem 0 0; }
+  .meta strong { color: var(--text); }
+  .stats { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 1.6rem 0 0; }
+  .stat { background: var(--navy-soft); border: 1px solid var(--border-2); border-radius: 10px;
+    padding: 0.55rem 0.9rem; min-width: 7rem; }
+  .stat b { display: block; font-family: var(--serif); font-size: 1.5rem; color: var(--navy); line-height: 1; }
+  .stat span { font-size: 0.78rem; color: var(--muted); }
+  section { margin-top: 0.5rem; }
+  .axes { list-style: none; padding: 0; margin: 0.5rem 0; }
+  .axes li { background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--navy);
+    border-radius: 8px; padding: 0.7rem 1rem; margin-bottom: 0.55rem; max-width: none; }
+  .axes b { color: var(--navy); }
+  .jumplist { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1rem 1.2rem; margin: 0.5rem 0 1.6rem; }
+  .jumplist ol { margin: 0.3rem 0 0; padding-left: 1.3rem; columns: 2; column-gap: 1.6rem; }
+  .jumplist li { max-width: none; margin-bottom: 0.3rem; break-inside: avoid; }
+  .idea { background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 1.4rem 1.5rem; margin-bottom: 1.4rem; box-shadow: 0 1px 2px rgba(26,54,93,0.04); scroll-margin-top: 1rem; }
+  .idea-head { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+  .rank { font-family: var(--serif); font-size: 1.5rem; font-weight: 700; color: var(--gold-dark); }
+  .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.55rem 0 0.8rem; }
+  .chip { font-size: 0.74rem; font-weight: 600; border-radius: 999px; padding: 0.2rem 0.7rem;
+    border: 1px solid var(--border-2); background: #f4f6fa; color: var(--muted); }
+  .chip-axis { background: var(--navy-soft); color: var(--navy); border-color: #d3deef; }
+  .chip-surface { background: var(--gold-soft); color: var(--gold-dark); border-color: #ecdcb0; }
+  .field { margin: 0.55rem 0; }
+  .field .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;
+    font-weight: 700; color: var(--gold-dark); }
+  .basis-tag { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem;
+    font-weight: 700; color: var(--navy); background: var(--navy-soft); border-radius: 4px; padding: 0.05rem 0.35rem; }
+  .meterrow { display: flex; gap: 1.2rem; flex-wrap: wrap; margin-top: 0.8rem;
+    padding-top: 0.7rem; border-top: 1px dashed var(--border); }
+  .meter span { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+  .meter b { display: block; font-family: var(--serif); font-size: 1.2rem; color: var(--navy); }
+  figure { margin: 1rem 0; }
+  figure svg { width: 100%; height: auto; display: block; background: #fcfbf7;
+    border: 1px solid var(--border); border-radius: 10px; }
+  figcaption { font-size: 0.82rem; color: var(--muted); margin-top: 0.4rem; max-width: 72ch; }
+  table { border-collapse: collapse; width: 100%; margin-top: 0.6rem; font-size: 0.93rem; }
+  th, td { text-align: left; padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--border-2); vertical-align: top; }
+  th { color: var(--navy); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.6px; }
+  td:first-child { font-weight: 600; white-space: nowrap; color: var(--gold-dark); }
+  .composition-signal { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border);
+    font-size: 0.8rem; color: var(--muted); }
+  .composition-signal code { background: #f1eee6; padding: 0.05rem 0.3rem; border-radius: 4px; }
+  strong { color: inherit; }
+  @media (max-width: 620px) { h1 { font-size: 2.1rem; } .jumplist ol { columns: 1; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">Ideation · Information Architecture</p>
+  <h1>Consolidating Split Surfaces</h1>
+  <p class="lede">Two reports — "<em>watch and archive lead to practically the same place</em>" and "<em>move the directory-listing settings under the account page</em>" — are the same anti-pattern: one logical thing split across two pages. This set treats them together.</p>
+  <p class="meta"><strong>Date:</strong> 2026-06-16 &nbsp;·&nbsp; <strong>Focus:</strong> consolidating split surfaces (video: <code>/watch</code> vs <code>/archive</code>; settings: <code>/account/settings</code> vs <code>/account/directory</code>) &nbsp;·&nbsp; <strong>Mode:</strong> repo-grounded</p>
+
+  <div class="stats">
+    <div class="stat"><b>2</b><span>split surface-pairs</span></div>
+    <div class="stat"><b>9</b><span>ranked ideas</span></div>
+    <div class="stat"><b>57</b><span>raw candidates</span></div>
+    <div class="stat"><b>5</b><span>topic axes</span></div>
+  </div>
+
+  <section>
+    <h2>Grounding Context</h2>
+    <p><strong>Codebase context.</strong> web-temple is an Express 4 + EJS server-rendered MPA (CommonJS, Postgres + Redis, no bundler/framework). Two independent "this splits one thing across two pages" cases surfaced:</p>
+
+    <h3 style="margin-top:1.2rem">Video: <code>/watch</code> vs <code>/archive</code></h3>
+    <p><code>/watch</code> ("Past Services") is <strong>public</strong> (<code>routes/watch.js</code>), a Facebook-iframe lightbox over a curated placeholder list (or the dormant Facebook Graph source) — no search, no detail page, no chat. <code>/archive</code> ("Recording Archive") is <strong>members-only</strong> (<code>routes/recordings.js</code>, <code>requireAuth</code>), DB-backed, with keyword/Torah-portion/service-type/date filters, a per-recording page with a native <code>&lt;video&gt;</code> player + captions, and an "Archived Chat History" replay. A logged-in member sees <strong>both</strong> "Watch" and "Archive" in the nav (<code>layout.ejs:106</code>, <code>110-111</code>) with no copy distinguishing them. Both currently run on fake data, so they look like twins. The split was a deliberate 2-day-old decision (public showcase vs members' annotated library) — but invisible in the labels, and amplified by the empty state.</p>
+
+    <h3 style="margin-top:1.2rem">Settings: <code>/account/settings</code> vs <code>/account/directory</code></h3>
+    <p><code>/account/settings</code> ("Account Settings") holds Profile, Notification Preferences, and Change Password. <code>/account/directory</code> ("My Directory Listing") holds phone, address, birthday, household, interests, the per-field visibility flags, and the "list me" opt-in. Both are "manage my own profile," yet they are two separate pages — and <code>/account/settings</code> does <strong>not link to the directory editor at all</strong>. The editor is reachable <em>only</em> from the public <code>/directory</code> browse (<code>directory/index.ejs:3,9,52</code>). So a member can't reach their own privacy settings from their Account. The public <code>/directory</code> (viewing <em>other</em> members) is a genuinely separate concern and stays separate.</p>
+
+    <p><strong>External grounding.</strong> Surveyed synagogues (Central, Park Avenue, Touro, Adas Israel) keep service archives <em>public</em>, gating member features via a separate "Member Portal," and well-designed video products (PBS Passport, member hubs) use <em>one</em> browse surface with item-level locks rather than two near-identical pages. NN/g: one function per nav item; verb-first concrete labels; co-locate a data field with its visibility control. Streaming-license law covers live + archived worship but not commercial music — a legal rationale for "clips public / full service gated" distinct from member-value.</p>
+  </section>
+
+  <section>
+    <h2>Topic Axes</h2>
+    <ul class="axes">
+      <li><b>Navigation &amp; labeling</b> — duplicate or ambiguous nav entries (Watch + Archive both shown; Account has no path to listing config) and labels that don't carry the distinction.</li>
+      <li><b>Surface consolidation &amp; structure</b> — one surface vs two; sections + anchor-nav vs tabs; browse vs detail; the artifacts of a page that used to stand alone.</li>
+      <li><b>Separation of concerns</b> — what genuinely <em>should</em> stay split (the public browse of others; public-vs-member access) vs what shouldn't (my profile vs my directory fields; two browse tiers of the same videos).</li>
+      <li><b>Population &amp; data model</b> — the empty/fake-data state that makes pages look like duplicates; auto-ingestion; one canonical source.</li>
+      <li><b>Discoverability &amp; value</b> — making settings and features findable and their value legible (where my settings live; why the member tier is worth signing in for).</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Ranked Ideas</h2>
+    <div class="jumplist">
+      <strong>Jump to:</strong>
+      <ol>
+        <li><a href="#i1">A "one surface per intent" consolidation pattern</a></li>
+        <li><a href="#i2">Merge the directory editor into Account Settings (4th section)</a></li>
+        <li><a href="#i3">Stop the save → /directory redirect; stay in Account</a></li>
+        <li><a href="#i4">Preserve entry points; add the missing Account path</a></li>
+        <li><a href="#i5">Auto-draft a recording when a livestream ends</a></li>
+        <li><a href="#i6">Collapse the duplicate video nav to one "Watch"</a></li>
+        <li><a href="#i7">Name the access distinction in the video labels</a></li>
+        <li><a href="#i8">One video browse surface with item-level gating</a></li>
+        <li><a href="#i9">Reframe why the archive is gated at all</a></li>
+      </ol>
+    </div>
+
+    <!-- IDEA 1 -->
+    <article class="idea" id="i1">
+      <div class="idea-head"><span class="rank">1.</span><h3>Adopt a "one surface per intent" consolidation pattern</h3></div>
+      <div class="chips"><span class="chip chip-axis">Separation of concerns</span><span class="chip chip-surface">cross-cutting</span></div>
+      <figure>
+        <svg viewBox="0 0 760 200" role="img" aria-labelledby="i1t">
+          <title id="i1t">Before: one intent split across two pages. After: one surface with in-place gating/sections.</title>
+          <text x="120" y="24" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#5a6678">BEFORE — one intent, two pages</text>
+          <rect x="30" y="40" width="180" height="50" rx="8" fill="#fbecec" stroke="#d99" />
+          <text x="120" y="70" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#9b2c2c">Page A (public / settings)</text>
+          <rect x="30" y="105" width="180" height="50" rx="8" fill="#fbecec" stroke="#d99" />
+          <text x="120" y="135" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#9b2c2c">Page B (members / directory)</text>
+          <text x="120" y="180" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#5a6678">same user intent · two nav entries</text>
+          <path d="M 330 100 L 410 100" stroke="#856823" stroke-width="2.5" fill="none" marker-end="url(#ar1)"/>
+          <defs><marker id="ar1" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#856823"/></marker></defs>
+          <text x="640" y="24" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#1b6e3c">AFTER — one surface, gate in place</text>
+          <rect x="520" y="40" width="220" height="115" rx="8" fill="#eaf5ee" stroke="#8bbf9f" />
+          <text x="630" y="64" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#1a365d">One surface</text>
+          <rect x="540" y="76" width="180" height="22" rx="5" fill="#ffffff" stroke="#cfe3d6"/>
+          <text x="630" y="91" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#2d3748">section / item (open)</text>
+          <rect x="540" y="104" width="180" height="22" rx="5" fill="#ffffff" stroke="#cfe3d6"/>
+          <text x="624" y="119" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#2d3748">section / item &#128274;</text>
+          <text x="630" y="146" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#1b6e3c">access/enrichment at the item level</text>
+        </svg>
+        <figcaption>The shared shape of both reports: collapse the parallel page into one surface and differentiate by section or per-item lock — not by a second nav entry.</figcaption>
+      </figure>
+      <div class="field"><span class="label">Description</span><p>Both reported problems are one anti-pattern: a single user intent split across two pages. Treat them as instances of one rule — <strong>one surface per intent; differentiate by access, recency, or enrichment at the section/item level, not by spawning a parallel page</strong> — and adopt it as a lightweight IA convention so the next feature doesn't repeat it.</p></div>
+      <div class="field"><span class="label">Basis</span><p><span class="basis-tag">reasoned:</span> the video pair (Watch + Archive in nav) and the settings pair (settings + directory) share the identical structure — two top-level surfaces for one intent — and the external prescription is the same for both (PBS Passport item-level gating; the "Member Hub" pattern; NN/g one-function-per-nav-item).</p></div>
+      <div class="field"><span class="label">Rationale</span><p>The most valuable output here isn't fixing two pages — it's naming the recurring pattern. A one-line convention prevents re-litigating "why are there two?" on the next surface, and it's the lens that makes ideas 2–9 cohere instead of reading as nine unrelated tweaks.</p></div>
+      <div class="field"><span class="label">Downsides</span><p>A principle is not a fix; it needs the concrete instances below to land. Over-applied it could collapse concerns that <em>should</em> stay separate — the public <code>/directory</code> browse of others is not "my settings," and the public <code>/watch</code> showcase has a real reason to exist apart from the member archive.</p></div>
+      <div class="meterrow"><div class="meter"><span>Confidence</span><b>80%</b></div><div class="meter"><span>Complexity</span><b>Low</b></div></div>
+    </article>
+
+    <!-- IDEA 2 -->
+    <article class="idea" id="i2">
+      <div class="idea-head"><span class="rank">2.</span><h3>Merge the directory editor into Account Settings as a fourth section</h3></div>
+      <div class="chips"><span class="chip chip-axis">Surface consolidation &amp; structure</span><span class="chip chip-surface">account/directory</span></div>
+      <figure>
+        <svg viewBox="0 0 760 210" role="img" aria-labelledby="i2t">
+          <title id="i2t">Before: settings page with three sections plus a separate orphan directory page. After: one settings page with four sections and a jump-nav.</title>
+          <text x="200" y="22" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#5a6678">BEFORE</text>
+          <rect x="40" y="34" width="150" height="120" rx="8" fill="#ffffff" stroke="#e6e1d6"/>
+          <text x="115" y="52" text-anchor="middle" font-family="sans-serif" font-size="11.5" font-weight="700" fill="#1a365d">/account/settings</text>
+          <rect x="54" y="62" width="122" height="24" rx="4" fill="#eef2f8" stroke="#d3deef"/><text x="115" y="78" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#1a365d">Profile</text>
+          <rect x="54" y="90" width="122" height="24" rx="4" fill="#eef2f8" stroke="#d3deef"/><text x="115" y="106" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#1a365d">Notifications</text>
+          <rect x="54" y="118" width="122" height="24" rx="4" fill="#eef2f8" stroke="#d3deef"/><text x="115" y="134" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#1a365d">Password</text>
+          <rect x="250" y="60" width="150" height="70" rx="8" fill="#fbecec" stroke="#d99" stroke-dasharray="4 3"/>
+          <text x="325" y="82" text-anchor="middle" font-family="sans-serif" font-size="11.5" font-weight="700" fill="#9b2c2c">/account/directory</text>
+          <text x="325" y="100" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#9b2c2c">orphan page —</text>
+          <text x="325" y="114" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#9b2c2c">no link from Account</text>
+          <path d="M 430 95 L 500 95" stroke="#856823" stroke-width="2.5" fill="none" marker-end="url(#ar2)"/>
+          <defs><marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 Z" fill="#856823"/></marker></defs>
+          <text x="630" y="22" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#1b6e3c">AFTER</text>
+          <rect x="540" y="34" width="180" height="162" rx="8" fill="#ffffff" stroke="#8bbf9f"/>
+          <text x="630" y="52" text-anchor="middle" font-family="sans-serif" font-size="11.5" font-weight="700" fill="#1a365d">/account/settings</text>
+          <rect x="556" y="60" width="148" height="20" rx="4" fill="#eef2f8" stroke="#d3deef"/><text x="630" y="74" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#1a365d">Profile</text>
+          <rect x="556" y="84" width="148" height="20" rx="4" fill="#eef2f8" stroke="#d3deef"/><text x="630" y="98" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#1a365d">Notifications</text>
+          <rect x="556" y="108" width="148" height="20" rx="4" fill="#eaf5ee" stroke="#8bbf9f"/><text x="630" y="122" text-anchor="middle" font-family="sans-serif" font-size="10.5" font-weight="700" fill="#1b6e3c">Directory Listing &amp; Privacy</text>
+          <rect x="556" y="132" width="148" height="20" rx="4" fill="#eef2f8" stroke="#d3deef"/><text x="630" y="146" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#1a365d">Password</text>
+          <text x="630" y="174" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a6678">+ jump-nav at top</text>
+        </svg>
+        <figcaption>The directory editor's markup is already <code>container.account-settings &gt; section.settings-section</code> on the same stylesheet — it drops in as a fourth section with no new shell.</figcaption>
+      </figure>
+      <div class="field"><span class="label">Description</span><p>Move the <code>/account/directory</code> editor into <code>/account/settings</code> as a fourth <code>&lt;section&gt;</code> ("Directory Listing &amp; Privacy"), delete the standalone view, and keep the <code>PUT /api/account/directory</code> API. Keep it <strong>one scrollable SSR page with a top anchor-nav</strong> (Profile · Notifications · Directory Listing · Password) — not tabs, which add JS state and history handling for no functional gain in a no-bundler MPA.</p></div>
+      <div class="field"><span class="label">Basis</span><p><span class="basis-tag">direct:</span> <code>settings.ejs:7–73</code> is three <code>section.settings-section</code> blocks each saving via a JSON API with an in-place <code>form-message</code>; <code>directory-listing.ejs:1</code> already uses <code>container.account-settings</code> + <code>section.settings-section</code> on the same <code>/css/account.css</code> — structurally isomorphic to a fourth section.</p></div>
+      <div class="field"><span class="label">Rationale</span><p>Directly answers "no reason to split my own settings across two pages," at the lowest complexity: one view deleted, one section added, no new routes or shell. A member can move from name/email to phone/visibility without leaving the page.</p></div>
+      <div class="field"><span class="label">Downsides</span><p>The page gets long, so the anchor-nav (idea 4) is load-bearing. The editor ships heavier widgets (household modal, tag-stack, birthday selects) than the simple settings forms — fine, since its JS is <code>defer</code>-loaded and gated on <code>#directoryForm</code>, but page weight grows. The <em>deeper</em> version — co-locating name/email with their visibility toggles — tangles two save APIs and is out of scope here.</p></div>
+      <div class="meterrow"><div class="meter"><span>Confidence</span><b>90%</b></div><div class="meter"><span>Complexity</span><b>Low–Medium</b></div></div>
+    </article>
+
+    <!-- IDEA 3 -->
+    <article class="idea" id="i3">
+      <div class="idea-head"><span class="rank">3.</span><h3>Stop redirecting the listing save to <code>/directory</code>; keep the member in Account</h3></div>
+      <div class="chips"><span class="chip chip-axis">Surface consolidation &amp; structure</span><span class="chip chip-surface">account/directory</span></div>
+      <div class="field"><span class="label">Description</span><p>On a successful save, <code>directory-listing.js:332</code> hard-redirects to the public <code>/directory</code> browse — an artifact of the editor being a standalone page. Once it's a section under Account, that bounces the member out of their settings. Replace it with an in-place success message + scroll-to-section, matching the other three settings forms.</p></div>
+      <div class="field"><span class="label">Basis</span><p><span class="basis-tag">direct:</span> the redirect lives in the client script <code>directory-listing.js:332</code> (not the controller — the PUT returns JSON); the existing settings forms show <code>#profileMessage</code>/<code>#preferencesMessage</code> in place rather than navigating away.</p></div>
+      <div class="field"><span class="label">Rationale</span><p>A one-line change that removes a disorienting bounce and enables multi-step editing — save phone, then update address — without leaving the page.</p></div>
+      <div class="field"><span class="label">Downsides</span><p>Members who arrived from the public <code>/directory</code> might expect to return there; landing them on the section (idea 4's anchor) covers it. A referer-based conditional redirect would be over-engineering.</p></div>
+      <div class="meterrow"><div class="meter"><span>Confidence</span><b>90%</b></div><div class="meter"><span>Complexity</span><b>Low</b></div></div>
+    </article>
+
+    <!-- IDEA 4 -->
+    <article class="idea" id="i4">
+      <div class="idea-head"><span class="rank">4.</span><h3>Preserve every entry point — and add the Account-side path that never existed</h3></div>
+      <div class="chips"><span class="chip chip-axis">Discoverability &amp; value</span><span class="chip chip-surface">account/directory</span></div>
+      <div class="field"><span class="label">Description</span><p>Three moves together: (a) <strong>301-redirect</strong> <code>/account/directory</code> → <code>/account/settings#directory-listing</code> so bookmarks, the registration opt-in flow, and the R20 nudge keep working; (b) <strong>repoint</strong> the three <code>/directory</code> links ("Manage your own listing", "Add my listing", "Be the first…") to the new anchor; (c) <strong>add the Account-side path</strong> that's missing today — <code>/account/settings</code> has no link to directory config at all, so the only route to your privacy settings is via the public browse.</p></div>
+      <div class="field"><span class="label">Basis</span><p><span class="basis-tag">direct:</span> <code>directory/index.ejs:3,9,52</code> link to <code>/account/directory</code>; <code>settings.ejs:3</code> subtitle is "Manage your profile, notifications, and password" — directory/privacy is unmentioned and unreachable from Account.</p></div>
+      <div class="field"><span class="label">Rationale</span><p>Consolidation must not strand the legitimate "see other members → add myself" motivation or break deep links from registration/nudge emails — and it fixes the root discoverability bug: a member can't reach their own privacy controls from their Account page.</p></div>
+      <div class="field"><span class="label">Downsides</span><p>Relies on a stable section <code>id</code> for the hash anchor; the redirect should be permanent (301) so search and bookmarks update.</p></div>
+      <div class="meterrow"><div class="meter"><span>Confidence</span><b>90%</b></div><div class="meter"><span>Complexity</span><b>Low</b></div></div>
+    </article>
+
+    <!-- IDEA 5 -->
+    <article class="idea" id="i5">
+      <div class="idea-head"><span class="rank">5.</span><h3>Auto-draft a recording when a livestream ends</h3></div>
+      <div class="chips"><span class="chip chip-axis">Population &amp; data model</span><span class="chip chip-surface">watch/archive</span></div>
+      <div class="field"><span class="label">Description</span><p>The strongest fix for "they look identical" isn't layout — it's <strong>population</strong>. <code>/archive</code> is effectively unused (manual publish only) and <code>/watch</code> shows 2–4 curated placeholders, so both display fake data and read as twins. Add a job that creates a <em>draft</em> recording from a finished stream's metadata, making manual publish additive (review → annotate → publish) instead of the only content path.</p></div>
+      <div class="field"><span class="label">Basis</span><p><span class="basis-tag">direct:</span> there is no automated ingestion today; the <code>recordings</code> schema already carries <code>provider_name</code>/<code>provider_recording_id</code> implying an intended-but-unbuilt pipeline, and the admin list literally says "Check back after the next livestream finishes." Migration 012 already defines the draft → published state machine.</p></div>
+      <div class="field"><span class="label">Rationale</span><p>Once <code>/archive</code> fills with real, annotated services, the genuine difference between the two surfaces (public showcase vs members' searchable, captioned, chat-replay library) becomes visible — much of the perceived redundancy is an empty-state artifact, not a structural one.</p></div>
+      <div class="field"><span class="label">Downsides</span><p>Depends on the provider/stream integration (the Facebook Graph token isn't live), and ingestion must capture a <em>playable</em> reference — Facebook embeds are iframes, not direct media files, the same gap that limits unifying the two players (idea 8).</p></div>
+      <div class="meterrow"><div class="meter"><span>Confidence</span><b>70%</b></div><div class="meter"><span>Complexity</span><b>Medium–High</b></div></div>
+    </article>
+
+    <!-- IDEA 6 -->
+    <article class="idea" id="i6">
+      <div class="idea-head"><span class="rank">6.</span><h3>Collapse the duplicate video nav to one "Watch" entry that deepens for members</h3></div>
+      <div class="chips"><span class="chip chip-axis">Navigation &amp; labeling</span><span class="chip chip-surface">watch/archive</span></div>
+      <div class="field"><span class="label">Description</span><p>Keep one always-present "Watch" entry; drop the separate "Archive" nav item and surface the members' archive from <em>within</em> <code>/watch</code> (a "Full member archive" section/link on the page). The page, not the nav, carries the access distinction — the PBS/Passport and member-hub shape.</p></div>
+      <div class="field"><span class="label">Basis</span><p><span class="basis-tag">direct:</span> <code>layout.ejs:106</code> ("Watch", always) and <code>layout.ejs:110–111</code> ("Archive", logged-in only) put two top-level video links in one nav. <span class="basis-tag">external:</span> well-designed video products keep one browse surface and enrich in place rather than adding a second nav item.</p></div>
+      <div class="field"><span class="label">Rationale</span><p>Two nav items for one intent fractures attention and signals inconsistent IA (NN/g: one function per nav item). One entry forces the page to explain the value split — the right layer for that explanation.</p></div>
+      <div class="field"><span class="label">Downsides</span><p>This partially reverses the deliberate 2-day-old "separate page" decision — worth an explicit team call. Fully surfacing the archive inside <code>/watch</code> runs into the source-join/player gap (idea 8); the nav/label change is cheap, the inline-archive part is not.</p></div>
+      <div class="meterrow"><div class="meter"><span>Confidence</span><b>80%</b></div><div class="meter"><span>Complexity</span><b>Medium</b></div></div>
+    </article>
+
+    <!-- IDEA 7 -->
+    <article class="idea" id="i7">
+      <div class="idea-head"><span class="rank">7.</span><h3>Name the access distinction in the video labels</h3></div>
+      <div class="chips"><span class="chip chip-axis">Navigation &amp; labeling</span><span class="chip chip-surface">watch/archive</span></div>
+      <div class="field"><span class="label">Description</span><p>"Watch" and "Archive" are abstract near-synonyms. If two labels remain, name what actually differs: <strong>"Recent Services"</strong> (public) and <strong>"Member Archive"</strong> (members) — recency/access, not two words for the same video list. Avoid "Library", "On-Demand", "Media Center".</p></div>
+      <div class="field"><span class="label">Basis</span><p><span class="basis-tag">external:</span> NN/g guidance — verb-first/concrete labels beat abstract nouns, "Library" reads as books to older users, and tabs/labels only disambiguate when they name the access distinction.</p></div>
+      <div class="field"><span class="label">Rationale</span><p>A near-zero-cost comprehension win: even if the structural work waits, the labels stop reading as duplicates. Pairs naturally with idea 6.</p></div>
+      <div class="field"><span class="label">Downsides</span><p>Labels alone don't fix the duplicate-surface structure; this is the cheap half of the nav work, not a substitute for it.</p></div>
+      <div class="meterrow"><div class="meter"><span>Confidence</span><b>80%</b></div><div class="meter"><span>Complexity</span><b>Low</b></div></div>
+    </article>
+
+    <!-- IDEA 8 -->
+    <article class="idea" id="i8">
+      <div class="idea-head"><span class="rank">8.</span><h3>One video browse surface with item-level gating (PBS-Passport model)</h3></div>
+      <div class="chips"><span class="chip chip-axis">Surface consolidation &amp; structure</span><span class="chip chip-surface">watch/archive</span></div>
+      <figure>
+        <svg viewBox="0 0 760 180" role="img" aria-labelledby="i8t">
+          <title id="i8t">One browse grid where member-only items show an inline lock, instead of a second members-only page.</title>
+          <text x="380" y="22" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="700" fill="#5a6678">One grid · gate the items, not the page</text>
+          <g font-family="sans-serif" font-size="11" fill="#2d3748">
+            <rect x="60" y="40" width="120" height="90" rx="8" fill="#ffffff" stroke="#e6e1d6"/><rect x="72" y="52" width="96" height="46" rx="4" fill="#eef2f8"/><text x="120" y="118" text-anchor="middle">Recent service</text>
+            <rect x="200" y="40" width="120" height="90" rx="8" fill="#ffffff" stroke="#e6e1d6"/><rect x="212" y="52" width="96" height="46" rx="4" fill="#eef2f8"/><text x="260" y="118" text-anchor="middle">Recent service</text>
+            <rect x="340" y="40" width="120" height="90" rx="8" fill="#fbf3e0" stroke="#ecdcb0"/><rect x="352" y="52" width="96" height="46" rx="4" fill="#f3e7c6"/><text x="430" y="79" text-anchor="middle" font-size="18" fill="#856823">&#128274;</text><text x="400" y="118" text-anchor="middle" fill="#856823">Member &#128274;</text>
+            <rect x="480" y="40" width="120" height="90" rx="8" fill="#fbf3e0" stroke="#ecdcb0"/><rect x="492" y="52" width="96" height="46" rx="4" fill="#f3e7c6"/><text x="570" y="79" text-anchor="middle" font-size="18" fill="#856823">&#128274;</text><text x="540" y="118" text-anchor="middle" fill="#856823">Member &#128274;</text>
+            <rect x="620" y="40" width="100" height="90" rx="8" fill="#ffffff" stroke="#e6e1d6" stroke-dasharray="4 3"/><text x="670" y="88" text-anchor="middle" fill="#5a6678">…</text>
+          </g>
+          <text x="380" y="160" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#5a6678">URL stays shareable + indexable · the rich player lives on the item's detail page</text>
+        </svg>
+        <figcaption>Item-level locks make the member value visible in place (you can see the locked services) instead of hiding it behind a second page nobody logged-out knows exists.</figcaption>
+      </figure>
+      <div class="field"><span class="label">Description</span><p>The target end-state: one <code>/watch</code> grid where member-only items show an inline lock rather than living on a separate page; the gate is on items/features, not the page, so the URL stays shareable and indexable. The rich per-recording experience (native player, captions, chat replay) lives at the detail page members deep-link into.</p></div>
+      <div class="field"><span class="label">Basis</span><p><span class="basis-tag">external:</span> PBS Passport's inline-lock grid and the broader pattern — "build one browse surface; gate items, not pages."</p></div>
+      <div class="field"><span class="label">Rationale</span><p>Resolves the two-browse-tiers mental model structurally and demonstrates member value in place rather than describing it in copy.</p></div>
+      <div class="field"><span class="label">Downsides</span><p>Real plumbing, and the verifier flagged it as the recurring under-estimate: <code>/watch</code> items are Facebook iframe embeds with no direct media file and <strong>no per-service join to the DB recordings</strong>, while <code>/archive</code> plays native <code>&lt;video&gt;</code> — one grid with two item types behind two players is substantial. Best treated as the north star that idea 5 (population) and a shared data model make reachable, not a quick win.</p></div>
+      <div class="meterrow"><div class="meter"><span>Confidence</span><b>60%</b></div><div class="meter"><span>Complexity</span><b>High</b></div></div>
+    </article>
+
+    <!-- IDEA 9 -->
+    <article class="idea" id="i9">
+      <div class="idea-head"><span class="rank">9.</span><h3>Reframe <em>why</em> the archive is gated at all</h3></div>
+      <div class="chips"><span class="chip chip-axis">Separation of concerns</span><span class="chip chip-surface">watch/archive</span></div>
+      <div class="field"><span class="label">Description</span><p>Access is currently split "public showcase vs members-only" largely by inheritance. Two sharper rationales exist: (a) the <strong>streaming-license</strong> angle — edited/sermon clips public, full unedited services (with licensed music) gated, a legal basis not a membership wall; or (b) default to the <strong>prevailing synagogue norm</strong> (public service archive) and make members-only the deliberate exception it has to justify (privacy of identifiable congregants, building-security). Choose the rationale on purpose.</p></div>
+      <div class="field"><span class="label">Basis</span><p><span class="basis-tag">external:</span> CCLI/WORSHIPcast licenses cover live + archived worship but not commercial music; surveyed synagogues keep service archives public and gate via a separate Member Portal rather than a wall on the video archive.</p></div>
+      <div class="field"><span class="label">Rationale</span><p>Whether to merge or keep the video surfaces depends entirely on <em>why</em> they're separated. A clear rationale (license vs privacy vs member-value) tells you what can go public and what must stay gated — and therefore which of ideas 6–8 are even on the table.</p></div>
+      <div class="field"><span class="label">Downsides</span><p>Requires the temple to confirm its music-licensing and privacy stance; the "default public" norm may not fit a small, security-conscious congregation, so this is a decision to surface, not a foregone conclusion.</p></div>
+      <div class="meterrow"><div class="meter"><span>Confidence</span><b>65%</b></div><div class="meter"><span>Complexity</span><b>Medium</b></div></div>
+    </article>
+  </section>
+
+  <section>
+    <h2>Rejection Summary</h2>
+    <table>
+      <thead><tr><th>Idea</th><th>Reason rejected</th></tr></thead>
+      <tbody>
+        <tr><td>Native HTML5 player on /watch</td><td>Refuted — /watch is a Facebook iframe embed, not a direct media file; the native <code>&lt;video&gt;</code> can't wrap it.</td></tr>
+        <tr><td>Tabs / sub-routes for the account hub</td><td>Anchor-linked sections preferred (idea 2) — tabs add JS state + history for zero functional gain in this no-bundler MPA.</td></tr>
+        <tr><td>Co-locate name/email with their visibility toggles</td><td>Beyond surgical scope — tangles two save APIs (<code>/api/account/profile</code> vs <code>/api/account/directory</code>); a deeper redesign.</td></tr>
+        <tr><td>Per-field inline visibility toggles (split the fieldset)</td><td>Breaks the single-fieldset disable gate (<code>wireVisibilityToggle</code>); a UX nicety beyond the consolidation ask.</td></tr>
+        <tr><td>Move the opt-in checkbox to the very top of the section</td><td>Marginal — the opt-in already functionally gates the visibility fieldset; reordering is cosmetic.</td></tr>
+        <tr><td>One canonical recording model (absorb curated/Graph into the DB)</td><td>Overlaps idea 5 and understates the real cost — unifying the table doesn't unify the iframe-vs-native player path.</td></tr>
+        <tr><td>Retire /watch to a redirect into /archive</td><td>Same embed-vs-file mismatch; also re-exposes /archive publicly, contradicting the just-made sitemap-exclusion decision.</td></tr>
+        <tr><td>Archived chat-replay teaser on public /watch cards</td><td>Folded into ideas 6/8 — leaks that identifiable members participated and needs the missing curated↔recording join; revisit once 5/8 land.</td></tr>
+        <tr><td>Blurred card skeletons / generic paywall teasers</td><td>CSP-strict (no inline style) + older-congregant audience — a slop-leaning UI trope.</td></tr>
+        <tr><td>Lazy-load the listing section's JS</td><td>Premature for a small-congregation app; the JS is already <code>defer</code>-loaded and gated, no-ops cheaply where absent.</td></tr>
+        <tr><td>~11 redundant naming + nav-collapse variants</td><td>Duplicates — folded into the strongest single phrasing in ideas 6 and 7.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer class="composition-signal">Composed 2026-06-16 by compound-engineering ce-ideate from two user reports ("watch/archive lead to the same place"; "move directory settings under account") · web-temple repo · 57 raw candidates → 9 survivors across 5 axes.</footer>
+
+</div>
+</body>
+</html>

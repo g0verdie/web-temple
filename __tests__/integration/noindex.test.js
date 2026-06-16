@@ -85,8 +85,9 @@ describe('noindex on auth/account pages (U7)', () => {
     });
 
     test.each([
-        '/account/settings',
-        '/account/directory'
+        // /account/directory now 301-redirects into /account/settings#directory-listing,
+        // so only the consolidated settings page renders a noindex page directly.
+        '/account/settings'
     ])('authenticated account page %s emits the noindex meta', async (path) => {
         const res = await request(app)
             .get(path)

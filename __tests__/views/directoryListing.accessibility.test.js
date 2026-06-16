@@ -11,9 +11,12 @@ const jwt = require('jsonwebtoken');
 const app = require('../../src/server');
 const db = require('../../src/config/db');
 const MemberDirectoryService = require('../../src/services/MemberDirectoryService');
+const userService = require('../../src/services/userService');
 
 jest.mock('../../src/config/db', () => ({ query: jest.fn() }));
 jest.mock('../../src/services/MemberDirectoryService');
+// The editor is now a section of /account/settings, which also loads account settings.
+jest.mock('../../src/services/userService');
 
 expect.extend(toHaveNoViolations);
 
@@ -33,15 +36,19 @@ describe('Directory listing edit form accessibility (WCAG AA, R19)', () => {
 
     beforeEach(() => {
         db.query.mockResolvedValue({ rows: [{ id: 'member-1', token_version: 1, role: 'member', email: 'm@x.com' }] });
+        userService.getAccountSettings.mockResolvedValue({
+            email: 'm@x.com', first_name: 'Member', last_name: 'One',
+            notification_preferences: { announcements: true, calendar_events: true, messages: true, recordings: true }
+        });
     });
 
-    it('edit form has no WCAG AA violations', async () => {
+    it('merged settings + directory editor has no WCAG AA violations', async () => {
         MemberDirectoryService.getMyProfile.mockResolvedValue({
             first_name: 'Member', last_name: 'One', email: 'm@x.com',
             listed: false, show_phone: false, show_email: false, show_household: false,
             phone: '', household: '', bio: '', interests: ''
         });
-        const res = await request(app).get('/account/directory').set('Cookie', [`auth_token=${token}`]);
+        const res = await request(app).get('/account/settings').set('Cookie', [`auth_token=${token}`]);
         expect(res.status).toBe(200);
         const results = await axe(res.text, AXE_OPTS);
         expect(results).toHaveNoViolations();
