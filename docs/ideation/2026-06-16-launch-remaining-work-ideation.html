@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ideation: What's Left to Launch (web-temple)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&display=swap">
+<style>
+  :root {
+    --navy: #1a365d; --navy-2: #2c5282; --gold: #d69e2e; --gold-dark: #856823;
+    --gold-focus: #b8860b; --text: #2d3748; --muted: #5a6678; --bg: #faf8f3;
+    --card: #ffffff; --border: #e6e1d6; --border-2: #e2e8f0;
+    --navy-soft: #eef2f8; --gold-soft: #fbf3e0; --green-soft: #eaf5ee; --green-text: #1b6e3c;
+    --red-soft: #fbecec; --red-text: #9b2c2c;
+    --serif: 'Cormorant Garamond', 'Hoefler Text', Georgia, 'Times New Roman', serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans);
+    font-size: 16px; line-height: 1.6; }
+  .wrap { max-width: 900px; margin-inline: auto; padding: 2.5rem 1.25rem 4rem; }
+  p, li { max-width: 72ch; }
+  h1 { font-family: var(--serif); font-weight: 700; color: var(--navy); font-size: 2.6rem;
+    line-height: 1.1; margin: 0 0 0.5rem; letter-spacing: 0.2px; }
+  h2 { font-family: var(--serif); font-weight: 600; color: var(--navy); font-size: 1.7rem;
+    margin: 2.6rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 2px solid var(--gold); }
+  h3 { font-family: var(--serif); font-weight: 600; color: var(--navy); font-size: 1.35rem; margin: 0 0 0.4rem; }
+  a { color: var(--gold-dark); }
+  a:focus-visible { outline: 3px solid var(--gold-focus); outline-offset: 2px; }
+  .eyebrow { text-transform: uppercase; letter-spacing: 1.5px; font-size: 0.72rem;
+    font-weight: 700; color: var(--gold-dark); margin: 0 0 0.4rem; }
+  .lede { font-size: 1.12rem; color: var(--text); }
+  .meta { font-size: 0.9rem; color: var(--muted); margin: 0.4rem 0 0; }
+  .meta strong { color: var(--text); }
+  .stats { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 1.6rem 0 0; }
+  .stat { background: var(--navy-soft); border: 1px solid var(--border-2); border-radius: 10px;
+    padding: 0.55rem 0.9rem; min-width: 7rem; }
+  .stat b { display: block; font-family: var(--serif); font-size: 1.5rem; color: var(--navy); line-height: 1; }
+  .stat span { font-size: 0.78rem; color: var(--muted); }
+  section { margin-top: 0.5rem; }
+  .callout { background: var(--green-soft); border: 1px solid #c6e3d1; border-left: 4px solid var(--green-text);
+    border-radius: 8px; padding: 0.9rem 1.1rem; margin: 1.2rem 0; }
+  .callout b { color: var(--green-text); }
+  .axes { list-style: none; padding: 0; margin: 0.5rem 0; }
+  .axes li { background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--navy);
+    border-radius: 8px; padding: 0.7rem 1rem; margin-bottom: 0.55rem; max-width: none; }
+  .axes b { color: var(--navy); }
+  .jumplist { background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1rem 1.2rem; margin: 0.5rem 0 1.6rem; }
+  .jumplist ol { margin: 0.3rem 0 0; padding-left: 1.3rem; columns: 2; column-gap: 1.6rem; }
+  .jumplist li { max-width: none; margin-bottom: 0.3rem; break-inside: avoid; }
+  .idea { background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 1.4rem 1.5rem; margin-bottom: 1.4rem; box-shadow: 0 1px 2px rgba(26,54,93,0.04); scroll-margin-top: 1rem; }
+  .idea-head { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+  .rank { font-family: var(--serif); font-size: 1.5rem; font-weight: 700; color: var(--gold-dark); }
+  .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.55rem 0 0.8rem; }
+  .chip { font-size: 0.74rem; font-weight: 600; border-radius: 999px; padding: 0.2rem 0.7rem;
+    border: 1px solid var(--border-2); background: #f4f6fa; color: var(--muted); }
+  .chip-axis { background: var(--navy-soft); color: var(--navy); border-color: #d3deef; }
+  .chip-surface { background: var(--gold-soft); color: var(--gold-dark); border-color: #ecdcb0; }
+  .chip-blocker { background: var(--red-soft); color: var(--red-text); border-color: #eccaca; }
+  .chip-gated { background: #efe8fb; color: #5b3a9b; border-color: #d9cbf2; }
+  .chip-qa { background: var(--navy-soft); color: var(--navy-2); border-color: #d3deef; }
+  .chip-polish { background: var(--green-soft); color: var(--green-text); border-color: #c6e3d1; }
+  .field { margin: 0.55rem 0; }
+  .field .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px;
+    font-weight: 700; color: var(--gold-dark); }
+  .basis-tag { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem;
+    font-weight: 700; color: var(--navy); background: var(--navy-soft); border-radius: 4px; padding: 0.05rem 0.35rem; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em;
+    background: #f1eee6; padding: 0.05rem 0.3rem; border-radius: 4px; }
+  .meterrow { display: flex; gap: 1.2rem; flex-wrap: wrap; margin-top: 0.8rem;
+    padding-top: 0.7rem; border-top: 1px dashed var(--border); }
+  .meter span { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+  .meter b { display: block; font-family: var(--serif); font-size: 1.2rem; color: var(--navy); }
+  figure { margin: 1rem 0; }
+  figure svg { width: 100%; height: auto; display: block; background: #fcfbf7;
+    border: 1px solid var(--border); border-radius: 10px; }
+  figcaption { font-size: 0.82rem; color: var(--muted); margin-top: 0.4rem; max-width: 72ch; }
+  table { border-collapse: collapse; width: 100%; margin-top: 0.6rem; font-size: 0.93rem; }
+  th, td { text-align: left; padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--border-2); vertical-align: top; }
+  th { color: var(--navy); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.6px; }
+  td:first-child { font-weight: 600; white-space: nowrap; color: var(--gold-dark); }
+  .composition-signal { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border);
+    font-size: 0.8rem; color: var(--muted); }
+  .composition-signal code { background: #f1eee6; padding: 0.05rem 0.3rem; border-radius: 4px; }
+  strong { color: inherit; }
+  @media (max-width: 620px) { h1 { font-size: 2.1rem; } .jumplist ol { columns: 1; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">Ideation · Launch Readiness</p>
+  <h1>What's Left to Launch</h1>
+  <p class="lede">A reconciliation of every prior planning artifact (the MVP plan, the parallel hardening &amp; polish plan, <code>deferred-work.md</code>, launch-readiness, PRD/epics) against what is <em>actually shipped on <code>dev</code> today</em> — because two days of heavy shipping made the older status docs stale. The answer: the product is feature-complete; what remains is almost entirely <strong>operations, content, and one gated integration</strong>, not feature code.</p>
+  <p class="meta"><strong>Date:</strong> 2026-06-16 &nbsp;·&nbsp; <strong>Focus:</strong> remaining work to launch, grounded in prior research/planning &nbsp;·&nbsp; <strong>Mode:</strong> repo-grounded</p>
+
+  <div class="stats">
+    <div class="stat"><b>9</b><span>ranked work-items</span></div>
+    <div class="stat"><b>6</b><span>true launch blockers</span></div>
+    <div class="stat"><b>5</b><span>topic axes</span></div>
+    <div class="stat"><b>60+</b><span>items reconciled vs code</span></div>
+    <div class="stat"><b>~40</b><span>already shipped (cut)</span></div>
+  </div>
+
+  <section>
+    <h2>Grounding Context</h2>
+    <p><strong>Codebase context.</strong> web-temple is an Express 4 + EJS server-rendered MPA (CommonJS, Postgres&nbsp;+&nbsp;Redis, Bull workers, no bundler/framework). It is on <code>dev</code> at HEAD <code>47cb66f</code>. Hard constraints stay in force (no TS/bundler/framework; strict CSP, no inline script/style; services own SQL; <code>NODE_ENV==='test'</code> branches are load-bearing).</p>
+
+    <div class="callout">
+      <p style="margin:0"><b>The wall behind us.</b> Five reconciliation scouts read the planning corpus and then verified each item against current code/git. Everything below already <strong>shipped</strong> and was cut from "remaining": the entire <strong>U1–U14 hardening suite</strong> (SIGTERM graceful-drain, <code>pg</code>-pool error + crash handlers, Sentry PII scrub, <code>/health</code> + <code>/ready</code>, SEO OG/JSON-LD/sitemap/noindex, donation form + metrics cache, reserved-name guard, branded 500, completed <code>.env.example</code>, <code>console.*</code>→winston), the <strong>11 UX items</strong>, the <strong>CSP fixes</strong> (password reset, Rabbi tour, CMS editor — JS externalized, driver.js/Quill vendored), <strong>trust proxy</strong>, the <strong>HMAC-signed one-click <code>/unsubscribe</code></strong>, <strong>seed content</strong> that meets the PRD Board-demo minimums, and the donation <strong>3-strike alert / CSV export / receipt-PDF / pluggable provider seam</strong>. So the surface below is small and almost entirely non-feature-code.</p>
+    </div>
+
+    <p><strong>What that leaves</strong> falls into four tiers: <strong>(1) launch blockers</strong> — stand up and cut over a server, set real secrets, make email deliverable, fix the broken real-account script, get legal pages reviewed, wire monitoring; <strong>(2) pre-real-money</strong> — productionize PayPal (Board-gated, mock by design); <strong>(3) launch QA gates</strong> — five human verification passes that need a real environment; <strong>(4) polish</strong> — small reliability/hygiene items, none blocking.</p>
+
+    <p><strong>External grounding</strong> (production-readiness research) cross-checks the internal plan and adds a few commonly-missed items: PM2 <code>kill_timeout</code> must exceed worst-case drain; an external uptime probe + dead-man's-switch + disk-full + cert-expiry alerts (a single box can't self-alert); SPF/DKIM/DMARC <em>plus</em> a PTR/rDNS record and the RFC&nbsp;8058 one-click <code>List-Unsubscribe</code> header for the 2024+ Gmail/Yahoo bulk rules; and for PayPal: verify the webhook over the <em>raw</em> request body, store an idempotency key per <code>transmission-id</code>, and use Subscriptions API v2 (Billing Agreements is deprecated). Institutional learnings add two: "ops code is production code" (the backup scripts were historically buggy — run the restore drill), and adversarially review admin/Rabbi route gating when you create real staff accounts.</p>
+
+    <figure>
+      <svg viewBox="0 0 840 300" role="img" aria-labelledby="map-title map-desc">
+        <title id="map-title">Launch-readiness map: shipped vs the remaining gates</title>
+        <desc id="map-desc">A solid block of shipped work on the left, then the remaining launch-blocker gates in sequence leading to public go-live, with a parallel Board-gated PayPal track.</desc>
+        <!-- shipped block -->
+        <rect x="16" y="40" width="180" height="220" rx="10" fill="#eaf5ee" stroke="#1b6e3c" stroke-width="1.5"/>
+        <text x="106" y="64" text-anchor="middle" font-family="Georgia, serif" font-size="15" font-weight="700" fill="#1b6e3c">Shipped on dev</text>
+        <text x="106" y="92" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#2d3748">U1–U14 hardening</text>
+        <text x="106" y="112" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#2d3748">11 UX items</text>
+        <text x="106" y="132" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#2d3748">CSP flow fixes</text>
+        <text x="106" y="152" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#2d3748">SEO · /health · /ready</text>
+        <text x="106" y="172" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#2d3748">Donation infra + seam</text>
+        <text x="106" y="192" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#2d3748">/unsubscribe (HMAC)</text>
+        <text x="106" y="212" text-anchor="middle" font-family="sans-serif" font-size="11.5" fill="#2d3748">Seed content</text>
+        <text x="106" y="240" text-anchor="middle" font-family="sans-serif" font-size="11.5" font-style="italic" fill="#5a6678">feature-complete</text>
+        <!-- arrow -->
+        <line x1="200" y1="150" x2="232" y2="150" stroke="#856823" stroke-width="2"/>
+        <polygon points="232,144 244,150 232,156" fill="#856823"/>
+        <!-- gates -->
+        <g font-family="sans-serif">
+          <rect x="248" y="46" width="150" height="46" rx="8" fill="#fbecec" stroke="#9b2c2c" stroke-width="1.2"/>
+          <text x="323" y="66" text-anchor="middle" font-size="12.5" font-weight="700" fill="#9b2c2c">1 · Host + cutover</text>
+          <text x="323" y="82" text-anchor="middle" font-size="10.5" fill="#5a6678">operator + dev</text>
+
+          <rect x="248" y="100" width="150" height="46" rx="8" fill="#fbecec" stroke="#9b2c2c" stroke-width="1.2"/>
+          <text x="323" y="120" text-anchor="middle" font-size="12.5" font-weight="700" fill="#9b2c2c">2 · Real secrets</text>
+          <text x="323" y="136" text-anchor="middle" font-size="10.5" fill="#5a6678">operator</text>
+
+          <rect x="248" y="154" width="150" height="46" rx="8" fill="#fbecec" stroke="#9b2c2c" stroke-width="1.2"/>
+          <text x="323" y="174" text-anchor="middle" font-size="12.5" font-weight="700" fill="#9b2c2c">3 · Email deliver</text>
+          <text x="323" y="190" text-anchor="middle" font-size="10.5" fill="#5a6678">operator · DNS</text>
+
+          <rect x="414" y="46" width="150" height="46" rx="8" fill="#fbecec" stroke="#9b2c2c" stroke-width="1.2"/>
+          <text x="489" y="66" text-anchor="middle" font-size="12.5" font-weight="700" fill="#9b2c2c">4 · Real accounts</text>
+          <text x="489" y="82" text-anchor="middle" font-size="10.5" fill="#5a6678">dev fix + operator</text>
+
+          <rect x="414" y="100" width="150" height="46" rx="8" fill="#fbecec" stroke="#9b2c2c" stroke-width="1.2"/>
+          <text x="489" y="120" text-anchor="middle" font-size="12.5" font-weight="700" fill="#9b2c2c">5 · Legal review</text>
+          <text x="489" y="136" text-anchor="middle" font-size="10.5" fill="#5a6678">counsel</text>
+
+          <rect x="414" y="154" width="150" height="46" rx="8" fill="#fbecec" stroke="#9b2c2c" stroke-width="1.2"/>
+          <text x="489" y="174" text-anchor="middle" font-size="12.5" font-weight="700" fill="#9b2c2c">6 · Monitor + drill</text>
+          <text x="489" y="190" text-anchor="middle" font-size="10.5" fill="#5a6678">operator</text>
+        </g>
+        <!-- QA gate + go-live -->
+        <line x1="564" y1="123" x2="596" y2="123" stroke="#856823" stroke-width="2"/>
+        <polygon points="596,117 608,123 596,129" fill="#856823"/>
+        <rect x="612" y="100" width="96" height="46" rx="8" fill="#eef2f8" stroke="#2c5282" stroke-width="1.2"/>
+        <text x="660" y="120" text-anchor="middle" font-family="sans-serif" font-size="12" font-weight="700" fill="#2c5282">8 · QA gates</text>
+        <text x="660" y="136" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a6678">human</text>
+        <line x1="708" y1="123" x2="740" y2="123" stroke="#856823" stroke-width="2"/>
+        <polygon points="740,117 752,123 740,129" fill="#856823"/>
+        <rect x="752" y="98" width="72" height="50" rx="25" fill="#1a365d"/>
+        <text x="788" y="120" text-anchor="middle" font-family="Georgia, serif" font-size="12.5" font-weight="700" fill="#fff">GO</text>
+        <text x="788" y="136" text-anchor="middle" font-family="Georgia, serif" font-size="12.5" font-weight="700" fill="#fff">LIVE</text>
+        <!-- parallel PayPal track -->
+        <rect x="612" y="212" width="212" height="52" rx="8" fill="#efe8fb" stroke="#5b3a9b" stroke-width="1.2" stroke-dasharray="5 3"/>
+        <text x="718" y="234" text-anchor="middle" font-family="sans-serif" font-size="12.5" font-weight="700" fill="#5b3a9b">7 · PayPal productionization</text>
+        <text x="718" y="252" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a6678">Board-gated · parallel · not required for go-live</text>
+        <text x="323" y="232" text-anchor="middle" font-family="sans-serif" font-size="10.5" font-style="italic" fill="#5a6678">9 · polish cluster rides along, blocks nothing</text>
+      </svg>
+      <figcaption>Illustrative sequence, not a Gantt chart. Items 1–6 are the go-live gates (operator-heavy); item 8 (manual QA) needs the real box to exist; item 7 (PayPal) is a parallel, Board-gated track that does not block the public launch; item 9 (polish) blocks nothing.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Topic Axes</h2>
+    <ul class="axes">
+      <li><b>Deploy &amp; ops readiness</b> — the production box that doesn't exist yet: PM2/Nginx, DNS/SSL cutover, real secret values, monitoring, backups, the single-instance assumptions.</li>
+      <li><b>Email &amp; DNS deliverability</b> — SMTP provider, SPF/DKIM/DMARC/PTR, captcha keys, the localhost-link trap, one-click unsubscribe header.</li>
+      <li><b>Launch content &amp; accounts</b> — real Rabbi/admin/treasurer accounts (and the broken script that should create them), and legal-page content that still says "pending review."</li>
+      <li><b>Payments productionization</b> — swapping the by-design mock for real PayPal capture, webhooks, and the recurring-subscription lifecycle.</li>
+      <li><b>Polish, deferred-work &amp; residual QA</b> — the nice-to-haves, the accepted residuals, and the manual QA passes that can only run in a real environment.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Ranked Work Items</h2>
+    <div class="jumplist">
+      <strong>Jump to:</strong>
+      <ol>
+        <li><a href="#i1">Stand up the production box &amp; run the go-live cutover</a></li>
+        <li><a href="#i2">Set the real production secrets</a></li>
+        <li><a href="#i3">Make email actually deliver (SMTP + DNS auth + captcha)</a></li>
+        <li><a href="#i4">Repair <code>create-admin.js</code> &amp; provision real staff accounts</a></li>
+        <li><a href="#i5">Get the legal pages reviewed by counsel</a></li>
+        <li><a href="#i6">Provision monitoring + finish the runbook + restore drill</a></li>
+        <li><a href="#i7">Productionize donations on real PayPal (Board-gated)</a></li>
+        <li><a href="#i8">Run the five deferred manual-QA gates</a></li>
+        <li><a href="#i9">Clear the reliability &amp; polish cluster</a></li>
+      </ol>
+    </div>
+
+    <!-- 1 -->
+    <article class="idea" id="i1">
+      <div class="idea-head"><span class="rank">1</span><h3>Stand up the production box &amp; run the go-live cutover</h3></div>
+      <div class="chips"><span class="chip chip-blocker">Launch blocker</span><span class="chip chip-axis">Deploy &amp; ops</span><span class="chip chip-surface">Operator (+ small dev)</span></div>
+      <div class="field"><span class="label">What</span> Provision the single VPS the docs assume: install Node + Postgres + Redis, put the app under <strong>PM2</strong> behind <strong>Nginx</strong>, get a Let's Encrypt cert (<code>docs/SSL_TLS_SETUP.md</code> has the certbot steps), lower the DNS TTL ~48h before cutover, point DNS at the box, set <code>NODE_ENV=production</code>, <strong>tag the pre-launch commit</strong>, and dry-run a rollback. Worth committing two small artifacts so they're versioned rather than ad-hoc: a <code>ecosystem.config.js</code> (with <code>kill_timeout</code> &gt; worst-case drain, <code>wait_ready</code>) and an Nginx site config.</div>
+      <div class="field"><span class="label">Basis</span> <span class="basis-tag">direct</span> No <code>ecosystem.config.js</code>, no Nginx config, no <code>deploy.sh</code>, no Dockerfile exist; <code>package.json</code> start is bare <code>node src/server.js</code>; <code>git tag</code> is empty. AGENTS.md marks host stand-up an "operator-owned launch task." <span class="basis-tag">external</span> PM2 cluster/reload discipline and zero-downtime reload patterns from the production-readiness research.</div>
+      <div class="field"><span class="label">Rationale</span> This is the single hard gate: nothing else about go-live can be verified until a real environment exists, and item 8 (QA) and item 6 (restore drill) literally depend on it. The graceful-shutdown work (U1) already landed, so <code>pm2 reload</code> is now safe.</div>
+      <div class="field"><span class="label">Downsides</span> Mostly human/operator effort, not code. Single-box choice caps you at one instance (see item 9's documentation note); accepted for this launch.</div>
+      <div class="meterrow"><div class="meter"><span>Confidence</span><b>95%</b></div><div class="meter"><span>Complexity</span><b>Medium</b></div><div class="meter"><span>Owner</span><b>Operator</b></div></div>
+    </article>
+
+    <!-- 2 -->
+    <article class="idea" id="i2">
+      <div class="idea-head"><span class="rank">2</span><h3>Set the real production secrets</h3></div>
+      <div class="chips"><span class="chip chip-blocker">Launch blocker</span><span class="chip chip-axis">Deploy &amp; ops</span><span class="chip chip-surface">Operator</span></div>
+      <div class="field"><span class="label">What</span> The ~14 documented vars need real <em>values</em> on the box. The load-bearing ones: <code>ENCRYPTION_KEY</code> (PII reads/writes <em>throw</em> without it), <code>JWT_SECRET</code> (auth forgery if weak/shared), <code>APP_URL</code>/<code>APP_BASE_URL</code> (or every email link is <code>http://localhost:3000</code>), and <code>TEMPLE_LEGAL_NAME</code>/<code>TEMPLE_EIN</code>/<code>TEMPLE_ADDRESS</code> (or tax receipts are legally invalid). Store them in a <code>chmod 600</code> file outside the repo (systemd <code>EnvironmentFile=</code> or PM2 <code>env_file</code>); validate-on-boot so a missing var fails fast. Do <strong>not</strong> set <code>ADMIN_TOKEN</code> (that middleware was deliberately removed in U10).</div>
+      <div class="field"><span class="label">Basis</span> <span class="basis-tag">direct</span> <code>.env.example</code> is fully expanded and documented (U13), but the committed <code>.env</code> has no SMTP/APP_URL/CAPTCHA/TEMPLE values; <code>receiptPdfService.js:9-11</code> falls back to placeholders.</div>
+      <div class="field"><span class="label">Rationale</span> Cheap but unskippable, and the receipt-identity values have a legal dimension (a 501(c)(3) receipt without a real EIN/legal name isn't valid).</div>
+      <div class="field"><span class="label">Downsides</span> None technical — but rotate any secret already committed in <code>.env</code> history before go-live.</div>
+      <div class="meterrow"><div class="meter"><span>Confidence</span><b>95%</b></div><div class="meter"><span>Complexity</span><b>Low</b></div><div class="meter"><span>Owner</span><b>Operator</b></div></div>
+    </article>
+
+    <!-- 3 -->
+    <article class="idea" id="i3">
+      <div class="idea-head"><span class="rank">3</span><h3>Make email actually deliver (SMTP + DNS auth + captcha)</h3></div>
+      <div class="chips"><span class="chip chip-blocker">Launch blocker</span><span class="chip chip-axis">Email &amp; DNS</span><span class="chip chip-surface">Operator · DNS</span></div>
+      <div class="field"><span class="label">What</span> Four coupled pieces: (a) pick an SMTP provider/ESP and set <code>SMTP_*</code> — <strong>without it every send is silently mocked</strong> (logged, never sent); (b) publish <strong>SPF + DKIM + DMARC</strong> records and a <strong>PTR/rDNS</strong> on the sending IP (the 2024+ Gmail/Yahoo bulk-sender rules); (c) set both <code>CAPTCHA_SITE_KEY</code> and <code>CAPTCHA_SECRET</code> together — set only one and the contact form's widget passes but the server rejects every submission; (d) add the RFC&nbsp;8058 one-click <code>List-Unsubscribe</code>/<code>List-Unsubscribe-Post</code> header (the body already has an unsubscribe link, but the header isn't set).</div>
+      <div class="field"><span class="label">Basis</span> <span class="basis-tag">direct</span> <code>emailService.js:6-13</code> returns early with a winston log when <code>SMTP_HOST</code> is absent; no SPF/DKIM/DMARC anywhere in repo (deferred as an operator DNS task); <code>contact.js:27</code> falls back to hCaptcha's test sitekey; no <code>List-Unsubscribe</code> header in <code>src/</code>. <span class="basis-tag">external</span> Gmail/Yahoo/Microsoft bulk-sender authentication + alignment requirements.</div>
+      <div class="field"><span class="label">Rationale</span> Password reset, donation receipts, reminders, and announcements all ride on email. Unauthenticated mail in 2026 lands in spam or is rejected outright — silent failure that looks like the feature is broken.</div>
+      <div class="field"><span class="label">Downsides</span> DNS propagation + a warm-up period; verify with mail-tester before relying on it. Mostly DNS/console work, no code (except the small header addition).</div>
+      <div class="meterrow"><div class="meter"><span>Confidence</span><b>90%</b></div><div class="meter"><span>Complexity</span><b>Medium</b></div><div class="meter"><span>Owner</span><b>Operator</b></div></div>
+    </article>
+
+    <!-- 4 -->
+    <article class="idea" id="i4">
+      <div class="idea-head"><span class="rank">4</span><h3>Repair <code>create-admin.js</code> &amp; provision real staff accounts</h3></div>
+      <div class="chips"><span class="chip chip-blocker">Launch blocker</span><span class="chip chip-axis">Content &amp; accounts</span><span class="chip chip-surface">Dev (1 file) + operator</span></div>
+      <div class="field"><span class="label">What</span> Fix the schema-stale provisioning script, then create the real Rabbi/admin/treasurer/moderator accounts (the demo seed uses a shared password and the <code>@florencetemple.org</code> demo domain — not real credentials). The script <code>INSERT</code>s <code>username</code>, <code>password</code>, and <code>is_active</code> columns that don't exist; the users table has <code>password_hash</code> and no <code>username</code>. So it throws on any real DB and there is currently <em>no</em> working path to a real admin.</div>
+      <div class="field"><span class="label">Basis</span> <span class="basis-tag">direct</span> <code>create-admin.js:39</code> inserts <code>(username, email, password, role, is_active, …)</code> vs <code>migrations/000</code> columns <code>(id, email, password_hash, role, first_name, last_name, …)</code>; <code>seed-demo.js:99</code> itself notes the script is schema-stale.</div>
+      <div class="field"><span class="label">Rationale</span> A real launch needs real, individually-credentialed staff accounts. This is the one genuine <em>code</em> fix among the launch blockers (small, ~1 file). Per the Epic-2 retro, adversarially review the route gating once these real roles exist.</div>
+      <div class="field"><span class="label">Downsides</span> None — strictly an improvement. Decide whether to repair the script or fold provisioning into a small interactive command.</div>
+      <div class="meterrow"><div class="meter"><span>Confidence</span><b>95%</b></div><div class="meter"><span>Complexity</span><b>Low</b></div><div class="meter"><span>Owner</span><b>Dev + operator</b></div></div>
+    </article>
+
+    <!-- 5 -->
+    <article class="idea" id="i5">
+      <div class="idea-head"><span class="rank">5</span><h3>Get the legal pages reviewed by counsel</h3></div>
+      <div class="chips"><span class="chip chip-blocker">Launch blocker</span><span class="chip chip-axis">Content &amp; accounts</span><span class="chip chip-surface">Legal / content</span></div>
+      <div class="field"><span class="label">What</span> <code>/privacy</code> and <code>/terms</code> render real temple details but both carry the inline disclaimer "<em>this policy/these terms are a template pending review by legal counsel</em>." Get them reviewed and the caveat removed before public launch. (<code>/accessibility</code> is already clean — no caveat — so it's not in scope.)</div>
+      <div class="field"><span class="label">Basis</span> <span class="basis-tag">direct</span> <code>migrations/021_seed_legal_pages.sql</code> comment: "this content is NOT a substitute for review by qualified counsel"; rendered footer: "<em>This policy is a template pending review by legal counsel.</em>"</div>
+      <div class="field"><span class="label">Rationale</span> Publishing a privacy policy that self-identifies as unreviewed is a real compliance exposure for an org collecting member PII and donations. Cheap to fix (swap copy after review).</div>
+      <div class="field"><span class="label">Downsides</span> Depends on an external human (counsel) — start early; it can run fully in parallel with everything else.</div>
+      <div class="meterrow"><div class="meter"><span>Confidence</span><b>85%</b></div><div class="meter"><span>Complexity</span><b>Low</b></div><div class="meter"><span>Owner</span><b>Legal/content</b></div></div>
+    </article>
+
+    <!-- 6 -->
+    <article class="idea" id="i6">
+      <div class="idea-head"><span class="rank">6</span><h3>Provision monitoring + finish the runbook + run the restore drill</h3></div>
+      <div class="chips"><span class="chip chip-blocker">Launch blocker</span><span class="chip chip-axis">Deploy &amp; ops</span><span class="chip chip-surface">Operator</span></div>
+      <div class="field"><span class="label">What</span> The endpoints ship (<code>/health</code> liveness, <code>/ready</code> deep DB+Redis) — what's missing is the human/operator wiring: provision an <strong>external</strong> uptime monitor pointed at <code>/health</code> (a single box can't self-alert) plus a dead-man's-switch heartbeat, disk-full, and cert-expiry alerts; fill the RUNBOOK's <code>_TODO (operator)</code> emergency-contact / ISP / registrar placeholders; and actually <strong>run <code>scripts/test-restore-staging.sh</code></strong> against the real environment.</div>
+      <div class="field"><span class="label">Basis</span> <span class="basis-tag">direct</span> <code>/health</code> at <code>server.js:256</code>, <code>/ready</code> at <code>:263</code>; RUNBOOK §8.1 carries explicit <code>_TODO (operator): fill in before production deploy</code> phone placeholders; the hardening plan lists "backup verify-after-restore" in deferred follow-up. <span class="basis-tag">external</span> single-instance monitoring patterns; "ops code is production code" (the backup scripts were historically buggy — the drill matters).</div>
+      <div class="field"><span class="label">Rationale</span> The NFR-R1 95%-uptime gate is undefendable without external monitoring, and an untested backup is not a backup. Depends on item 1 (needs the live box).</div>
+      <div class="field"><span class="label">Downsides</span> Operator effort; recurring (monthly restore drill).</div>
+      <div class="meterrow"><div class="meter"><span>Confidence</span><b>90%</b></div><div class="meter"><span>Complexity</span><b>Low–Med</b></div><div class="meter"><span>Owner</span><b>Operator</b></div></div>
+    </article>
+
+    <!-- 7 -->
+    <article class="idea" id="i7">
+      <div class="idea-head"><span class="rank">7</span><h3>Productionize donations on real PayPal (Board-gated)</h3></div>
+      <div class="chips"><span class="chip chip-gated">Pre-real-money · Board-gated</span><span class="chip chip-axis">Payments</span><span class="chip chip-surface">Dev (post-Board)</span></div>
+      <div class="field"><span class="label">What</span> Build a <code>PayPalProvider</code> behind the existing seam and add the case to the <code>PAYMENT_PROVIDER</code> switch. Scope: one-time <strong>capture</strong> via Orders API v2; a <strong>webhook endpoint</strong> with signature verification (over the <em>raw</em> body) and an <strong>idempotency store</strong> keyed by <code>transmission-id</code>; the <strong>recurring-subscription lifecycle</strong> (Subscriptions API v2 — Billing Agreements is deprecated) plus schema columns (<code>subscription_id</code>/<code>status</code>/<code>next_billing_date</code>) so MRR reflects realized, not intended, revenue; thread the real method through <code>finalize()</code> (it hardcodes <code>payment_method='mock'</code>); and a dispute webhook handler. Keep the controller's ownership-cookie + idempotent-finalize guards untouched, and honor the in-code contract: derive the outcome from the <em>verified callback</em>, never client data.</div>
+      <div class="field"><span class="label">Basis</span> <span class="basis-tag">direct</span> Provider seam at <code>payments/index.js:14-22</code> (no <code>'paypal'</code> case); <code>DonationService.js:106</code> hardcodes <code>payment_method='mock'</code>; no webhook route, no subscription methods/columns. <span class="basis-tag">external</span> PayPal raw-body verification, idempotency, and Subscriptions-v2 best practices.</div>
+      <div class="field"><span class="label">Rationale</span> The largest remaining <em>engineering</em> chunk — but it's deliberately gated on Board authorization + PayPal business credentials and is <strong>not required for public go-live</strong> (donations can launch on the mock or be hidden). The clean seam means the controller doesn't change.</div>
+      <div class="field"><span class="label">Downsides</span> Real money = real risk: webhooks, idempotency, dunning, disputes, and a sandbox→live cutover all have sharp edges. Wants its own <code>/ce-plan</code>.</div>
+      <figure>
+        <svg viewBox="0 0 820 220" role="img" aria-labelledby="pp-title pp-desc">
+          <title id="pp-title">PayPal slots into the existing provider seam</title>
+          <desc id="pp-desc">The donation controller calls getProvider() which switches on an env var between the shipped mock provider and a PayPalProvider that must be built.</desc>
+          <rect x="20" y="86" width="170" height="48" rx="8" fill="#eef2f8" stroke="#2c5282" stroke-width="1.3"/>
+          <text x="105" y="106" text-anchor="middle" font-family="sans-serif" font-size="12.5" font-weight="700" fill="#2c5282">donationController</text>
+          <text x="105" y="123" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a6678">ownership + idempotency (shipped)</text>
+          <line x1="190" y1="110" x2="222" y2="110" stroke="#856823" stroke-width="2"/>
+          <polygon points="222,104 234,110 222,116" fill="#856823"/>
+          <rect x="238" y="84" width="150" height="52" rx="8" fill="#fbf3e0" stroke="#856823" stroke-width="1.3"/>
+          <text x="313" y="106" text-anchor="middle" font-family="sans-serif" font-size="12.5" font-weight="700" fill="#856823">getProvider()</text>
+          <text x="313" y="123" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a6678">switch(PAYMENT_PROVIDER)</text>
+          <!-- mock branch -->
+          <line x1="388" y1="98" x2="430" y2="60" stroke="#1b6e3c" stroke-width="2"/>
+          <rect x="432" y="36" width="170" height="46" rx="8" fill="#eaf5ee" stroke="#1b6e3c" stroke-width="1.3"/>
+          <text x="517" y="56" text-anchor="middle" font-family="sans-serif" font-size="12.5" font-weight="700" fill="#1b6e3c">MockProvider</text>
+          <text x="517" y="72" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a6678">shipped · default</text>
+          <!-- paypal branch -->
+          <line x1="388" y1="122" x2="430" y2="158" stroke="#9b2c2c" stroke-width="2" stroke-dasharray="5 3"/>
+          <rect x="432" y="140" width="368" height="62" rx="8" fill="#fbecec" stroke="#9b2c2c" stroke-width="1.3" stroke-dasharray="5 3"/>
+          <text x="616" y="160" text-anchor="middle" font-family="sans-serif" font-size="12.5" font-weight="700" fill="#9b2c2c">PayPalProvider — to build</text>
+          <text x="616" y="178" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a6678">capture · webhook+verify · idempotency</text>
+          <text x="616" y="193" text-anchor="middle" font-family="sans-serif" font-size="10.5" fill="#5a6678">subscriptions v2 · schema cols · dispute handler</text>
+        </svg>
+        <figcaption>The seam is the whole point: one new class + one <code>case 'paypal':</code> line, with the controller and <code>DonationService</code> already provider-agnostic. The cost is the provider internals, not the integration.</figcaption>
+      </figure>
+      <div class="meterrow"><div class="meter"><span>Confidence</span><b>90%</b></div><div class="meter"><span>Complexity</span><b>High</b></div><div class="meter"><span>Owner</span><b>Dev (post-Board)</b></div></div>
+    </article>
+
+    <!-- 8 -->
+    <article class="idea" id="i8">
+      <div class="idea-head"><span class="rank">8</span><h3>Run the five deferred manual-QA gates</h3></div>
+      <div class="chips"><span class="chip chip-qa">Launch QA gate</span><span class="chip chip-axis">Polish &amp; QA</span><span class="chip chip-surface">Human QA</span></div>
+      <div class="field"><span class="label">What</span> Five passes the automated suite can't cover and the in-repo e2e walkthrough explicitly deferred: (1) real mobile-Safari / cross-browser sweep; (2) a manual screen-reader pass on the donation + login flows; (3) a full <code>NODE_ENV=production</code> smoke (secure cookies over HTTPS, Postgres SSL, captcha fail-closed, SIGTERM drain); (4) email-link verification with a real <code>APP_URL</code>; (5) Lighthouse-in-prod (<code>npm run test:performance</code>).</div>
+      <div class="field"><span class="label">Basis</span> <span class="basis-tag">direct</span> Enumerated as the "out of scope today" list in the e2e plan and the polish/QA dossier; none have been run.</div>
+      <div class="field"><span class="label">Rationale</span> The automated suite (1112 tests + 66 a11y) green-gates logic, but secure-cookie/SSL/prod-mode behavior, real assistive-tech UX, and real-browser rendering are only observable in a prod-like environment. Depends on item 1.</div>
+      <div class="field"><span class="label">Downsides</span> Human time; needs the live box (or a prod-mode local run for some of it).</div>
+      <div class="meterrow"><div class="meter"><span>Confidence</span><b>90%</b></div><div class="meter"><span>Complexity</span><b>Medium</b></div><div class="meter"><span>Owner</span><b>Human QA</b></div></div>
+    </article>
+
+    <!-- 9 -->
+    <article class="idea" id="i9">
+      <div class="idea-head"><span class="rank">9</span><h3>Clear the reliability &amp; polish cluster</h3></div>
+      <div class="chips"><span class="chip chip-polish">Polish · post-launch</span><span class="chip chip-axis">Polish &amp; QA</span><span class="chip chip-surface">Dev (small)</span></div>
+      <div class="field"><span class="label">What</span> A handful of small, independent items, none launch-blocking: add <strong>cache headers to <code>express.static</code></strong> (<code>server.js:101</code> has none — the <code>maxAge:31536000</code> at <code>:83</code> is the HSTS setting, not asset caching); <strong>document the single-instance assumptions</strong> (rate-limit <code>MemoryStore</code> resets on restart; WS chat state is process-local) in AGENTS/RUNBOOK, and optionally move rate-limiting to a Redis store; add reconnect <strong>jitter</strong> to live-chat backoff and drop the <strong>dead <code>msg.role</code></strong> moderator-badge branch; add an <code>is_active</code>/<code>deleted_at</code> guard to the <strong>bulk-email fan-out</strong>; <strong>refresh the stale README/AGENTS</strong> narrative.</div>
+      <div class="field"><span class="label">Basis</span> <span class="basis-tag">direct</span> Each item carries a <code>file:line</code> in the polish/QA dossier (e.g. <code>server.js:101</code> static; <code>live-chat.js</code> fixed <code>[2000,5000,10000]</code> backoff + dead <code>msg.role</code>; <code>AnnouncementService</code>/<code>EventService</code> fan-out with no active-user filter). Most are accepted residuals from <code>deferred-work.md</code>.</div>
+      <div class="field"><span class="label">Rationale</span> These improve performance, scaling-honesty, and maintainability but block nothing. The static cache header is the highest value-per-effort (one options object); the rest are opportunistic. Good as a post-launch sweep or a worktree fill-in.</div>
+      <div class="field"><span class="label">Downsides</span> Easy to gold-plate — keep it bounded; explicitly defer the documented Phase-2 items (GCM re-encryption, bounded CSV export, iCal, announcements archive page, etc.).</div>
+      <div class="meterrow"><div class="meter"><span>Confidence</span><b>85%</b></div><div class="meter"><span>Complexity</span><b>Low</b></div><div class="meter"><span>Owner</span><b>Dev</b></div></div>
+    </article>
+  </section>
+
+  <section>
+    <h2>Rejection Summary</h2>
+    <p>What was considered and cut — overwhelmingly because it <strong>already shipped</strong> (verified against <code>dev</code>, not trusted from stale status docs) or is explicitly out of MVP scope.</p>
+    <table>
+      <thead><tr><th>Item</th><th>Reason cut</th></tr></thead>
+      <tbody>
+        <tr><td>U1–U14 hardening suite</td><td>Shipped on <code>dev</code> (SIGTERM drain, crash handlers, Sentry PII scrub, <code>/health</code>+<code>/ready</code>, SEO, donation form+cache, reserved-name, branded 500, <code>.env.example</code>, console→winston).</td></tr>
+        <tr><td><code>/unsubscribe</code> + one-click token</td><td>Shipped &amp; verified — token is HMAC-signed (<code>unsubscribeToken.js</code>, <code>timingSafeEqual</code>), all email paths use <code>signUnsubscribeToken</code>. The deferred "raw UUID" concern is fixed.</td></tr>
+        <tr><td>CSP-broken flows</td><td>Shipped — password reset, Rabbi tour, CMS editor JS externalized; driver.js/Quill vendored. (Was the highest-priority code blocker in launch-readiness.)</td></tr>
+        <tr><td>trust proxy behind Nginx</td><td>Shipped (<code>server.js:34</code>); the earlier hosting-blocker flag is resolved.</td></tr>
+        <tr><td>Demo / seed content</td><td>Shipped — <code>seed-demo.js</code> gives 5 recordings / 7 events / 3 announcements, meeting PRD Board-demo minimums.</td></tr>
+        <tr><td><code>/accessibility</code> statement</td><td>Shipped clean (no "pending review" caveat, unlike privacy/terms).</td></tr>
+        <tr><td>Donation 3-strike alert · CSV export · receipt PDF · provider seam</td><td>Shipped — only the real-PayPal implementation remains (folded into item 7).</td></tr>
+        <tr><td>Production Dockerfile</td><td>Deliberately deferred — accepted for a single-box PM2 launch (Phase-2 / follow-up).</td></tr>
+        <tr><td>Security headers (nosniff, x-powered-by)</td><td>Already handled by helmet defaults (<code>server.js:66</code>); not a gap.</td></tr>
+        <tr><td>Accepted residuals</td><td>Folded into item 9 or deferred post-launch: <code>updatePreferences</code> read-modify-write race, key-rotation NULL-on-decrypt-failure, featured-expiry cron, server-persisted drafts, donations partial-index 024 (cache is the real fix), ChatService full-history SELECT ("fine at MVP scale").</td></tr>
+        <tr><td>Phase-2 scope</td><td>Out of MVP: YouTube simulstream, unified inbox (Epic 7), full CMS/analytics (Epic 9), MFA, audio descriptions, RSVP, multi-language, AES-GCM re-encryption, bounded/streamed CSV export, iCal "add to calendar", member donation-history page, recurring-events RRULE.</td></tr>
+        <tr><td>Generic divergent-ideation frames</td><td>Skipped by design — five code-reading reconciliation scouts produced a higher-fidelity, verified candidate set than speculative frames, which would have risked re-surfacing shipped items.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <p class="composition-signal">Composed by <code>ce-ideate</code> (compound-engineering) on 2026-06-16 — repo-grounded, reconciled against <code>dev</code> @ <code>47cb66f</code> via five per-axis evidence scouts + external production-readiness research. A discovery artifact, not a plan: items here are candidates to route into <code>ce-plan</code>, not committed work.</p>
+
+</div>
+</body>
+</html>
