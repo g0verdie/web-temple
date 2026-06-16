@@ -35,7 +35,8 @@ if (form) {
       email,
       password,
       first_name: document.getElementById('first_name').value || null,
-      last_name: document.getElementById('last_name').value || null
+      last_name: document.getElementById('last_name').value || null,
+      directory_listed: document.getElementById('directory_listed').checked
     };
 
     try {
