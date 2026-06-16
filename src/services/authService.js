@@ -22,7 +22,7 @@ const LOCKOUT_DURATION_MINUTES = 15;
  * @throws {Error} if email already exists or validation fails
  */
 const registerUser = async (userData) => {
-    const { email, password, first_name, last_name, ip_address } = userData;
+    const { email, password, first_name, last_name, ip_address, directory_listed } = userData;
     const validator = require('validator');
 
     // Validate input
@@ -76,6 +76,18 @@ const registerUser = async (userData) => {
         description: `User registered: ${email}`,
         ip_address,
     }).catch(err => logger.error('Audit log error', { error: err }));
+
+    // Item 6: opt into the member directory at registration. A bare {listed:true}
+    // creates the profile row; per-field "show my…" prefs stay on the account page.
+    // Best-effort — awaited so the user lands listed, but a failure must NOT undo the
+    // already-created account (mirrors the fire-and-forget welcome email).
+    if (directory_listed === true) {
+        try {
+            await require('./MemberDirectoryService').saveMyProfile(user.id, { listed: true });
+        } catch (err) {
+            logger.error('Directory opt-in at registration failed (account still created)', { error: err, user_id: user.id });
+        }
+    }
 
     return user;
 };

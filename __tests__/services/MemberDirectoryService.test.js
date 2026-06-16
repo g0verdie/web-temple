@@ -182,6 +182,39 @@ describe('MemberDirectoryService', () => {
             expect(db.query).not.toHaveBeenCalled();
         });
 
+        test('accepts a year-less MM-DD birthday (year is optional) and stores it encrypted', async () => {
+            db.query.mockResolvedValue({ rows: [{ user_id: 'u1' }] });
+            await svc.saveMyProfile('u1', { birthday: '02-29', show_birthday: true, listed: true });
+            const [, params] = db.query.mock.calls[0];
+            const stored = params.find((p) => {
+                if (typeof p !== 'string') return false;
+                try { return decrypt(p) === '02-29'; } catch (e) { return false; }
+            });
+            expect(stored).toBeTruthy(); // Feb 29 allowed (leap-year validated), year omitted
+            expect(stored).not.toBe('02-29'); // not plaintext
+        });
+
+        test('rejects an invalid year-less birthday (e.g. month 13)', async () => {
+            await expect(svc.saveMyProfile('u1', { birthday: '13-01' }))
+                .rejects.toThrow(/valid date/i);
+            expect(db.query).not.toHaveBeenCalled();
+        });
+
+        test('shows month + day for a year-less stored birthday', async () => {
+            mockClient.query
+                .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+                .mockResolvedValueOnce({
+                    rows: [{
+                        user_id: 'u3', first_name: 'Bea', last_name: 'Day', email: 'bea@x.com',
+                        show_phone: false, show_email: false, show_household: false, show_address: false, show_birthday: true,
+                        phone_encrypted: null, household_encrypted: null, address_encrypted: null,
+                        birthday_encrypted: encrypt('06-15'), bio: null, interests: null
+                    }]
+                });
+            const { profiles } = await svc.listListedProfiles({ page: 1, limit: 20 });
+            expect(profiles[0].birthday).toBe('June 15');
+        });
+
         test('shows only month + day to members (never the year) when show_birthday is true', async () => {
             mockClient.query
                 .mockResolvedValueOnce({ rows: [{ count: '1' }] })
@@ -470,6 +503,71 @@ describe('MemberDirectoryService', () => {
             const sql = db.query.mock.calls[0][0];
             expect(sql).toContain('directory_nudge_dismissed');
             expect(sql).toContain('||'); // jsonb merge, not a full overwrite
+        });
+    });
+
+    describe('export (item 8)', () => {
+        test('toCsv neutralizes spreadsheet-formula injection and escapes quotes', () => {
+            const csv = svc.toCsv([
+                { first_name: '=cmd', last_name: 'Evil', interests: '+1', bio: 'hi "there"' }
+            ]);
+            const [header, row] = csv.split('\n');
+            expect(header).toBe(svc.EXPORT_COLUMNS.join(','));
+            expect(row).toContain('"\'=cmd Evil"'); // leading = neutralized with a quote
+            expect(row).toContain('"\'+1"');         // leading + neutralized
+            expect(row).toContain('hi ""there""');   // embedded quotes doubled
+        });
+
+        test('listAllForExport applies the member-visible projection; hidden fields never export', async () => {
+            db.query.mockResolvedValue({ rows: [{
+                user_id: 'u1', first_name: 'Lin', last_name: 'Listed', email: 'lin@x.com',
+                show_phone: true, show_email: false, show_household: false, show_address: false, show_birthday: false,
+                phone_encrypted: encrypt('555-9999'), household_encrypted: null, address_encrypted: null, birthday_encrypted: null,
+                bio: 'Bio text', interests: 'Choir'
+            }] });
+
+            const profiles = await svc.listAllForExport();
+            expect(db.query.mock.calls[0][0]).toMatch(/mp\.listed = true/); // listed members only
+            expect(profiles[0].email).toBeUndefined(); // show_email=false → omitted by shapeForMember
+            expect(profiles[0].phone).toBe('555-9999'); // show_phone=true → included
+
+            const csv = svc.toCsv(profiles);
+            expect(csv).toContain('555-9999');   // shown field exported
+            expect(csv).not.toContain('lin@x.com'); // hidden field never exported
+
+            const json = svc.toExportJson(profiles);
+            expect(json[0].Phone).toBe('555-9999');
+            expect(json[0].Email).toBe(''); // hidden → empty, not the real value
+        });
+
+        test('flattens a shown household to "Name (Relationship); …" in the export', async () => {
+            const household = JSON.stringify([
+                { name: 'Dana', relationship: 'Spouse', birthday: '' },
+                { name: 'Sam', relationship: '', birthday: '' }
+            ]);
+            db.query.mockResolvedValue({ rows: [{
+                user_id: 'u1', first_name: 'Lin', last_name: 'Listed', email: 'lin@x.com',
+                show_phone: false, show_email: false, show_household: true, show_address: false, show_birthday: false,
+                phone_encrypted: null, household_encrypted: encrypt(household), address_encrypted: null, birthday_encrypted: null,
+                bio: null, interests: null
+            }] });
+
+            const profiles = await svc.listAllForExport();
+            expect(svc.toExportJson(profiles)[0].Household).toBe('Dana (Spouse); Sam');
+            expect(svc.toCsv(profiles)).toContain('Dana (Spouse); Sam');
+        });
+
+        test('omits a hidden household from the export', async () => {
+            db.query.mockResolvedValue({ rows: [{
+                user_id: 'u2', first_name: 'Pat', last_name: 'Private', email: 'pat@x.com',
+                show_phone: false, show_email: false, show_household: false, show_address: false, show_birthday: false,
+                phone_encrypted: null,
+                household_encrypted: encrypt(JSON.stringify([{ name: 'Secret', relationship: 'Spouse', birthday: '' }])),
+                address_encrypted: null, birthday_encrypted: null, bio: null, interests: null
+            }] });
+
+            const json = svc.toExportJson(await svc.listAllForExport());
+            expect(json[0].Household).toBe('');
         });
     });
 });

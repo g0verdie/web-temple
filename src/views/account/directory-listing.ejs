@@ -18,9 +18,19 @@
             </div>
 
             <div class="form-row">
-                <label for="birthday">Birthday</label>
-                <input type="date" id="birthday" name="birthday" value="<%= profile.birthday || '' %>" autocomplete="bday" aria-describedby="birthday-hint">
-                <p class="hint" id="birthday-hint">Other members see only the month and day &mdash; never the year.</p>
+                <span class="form-label" id="birthday-label">Birthday</span>
+                <div class="birthday-fields" id="birthdayFields" role="group" aria-labelledby="birthday-label" aria-describedby="birthday-hint" data-birthday="<%= profile.birthday || '' %>">
+                    <select id="birthday_month" aria-label="Birth month">
+                        <option value="">Month</option>
+                        <% ['January','February','March','April','May','June','July','August','September','October','November','December'].forEach(function (name, i) { %><option value="<%= String(i + 1).padStart(2, '0') %>"><%= name %></option><% }); %>
+                    </select>
+                    <select id="birthday_day" aria-label="Birth day">
+                        <option value="">Day</option>
+                        <% for (let d = 1; d <= 31; d++) { %><option value="<%= String(d).padStart(2, '0') %>"><%= d %></option><% } %>
+                    </select>
+                    <input type="number" id="birthday_year" inputmode="numeric" min="1900" max="<%= new Date().getFullYear() %>" placeholder="Year (optional)" aria-label="Birth year (optional)">
+                </div>
+                <p class="hint" id="birthday-hint">Year is optional. Other members see only the month and day &mdash; never the year.</p>
             </div>
 
             <div class="form-row">
@@ -79,12 +89,23 @@
             </div>
 
             <div class="form-row">
-                <label for="interests">Committees / Interests</label>
-                <input type="text" id="interests" name="interests" value="<%= profile.interests || '' %>" maxlength="200" aria-describedby="interests-hint">
-                <p class="hint" id="interests-hint">Comma-separated. Other members can search by these.</p>
+                <span class="form-label" id="interests-label">Committees / Interests</span>
+                <div class="tag-stack" id="interestsStack" role="list" aria-labelledby="interests-label" aria-describedby="interests-hint">
+                    <% (profile.interests ? profile.interests.split(',') : []).forEach(function (raw) { const tag = raw.trim(); if (tag) { %>
+                        <span class="tag-chip" role="listitem" data-tag="<%= tag %>"><span class="tag-chip-label"><%= tag %></span><button type="button" class="tag-chip-remove" aria-label="Remove <%= tag %>">&times;</button></span>
+                    <% } }); %>
+                </div>
+                <input type="text" id="interestsEntry" maxlength="60" aria-label="Add a committee or interest" aria-describedby="interests-hint" placeholder="Type a committee and press Enter">
+                <p class="hint" id="interests-hint">Type a committee or interest and press Enter to add it. Other members can search by these.</p>
             </div>
 
-            <fieldset class="settings-section" aria-labelledby="visibility-heading">
+            <label class="checkbox-row directory-optin">
+                <input type="checkbox" id="listed" name="listed" <%= profile.listed ? 'checked' : '' %>>
+                <strong>List me in the member directory</strong>
+            </label>
+            <p class="hint" id="listed-hint">When on, the details above become visible to other logged-in members. Turn it off any time to leave the directory; your information is kept but hidden. Until it's on, the visibility options below stay disabled.</p>
+
+            <fieldset class="settings-section visibility-fieldset" id="visibilityFieldset" aria-labelledby="visibility-heading">
                 <legend id="visibility-heading"><h2>What others can see</h2></legend>
                 <p class="hint">Your name and the items above are shown when you're listed. Choose which contact details to reveal:</p>
                 <label class="checkbox-row">
@@ -112,12 +133,6 @@
                     I confirm I'm not sharing details about anyone who hasn't consented.
                 </label>
             </fieldset>
-
-            <label class="checkbox-row directory-optin">
-                <input type="checkbox" id="listed" name="listed" <%= profile.listed ? 'checked' : '' %>>
-                <strong>List me in the member directory</strong>
-            </label>
-            <p class="hint">When on, the details above become visible to other logged-in members. Turn it off any time to leave the directory; your information is kept but hidden.</p>
 
             <button type="submit" class="btn-primary">Save Listing</button>
             <div class="form-message" id="directoryMessage" role="alert"></div>

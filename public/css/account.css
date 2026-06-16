@@ -195,3 +195,97 @@
         padding: 1.25rem;
     }
 }
+
+/* Item 5: "List me in the directory" comes first; the visibility fieldset is disabled
+   and greyed until it's on. */
+.directory-optin {
+    margin-top: 0.5rem;
+    font-size: 1.05rem;
+}
+
+.visibility-fieldset {
+    transition: opacity 0.15s ease;
+}
+
+.visibility-fieldset:disabled {
+    opacity: 0.55;
+}
+
+/* Item 3: month / day / optional-year birthday inputs laid out in a row. */
+.birthday-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.birthday-fields select,
+.birthday-fields input {
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.birthday-fields #birthday_year {
+    max-width: 9rem;
+}
+
+/* Item 4: committees/interests tag-stack. Each chip carries a removable "×" badge in its
+   top-right corner that reveals on hover/focus (always shown on touch, where there is no
+   hover). */
+.tag-stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    padding: 0.25rem 0;
+}
+
+.tag-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    background: var(--color-bg-alt, #f7fafc);
+    border: 1px solid var(--color-border, #e2e8f0);
+    border-radius: 999px;
+    padding: 0.4rem 0.9rem;
+    font-size: 0.95rem;
+    color: var(--color-text, #2d3748);
+}
+
+.tag-chip-remove {
+    position: absolute;
+    top: -0.5rem;
+    right: -0.5rem;
+    width: 1.3rem;
+    height: 1.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--color-primary, #1a365d);
+    color: #fff;
+    font-size: 0.95rem;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+}
+
+.tag-chip:hover .tag-chip-remove,
+.tag-chip:focus-within .tag-chip-remove,
+.tag-chip-remove:focus-visible {
+    opacity: 1;
+}
+
+.tag-chip-remove:focus-visible {
+    outline: 2px solid var(--color-gold-focus, #b8860b);
+    outline-offset: 1px;
+}
+
+/* Touch devices have no hover state, so the remove badge is always visible there. */
+@media (hover: none) {
+    .tag-chip-remove {
+        opacity: 1;
+    }
+}

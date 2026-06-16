@@ -110,30 +110,45 @@ const parseHousehold = (decrypted) => {
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
 
-// Validate caller input into an ISO date string or null. Rejects malformed and
-// future dates. Parsed from the page's <input type="date">, so well-formed in practice.
+// Validate caller input into a stored birthday string or null. The YEAR IS OPTIONAL:
+//  - 'YYYY-MM-DD' (full date) — validated strictly and rejected if in the future.
+//  - 'MM-DD'      (month + day only, year omitted) — validated against a leap year so
+//                 Feb 29 is allowed; no future check (a month/day has no year to compare).
+// Members only ever see the month + day, so omitting the year keeps the age private by
+// construction. Parsed from the page's month/day/(optional year) fields.
 const cleanBirthday = (value) => {
     if (value === undefined || value === null) return null;
     const s = String(value).trim();
     if (s.length === 0) return null;
-    if (!validator.isDate(s, { format: 'YYYY-MM-DD', strictMode: true })) {
-        throw new Error('Birthday must be a valid date');
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+        if (!validator.isDate(s, { format: 'YYYY-MM-DD', strictMode: true })) {
+            throw new Error('Birthday must be a valid date');
+        }
+        // Lexical ISO compare is timezone-agnostic and good enough for a birthday guard.
+        const todayIso = new Date().toISOString().slice(0, 10);
+        if (s > todayIso) {
+            throw new Error('Birthday cannot be in the future');
+        }
+        return s;
     }
-    // Lexical ISO compare is timezone-agnostic and good enough for a birthday guard.
-    const todayIso = new Date().toISOString().slice(0, 10);
-    if (s > todayIso) {
-        throw new Error('Birthday cannot be in the future');
+    if (/^\d{2}-\d{2}$/.test(s)) {
+        // 2000 is a leap year, so a Feb 29 birthday (year unknown) is accepted.
+        if (!validator.isDate(`2000-${s}`, { format: 'YYYY-MM-DD', strictMode: true })) {
+            throw new Error('Birthday must be a valid date');
+        }
+        return s;
     }
-    return s;
+    throw new Error('Birthday must be a valid date');
 };
 
-// Member-facing display: month + day only, never the year. Parsed straight from the
-// ISO string (no Date object) to avoid any timezone shift. Returns null on bad input.
-const formatBirthdayMonthDay = (iso) => {
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+// Member-facing display: month + day only, never the year. Accepts both the full
+// 'YYYY-MM-DD' and the year-less 'MM-DD' stored forms. Parsed straight from the string
+// (no Date object) to avoid any timezone shift. Returns null on bad input.
+const formatBirthdayMonthDay = (value) => {
+    const m = /^(?:\d{4}-)?(\d{2})-(\d{2})$/.exec(String(value || ''));
     if (!m) return null;
-    const month = parseInt(m[2], 10);
-    const day = parseInt(m[3], 10);
+    const month = parseInt(m[1], 10);
+    const day = parseInt(m[2], 10);
     if (month < 1 || month > 12 || day < 1 || day > 31) return null;
     return `${MONTH_NAMES[month - 1]} ${day}`;
 };
@@ -518,6 +533,64 @@ const dismissNudge = async (userId) => {
     return true;
 };
 
+/**
+ * ADMIN-ONLY export (item 8): every LISTED member, shaped to the member-visible
+ * projection — hidden fields are omitted and the birthday is month+day only, exactly
+ * as the public browse shows them (shapeForMember). Unbounded over listed members (a
+ * single congregation), no pagination; decrypts PII per row. The export can never
+ * include an unlisted member or a field a member chose to hide.
+ */
+const listAllForExport = async () => {
+    const result = await db.query(
+        `SELECT mp.user_id, u.first_name, u.last_name, u.email,
+                mp.show_phone, mp.show_email, mp.show_household, mp.show_address, mp.show_birthday,
+                mp.phone_encrypted, mp.household_encrypted, mp.address_encrypted, mp.birthday_encrypted, mp.bio, mp.interests
+         FROM member_profiles mp
+         JOIN users u ON u.id = mp.user_id
+         WHERE mp.listed = true
+         ORDER BY u.last_name ASC, u.first_name ASC`
+    );
+    return result.rows.map(shapeForMember);
+};
+
+// Stable column order for both CSV and JSON exports.
+const EXPORT_COLUMNS = ['Name', 'Email', 'Phone', 'Address', 'Birthday', 'Interests', 'Bio', 'Household'];
+
+// Flatten a member-visible profile to a human-readable export record. Fields the member
+// hid are absent from `shaped`, so they serialize as empty here — the export can never
+// reveal a hidden field. Household (a people array) is joined to a readable string.
+const toExportRecord = (p) => ({
+    Name: `${p.first_name || ''} ${p.last_name || ''}`.trim(),
+    Email: p.email || '',
+    Phone: p.phone || '',
+    Address: p.address || '',
+    Birthday: p.birthday || '',
+    Interests: p.interests || '',
+    Bio: p.bio || '',
+    Household: Array.isArray(p.household)
+        ? p.household.map(h => (h.relationship ? `${h.name} (${h.relationship})` : h.name)).join('; ')
+        : ''
+});
+
+// CSV with spreadsheet-formula-injection neutralization — names/bio/interests/household
+// are fully user-controlled. Mirrors DonationService.toCsv.
+const toCsv = (profiles) => {
+    const escape = (v) => {
+        let s = String(v == null ? '' : v);
+        if (/^[=+\-@]/.test(s)) s = `'${s}`;
+        return `"${s.replace(/"/g, '""')}"`;
+    };
+    const header = EXPORT_COLUMNS.join(',');
+    const lines = (profiles || []).map((p) => {
+        const rec = toExportRecord(p);
+        return EXPORT_COLUMNS.map((c) => escape(rec[c])).join(',');
+    });
+    return [header, ...lines].join('\n');
+};
+
+// JSON export: the same member-visible records as the CSV, as structured objects.
+const toExportJson = (profiles) => (profiles || []).map(toExportRecord);
+
 module.exports = {
     getMyProfile,
     saveMyProfile,
@@ -525,10 +598,14 @@ module.exports = {
     getListedProfile,
     getProfileForAdmin,
     listAllMembersForAdmin,
+    listAllForExport,
+    toCsv,
+    toExportJson,
     moderateProfile,
     getNudgeState,
     dismissNudge,
     // exported for tests / reuse
+    EXPORT_COLUMNS,
     MODERATABLE_FIELDS,
     computeInitials
 };

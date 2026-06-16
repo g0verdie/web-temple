@@ -91,6 +91,24 @@ describe('Authentication API Integration Tests', () => {
             expect(enqueueEmail).toHaveBeenCalledTimes(1);
         });
 
+        it('threads the directory opt-in (item 6): directory_listed:true reaches registerUser', async () => {
+            registerUser.mockResolvedValue({ id: 2, email: 'optin@example.com', role: 'member' });
+            await request(app)
+                .post('/api/auth/register')
+                .send({ email: 'optin@example.com', password: 'SecurePass123!@#', directory_listed: true })
+                .expect(201);
+            expect(registerUser).toHaveBeenCalledWith(expect.objectContaining({ directory_listed: true }));
+        });
+
+        it('defaults the directory opt-in to false when the box is omitted', async () => {
+            registerUser.mockResolvedValue({ id: 3, email: 'noopt@example.com', role: 'member' });
+            await request(app)
+                .post('/api/auth/register')
+                .send({ email: 'noopt@example.com', password: 'SecurePass123!@#' })
+                .expect(201);
+            expect(registerUser).toHaveBeenCalledWith(expect.objectContaining({ directory_listed: false }));
+        });
+
         it('should reject registration with missing email', async () => {
             const response = await request(app)
                 .post('/api/auth/register')

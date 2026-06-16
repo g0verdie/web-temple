@@ -4,8 +4,16 @@ const logger = require('../utils/logger');
 // Normalize query values to strings to avoid array/object edge cases (mirrors recordingController).
 const queryString = (value) => (typeof value === 'string' ? value : '');
 
+// The browse page renders ALL listed members on one page so directory-search.js can
+// filter live (as-you-type) across everyone — pagination is dropped (a single
+// congregation is small). This bounds one page; if a congregation ever exceeds it we
+// log so the cap is never silent.
+const BROWSE_LIMIT = 500;
+
 /**
- * GET /directory — paginated browse + name/interest search of LISTED members.
+ * GET /directory — full browse + name/interest search of LISTED members. Renders every
+ * listed member (up to BROWSE_LIMIT) for client-side live filtering; the server-side
+ * ?search= path remains as the no-JS fallback.
  */
 exports.getDirectory = async (req, res) => {
     try {
@@ -21,9 +29,14 @@ exports.getDirectory = async (req, res) => {
             return res.status(400).render('error', { title: '400 - Invalid Request', message: 'Invalid page number' });
         }
 
-        const limit = 20;
+        const limit = BROWSE_LIMIT;
         const search = queryString(req.query.search);
         const result = await MemberDirectoryService.listListedProfiles({ search, page, limit });
+        if (result.totalCount > BROWSE_LIMIT) {
+            logger.warn('Directory listing exceeds the single-page browse cap; some members are not rendered', {
+                totalCount: result.totalCount, cap: BROWSE_LIMIT
+            });
+        }
 
         // Activation nudge (R20): only for members not yet listed and not dismissed.
         let showNudge = false;
@@ -43,6 +56,8 @@ exports.getDirectory = async (req, res) => {
                 currentPage: result.currentPage,
                 totalPages: result.totalPages,
                 totalCount: result.totalCount,
+                truncated: result.totalCount > BROWSE_LIMIT,
+                browseLimit: BROWSE_LIMIT,
                 filters: { search },
                 showNudge,
                 csrfToken: req.csrfToken ? req.csrfToken() : null

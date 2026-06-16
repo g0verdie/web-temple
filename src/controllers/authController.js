@@ -24,7 +24,7 @@ const register = async (req, res) => {
     try {
         const body = req.body || {};
         ({ email } = body);
-        const { password, first_name, last_name } = body;
+        const { password, first_name, last_name, directory_listed } = body;
 
         // Validate required fields
         if (!email || !password) {
@@ -40,6 +40,7 @@ const register = async (req, res) => {
             password,
             first_name,
             last_name,
+            directory_listed: directory_listed === true,
             ip_address: req.ip || req.connection.remoteAddress
         });
 

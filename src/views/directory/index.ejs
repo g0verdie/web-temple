@@ -17,14 +17,19 @@
 
     <div class="directory-filters">
         <form method="GET" action="/directory" role="search">
-            <input type="text" name="search" placeholder="Search by name or interest..." value="<%= filters.search || '' %>" aria-label="Search members by name or interest">
-            <button type="submit">Search</button>
+            <input type="text" id="directorySearchInput" name="search" placeholder="Search by name or interest..." value="<%= filters.search || '' %>" aria-label="Search members by name or interest" aria-controls="memberList">
+            <button type="submit" class="directory-search-btn">Search</button>
         </form>
+        <p class="directory-search-status" id="directorySearchStatus" role="status" aria-live="polite"></p>
     </div>
+
+    <% if (typeof truncated !== 'undefined' && truncated) { %>
+        <p class="directory-truncated-note" role="status">Showing the first <%= browseLimit %> members. Some listings aren't shown here — use a more specific search to find a member.</p>
+    <% } %>
 
     <div class="directory-results">
         <% if (profiles && profiles.length > 0) { %>
-            <ul class="member-list">
+            <ul class="member-list" id="memberList">
                 <% profiles.forEach(profile => { %>
                     <li class="member-card">
                         <a class="member-card-link" href="/directory/<%= encodeURIComponent(profile.user_id) %>" aria-label="View profile: <%= profile.first_name %> <%= profile.last_name %>">
@@ -39,22 +44,14 @@
                     </li>
                 <% }) %>
             </ul>
+            <!-- Shown by directory-search.js when the live filter matches nothing. -->
+            <p class="directory-empty" id="directoryLiveEmpty" hidden>No members match your search. Try a different name or interest.</p>
         <% } else if (filters.search) { %>
             <p class="directory-empty">No members match "<%= filters.search %>". Try a different name or interest.</p>
         <% } else { %>
             <p class="directory-empty">No members are listed in the directory yet. <a href="/account/directory">Be the first to add your listing.</a></p>
         <% } %>
     </div>
-
-    <% if (totalPages > 1) { %>
-        <nav class="pagination" aria-label="Directory pages">
-            <% if (currentPage > 1) { %>
-                <a href="/directory?page=<%= currentPage - 1 %>&search=<%= encodeURIComponent(filters.search || '') %>" rel="prev">Previous</a>
-            <% } %>
-            <span>Page <%= currentPage %> of <%= totalPages %></span>
-            <% if (currentPage < totalPages) { %>
-                <a href="/directory?page=<%= currentPage + 1 %>&search=<%= encodeURIComponent(filters.search || '') %>" rel="next">Next</a>
-            <% } %>
-        </nav>
-    <% } %>
 </div>
+
+<script src="/js/directory-search.js" defer></script>

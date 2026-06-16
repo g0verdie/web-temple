@@ -41,7 +41,7 @@ describe('Member directory routes', () => {
             const res = await request(app).get('/directory').set('Cookie', [`auth_token=${memberToken}`]);
             expect(res.status).toBe(200);
             expect(MemberDirectoryService.listListedProfiles).toHaveBeenCalledWith(
-                expect.objectContaining({ search: '', page: 1, limit: 20 })
+                expect.objectContaining({ search: '', page: 1, limit: 500 })
             );
             expect(res.text).toContain('Ada');
             expect(res.text).not.toMatch(/tel:/); // no phone key on the row → never rendered

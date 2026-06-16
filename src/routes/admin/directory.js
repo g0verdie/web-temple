@@ -7,6 +7,7 @@
 
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const adminDirectoryController = require('../../controllers/adminDirectoryController');
 const { requirePermission } = require('../../middleware/requireRbac');
 const requireAuth = require('../../middleware/requireAuth');
@@ -20,7 +21,21 @@ const requireDirectoryAdmin = [
     requirePermission(Permissions.MANAGE_DIRECTORY)
 ];
 
+// Export decrypts every listed member's PII in one request, so cap export frequency
+// per user (mirrors the donations export limiter).
+const exportLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 10,
+    keyGenerator: (req) => (req.user && req.user.id ? String(req.user.id) : 'anonymous'),
+    message: { error: 'Too many export requests. Please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: () => process.env.NODE_ENV === 'test'
+});
+
 router.get('/', requireDirectoryAdmin, adminDirectoryController.getDirectoryAdmin);
+router.get('/export.csv', requireDirectoryAdmin, exportLimiter, adminDirectoryController.exportCsv);
+router.get('/export.json', requireDirectoryAdmin, exportLimiter, adminDirectoryController.exportJson);
 router.post('/moderate', requireDirectoryAdmin, adminDirectoryController.moderate);
 
 module.exports = router;

@@ -165,10 +165,38 @@ header {
   outline-offset: 2px;
 }
 
+/* The brand never compresses: it keeps its natural aspect at all widths, overriding the
+   global `img { max-width: 100% }` (which otherwise squished the wordmark against the
+   flex-shrunk header). The nav side yields space instead. Below a narrow breakpoint the
+   wordmark is swapped for a compact home icon (see media query) rather than cramped. */
+.site-title,
+.site-logo-link {
+  flex-shrink: 0;
+}
+
 .site-logo {
   display: block;
   height: 40px;
   width: auto;
+  max-width: none;
+  flex-shrink: 0;
+}
+
+.site-home-icon {
+  display: none;
+  color: var(--color-primary);
+}
+
+/* On small phones the full wordmark is swapped for a compact home icon so the brand
+   stays clean and uncrowded; the wordmark itself is never compressed (see above). */
+@media (max-width: 480px) {
+  .site-logo {
+    display: none;
+  }
+
+  .site-home-icon {
+    display: block;
+  }
 }
 
 /* Hamburger menu button - 44px touch target */
