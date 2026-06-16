@@ -9,6 +9,12 @@
         </form>
     </div>
 
+    <div class="directory-export">
+        <span class="directory-export-label">Export listed members (only fields each member chose to show):</span>
+        <a class="btn-link" href="/admin/directory/export.csv">Export CSV</a>
+        <a class="btn-link" href="/admin/directory/export.json">Export JSON</a>
+    </div>
+
     <% if (members && members.length > 0) { %>
         <table class="admin-member-table">
             <thead>

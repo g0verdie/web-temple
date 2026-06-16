@@ -472,4 +472,39 @@ describe('MemberDirectoryService', () => {
             expect(sql).toContain('||'); // jsonb merge, not a full overwrite
         });
     });
+
+    describe('export (item 8)', () => {
+        test('toCsv neutralizes spreadsheet-formula injection and escapes quotes', () => {
+            const csv = svc.toCsv([
+                { first_name: '=cmd', last_name: 'Evil', interests: '+1', bio: 'hi "there"' }
+            ]);
+            const [header, row] = csv.split('\n');
+            expect(header).toBe(svc.EXPORT_COLUMNS.join(','));
+            expect(row).toContain('"\'=cmd Evil"'); // leading = neutralized with a quote
+            expect(row).toContain('"\'+1"');         // leading + neutralized
+            expect(row).toContain('hi ""there""');   // embedded quotes doubled
+        });
+
+        test('listAllForExport applies the member-visible projection; hidden fields never export', async () => {
+            db.query.mockResolvedValue({ rows: [{
+                user_id: 'u1', first_name: 'Lin', last_name: 'Listed', email: 'lin@x.com',
+                show_phone: true, show_email: false, show_household: false, show_address: false, show_birthday: false,
+                phone_encrypted: encrypt('555-9999'), household_encrypted: null, address_encrypted: null, birthday_encrypted: null,
+                bio: 'Bio text', interests: 'Choir'
+            }] });
+
+            const profiles = await svc.listAllForExport();
+            expect(db.query.mock.calls[0][0]).toMatch(/mp\.listed = true/); // listed members only
+            expect(profiles[0].email).toBeUndefined(); // show_email=false → omitted by shapeForMember
+            expect(profiles[0].phone).toBe('555-9999'); // show_phone=true → included
+
+            const csv = svc.toCsv(profiles);
+            expect(csv).toContain('555-9999');   // shown field exported
+            expect(csv).not.toContain('lin@x.com'); // hidden field never exported
+
+            const json = svc.toExportJson(profiles);
+            expect(json[0].Phone).toBe('555-9999');
+            expect(json[0].Email).toBe(''); // hidden → empty, not the real value
+        });
+    });
 });

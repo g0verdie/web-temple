@@ -68,6 +68,41 @@ describe('Admin directory routes', () => {
         });
     });
 
+    describe('export (item 8)', () => {
+        it('blocks a member from CSV export (403) and never reads the dataset', async () => {
+            const res = await request(app).get('/admin/directory/export.csv').set('Cookie', [`auth_token=${memberToken}`]);
+            expect(res.status).toBe(403);
+            expect(MemberDirectoryService.listAllForExport).not.toHaveBeenCalled();
+        });
+
+        it('blocks a member from JSON export (403)', async () => {
+            const res = await request(app).get('/admin/directory/export.json').set('Cookie', [`auth_token=${memberToken}`]);
+            expect(res.status).toBe(403);
+            expect(MemberDirectoryService.listAllForExport).not.toHaveBeenCalled();
+        });
+
+        it('admin gets a CSV attachment', async () => {
+            MemberDirectoryService.listAllForExport.mockResolvedValue([{ first_name: 'Lin', last_name: 'Listed' }]);
+            MemberDirectoryService.toCsv.mockReturnValue('Name,Email\n"Lin Listed",""');
+            const res = await request(app).get('/admin/directory/export.csv').set('Cookie', [`auth_token=${adminToken}`]);
+            expect(res.status).toBe(200);
+            expect(res.header['content-type']).toMatch(/text\/csv/);
+            expect(res.header['content-disposition']).toMatch(/attachment; filename="member-directory\.csv"/);
+            expect(res.text).toContain('Lin Listed');
+            expect(MemberDirectoryService.listAllForExport).toHaveBeenCalled();
+        });
+
+        it('admin gets a JSON attachment', async () => {
+            MemberDirectoryService.listAllForExport.mockResolvedValue([{ first_name: 'Lin', last_name: 'Listed' }]);
+            MemberDirectoryService.toExportJson.mockReturnValue([{ Name: 'Lin Listed', Email: '' }]);
+            const res = await request(app).get('/admin/directory/export.json').set('Cookie', [`auth_token=${adminToken}`]);
+            expect(res.status).toBe(200);
+            expect(res.header['content-type']).toMatch(/application\/json/);
+            expect(res.header['content-disposition']).toMatch(/attachment; filename="member-directory\.json"/);
+            expect(JSON.parse(res.text)).toEqual([{ Name: 'Lin Listed', Email: '' }]);
+        });
+    });
+
     describe('moderation', () => {
         it('unlists + clears fields and redirects back', async () => {
             MemberDirectoryService.moderateProfile.mockResolvedValue({ moderated: true });

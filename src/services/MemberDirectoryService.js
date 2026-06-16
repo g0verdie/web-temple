@@ -518,6 +518,64 @@ const dismissNudge = async (userId) => {
     return true;
 };
 
+/**
+ * ADMIN-ONLY export (item 8): every LISTED member, shaped to the member-visible
+ * projection — hidden fields are omitted and the birthday is month+day only, exactly
+ * as the public browse shows them (shapeForMember). Unbounded over listed members (a
+ * single congregation), no pagination; decrypts PII per row. The export can never
+ * include an unlisted member or a field a member chose to hide.
+ */
+const listAllForExport = async () => {
+    const result = await db.query(
+        `SELECT mp.user_id, u.first_name, u.last_name, u.email,
+                mp.show_phone, mp.show_email, mp.show_household, mp.show_address, mp.show_birthday,
+                mp.phone_encrypted, mp.household_encrypted, mp.address_encrypted, mp.birthday_encrypted, mp.bio, mp.interests
+         FROM member_profiles mp
+         JOIN users u ON u.id = mp.user_id
+         WHERE mp.listed = true
+         ORDER BY u.last_name ASC, u.first_name ASC`
+    );
+    return result.rows.map(shapeForMember);
+};
+
+// Stable column order for both CSV and JSON exports.
+const EXPORT_COLUMNS = ['Name', 'Email', 'Phone', 'Address', 'Birthday', 'Interests', 'Bio', 'Household'];
+
+// Flatten a member-visible profile to a human-readable export record. Fields the member
+// hid are absent from `shaped`, so they serialize as empty here — the export can never
+// reveal a hidden field. Household (a people array) is joined to a readable string.
+const toExportRecord = (p) => ({
+    Name: `${p.first_name || ''} ${p.last_name || ''}`.trim(),
+    Email: p.email || '',
+    Phone: p.phone || '',
+    Address: p.address || '',
+    Birthday: p.birthday || '',
+    Interests: p.interests || '',
+    Bio: p.bio || '',
+    Household: Array.isArray(p.household)
+        ? p.household.map(h => (h.relationship ? `${h.name} (${h.relationship})` : h.name)).join('; ')
+        : ''
+});
+
+// CSV with spreadsheet-formula-injection neutralization — names/bio/interests/household
+// are fully user-controlled. Mirrors DonationService.toCsv.
+const toCsv = (profiles) => {
+    const escape = (v) => {
+        let s = String(v == null ? '' : v);
+        if (/^[=+\-@]/.test(s)) s = `'${s}`;
+        return `"${s.replace(/"/g, '""')}"`;
+    };
+    const header = EXPORT_COLUMNS.join(',');
+    const lines = (profiles || []).map((p) => {
+        const rec = toExportRecord(p);
+        return EXPORT_COLUMNS.map((c) => escape(rec[c])).join(',');
+    });
+    return [header, ...lines].join('\n');
+};
+
+// JSON export: the same member-visible records as the CSV, as structured objects.
+const toExportJson = (profiles) => (profiles || []).map(toExportRecord);
+
 module.exports = {
     getMyProfile,
     saveMyProfile,
@@ -525,10 +583,14 @@ module.exports = {
     getListedProfile,
     getProfileForAdmin,
     listAllMembersForAdmin,
+    listAllForExport,
+    toCsv,
+    toExportJson,
     moderateProfile,
     getNudgeState,
     dismissNudge,
     // exported for tests / reuse
+    EXPORT_COLUMNS,
     MODERATABLE_FIELDS,
     computeInitials
 };

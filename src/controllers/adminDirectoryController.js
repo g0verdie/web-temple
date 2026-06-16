@@ -1,5 +1,6 @@
 const MemberDirectoryService = require('../services/MemberDirectoryService');
 const logger = require('../utils/logger');
+const { logAudit, AUDIT_ACTIONS } = require('../services/auditService');
 
 const queryString = (value) => (typeof value === 'string' ? value : '');
 
@@ -66,5 +67,51 @@ exports.moderate = async (req, res) => {
     } catch (error) {
         logger.error('Error moderating directory profile', { error });
         return res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to moderate this profile.' });
+    }
+};
+
+/**
+ * GET /admin/directory/export.csv — member-visible export of all LISTED members.
+ * Mirrors the donations CSV export: audit-logged, attachment download, no CSRF
+ * (read-only GET). Respects each member's show_* flags (MemberDirectoryService).
+ */
+exports.exportCsv = async (req, res) => {
+    try {
+        const profiles = await MemberDirectoryService.listAllForExport();
+        const csv = MemberDirectoryService.toCsv(profiles);
+        logAudit({
+            user_id: req.user && req.user.id,
+            action: AUDIT_ACTIONS.DIRECTORY_EXPORTED,
+            entity_type: 'member_profile',
+            description: `Exported member directory (CSV, ${profiles.length} listed members)`
+        }).catch((err) => logger.error('Audit log error:', err));
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="member-directory.csv"');
+        return res.send(csv);
+    } catch (error) {
+        logger.error('Error exporting member directory CSV', { error });
+        return res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to export the member directory.' });
+    }
+};
+
+/**
+ * GET /admin/directory/export.json — same member-visible records as the CSV.
+ */
+exports.exportJson = async (req, res) => {
+    try {
+        const profiles = await MemberDirectoryService.listAllForExport();
+        const records = MemberDirectoryService.toExportJson(profiles);
+        logAudit({
+            user_id: req.user && req.user.id,
+            action: AUDIT_ACTIONS.DIRECTORY_EXPORTED,
+            entity_type: 'member_profile',
+            description: `Exported member directory (JSON, ${profiles.length} listed members)`
+        }).catch((err) => logger.error('Audit log error:', err));
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', 'attachment; filename="member-directory.json"');
+        return res.send(JSON.stringify(records, null, 2));
+    } catch (error) {
+        logger.error('Error exporting member directory JSON', { error });
+        return res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to export the member directory.' });
     }
 };
