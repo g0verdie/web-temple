@@ -129,6 +129,16 @@ describe('emailTemplateService', () => {
             expect(r.headers).toBeUndefined();
         });
 
+        test('non-exempt template WITHOUT a token emits no header (no broken tokenless one-click)', () => {
+            // The donation receipt is enqueued with no unsubscribeToken; advertising a
+            // tokenless one-click URL that always 400s would hurt sender reputation.
+            const receipt = emailTemplateService.renderTemplate('receipt', { amount: '$18', receiptId: 'R1' });
+            expect(receipt.headers).toBeUndefined();
+
+            const tokenless = emailTemplateService.renderTemplate('announcement-notification', { bodyHtml: '<p>x</p>', bodyText: 'x' });
+            expect(tokenless.headers).toBeUndefined();
+        });
+
         test('header URL matches the in-body unsubscribe link (single source of truth)', () => {
             process.env.APP_BASE_URL = 'https://temple.example.com';
             const r = emailTemplateService.renderTemplate('new-event', {

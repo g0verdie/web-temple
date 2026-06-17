@@ -268,6 +268,7 @@ const publishRecording = async (recording, context) => {
                 subject: emailContent.subject,
                 html: emailContent.html,
                 text: emailContent.text,
+                headers: emailContent.headers,
                 priority: 2
             }).catch(e => logger.error('Failed to queue email for recording', { error: e }));
         }

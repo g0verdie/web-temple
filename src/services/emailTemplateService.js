@@ -204,12 +204,18 @@ const renderTemplate = (templateKey, data = {}) => {
 
     const withUnsubscribe = appendUnsubscribe(base, data.unsubscribeToken);
 
-    return {
+    const result = {
         subject: base.subject,
         html: withUnsubscribe.html,
-        text: withUnsubscribe.text,
-        headers: buildUnsubscribeHeaders(data.unsubscribeToken)
+        text: withUnsubscribe.text
     };
+    // Only advertise a one-click List-Unsubscribe header when we have a token to
+    // address it — a tokenless URL always 400s and would hurt sender reputation.
+    // (Transactional templates with no token, e.g. the receipt, get no header.)
+    if (data.unsubscribeToken) {
+        result.headers = buildUnsubscribeHeaders(data.unsubscribeToken);
+    }
+    return result;
 };
 
 module.exports = {

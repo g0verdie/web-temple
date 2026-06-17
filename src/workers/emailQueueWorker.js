@@ -13,7 +13,7 @@ const startEmailQueueWorker = ({
     log = logger
 } = {}) => {
     queue.process('email', async (job) => {
-        const { to, subject, text, html, template, data, attachments } = job.data;
+        const { to, subject, text, html, template, data, attachments, headers } = job.data;
         const rendered = template ? templateService.renderTemplate(template, data) : { subject, text, html };
         const payload = {
             to,
@@ -24,8 +24,11 @@ const startEmailQueueWorker = ({
         if (attachments && attachments.length) {
             payload.attachments = attachments;
         }
-        if (rendered.headers) {
-            payload.headers = rendered.headers;
+        // Headers come from a deferred render (template path) or ride on the job
+        // payload when the email was rendered eagerly at the call site.
+        const outboundHeaders = rendered.headers || headers;
+        if (outboundHeaders) {
+            payload.headers = outboundHeaders;
         }
 
         await mailer.sendEmail(payload);

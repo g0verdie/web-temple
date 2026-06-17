@@ -45,6 +45,15 @@ describe('emailQueueService', () => {
         }));
     });
 
+    test('enqueueEmail forwards List-Unsubscribe headers into the job payload', async () => {
+        const headers = {
+            'List-Unsubscribe': '<https://temple.example.com/unsubscribe?token=t>',
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+        };
+        const job = await emailQueueService.enqueueEmail({ to: 'a@b.c', subject: 'S', html: '<p>h</p>', headers });
+        expect(job.data.headers).toEqual(headers);
+    });
+
     test('getQueueStats returns counts and failed list', async () => {
         const stats = await emailQueueService.getQueueStats();
         expect(stats).toEqual(expect.objectContaining({
