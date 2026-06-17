@@ -97,8 +97,11 @@ app.use(morgan(morganFormat, {
 // Compression middleware
 app.use(compression());
 
-// Static files
-app.use(express.static(path.join(__dirname, '../public')));
+// Static files. A 1h max-age lets browsers cache assets without a revalidation
+// round-trip each request (the default is max-age=0). Kept conservative — and
+// without `immutable` — because filenames are not content-hashed, so ETag/
+// Last-Modified must still revalidate stale CSS/JS after a deploy.
+app.use(express.static(path.join(__dirname, '../public'), { maxAge: '1h' }));
 
 // View engine setup
 app.set('view engine', 'ejs');
