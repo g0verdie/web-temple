@@ -99,6 +99,28 @@ describe('AnnouncementService', () => {
             expect(result.recipientCount).toBe(2);
         });
 
+        it('forwards the template List-Unsubscribe headers to the email queue (one-click reaches bulk mail)', async () => {
+            const headers = {
+                'List-Unsubscribe': '<https://temple.example.com/unsubscribe?token=t>',
+                'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+            };
+            emailTemplateService.renderTemplate.mockReturnValue({
+                subject: 'New Announcement: Test', html: '<p>body</p>', text: 'body', headers
+            });
+            client.query
+                .mockResolvedValueOnce({}) // BEGIN
+                .mockResolvedValueOnce({ rows: [insertedRow()] }) // INSERT
+                .mockResolvedValueOnce({ rows: [{ id: 'm1', email: 'a@x.com', first_name: 'A' }] }) // members
+                .mockResolvedValueOnce({}); // COMMIT
+
+            await AnnouncementService.create(
+                { title: 'Shabbat Notice', body: '<p>Hello</p>' },
+                { userId: 'rabbi-1', ipAddress: '127.0.0.1' }
+            );
+
+            expect(emailQueueService.enqueueEmail).toHaveBeenCalledWith(expect.objectContaining({ headers }));
+        });
+
         it('rejects a blank title before opening a transaction', async () => {
             await expect(
                 AnnouncementService.create({ title: '   ', body: 'x' }, { userId: 'rabbi-1' })

@@ -71,6 +71,9 @@ describe('live-chat client behavior', () => {
     beforeEach(() => {
         jest.resetModules();
         jest.useFakeTimers();
+        // Pin reconnect jitter to 0 so the fixed-interval reconnect tests stay
+        // deterministic; the jitter test overrides this per-case.
+        jest.spyOn(Math, 'random').mockReturnValue(0);
         MockWebSocket.instances = [];
         global.WebSocket = MockWebSocket;
         global.alert = jest.fn();
@@ -85,6 +88,7 @@ describe('live-chat client behavior', () => {
     afterEach(() => {
         jest.useRealTimers();
         jest.clearAllMocks();
+        jest.restoreAllMocks();
         delete global.WebSocket;
         delete global.fetch;
         delete global.alert;
@@ -114,6 +118,21 @@ describe('live-chat client behavior', () => {
         const callsAfterSwitch = global.fetch.mock.calls.length;
         jest.advanceTimersByTime(3000);
         expect(global.fetch.mock.calls.length).toBe(callsAfterSwitch + 1);
+    });
+
+    it('adds randomized jitter to the reconnect backoff to avoid a thundering herd', () => {
+        // 0.5 * 1000ms jitter = +500ms, so the first reconnect fires at 2500ms, not 2000ms.
+        Math.random.mockReturnValue(0.5);
+        document.body.innerHTML = PANEL('member');
+        loadModule();
+
+        MockWebSocket.last._failClose();
+
+        jest.advanceTimersByTime(2000);
+        expect(MockWebSocket.instances).toHaveLength(1); // base interval alone does not fire
+
+        jest.advanceTimersByTime(500);
+        expect(MockWebSocket.instances).toHaveLength(2); // jittered delay fires the reconnect
     });
 
     it('manual reconnect leaves polling mode and reopens a WebSocket', () => {

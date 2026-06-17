@@ -57,7 +57,7 @@ const createQueue = () => {
 
 const queue = createQueue();
 
-const enqueueEmail = async ({ to, subject, text, html, template, data, attachments, priority }) => {
+const enqueueEmail = async ({ to, subject, text, html, template, data, attachments, headers, priority }) => {
     if (!to) {
         throw new Error('Email recipient is required');
     }
@@ -69,7 +69,8 @@ const enqueueEmail = async ({ to, subject, text, html, template, data, attachmen
         html,
         template,
         data,
-        attachments
+        attachments,
+        headers
     }, {
         attempts: MAX_ATTEMPTS,
         backoff: { type: 'emailBackoff' },

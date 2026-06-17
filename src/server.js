@@ -97,8 +97,11 @@ app.use(morgan(morganFormat, {
 // Compression middleware
 app.use(compression());
 
-// Static files
-app.use(express.static(path.join(__dirname, '../public')));
+// Static files. A 1h max-age lets browsers cache assets without a revalidation
+// round-trip each request (the default is max-age=0). Kept conservative — and
+// without `immutable` — because filenames are not content-hashed, so ETag/
+// Last-Modified must still revalidate stale CSS/JS after a deploy.
+app.use(express.static(path.join(__dirname, '../public'), { maxAge: '1h' }));
 
 // View engine setup
 app.set('view engine', 'ejs');
@@ -137,6 +140,12 @@ const csrfProtection = csurf({
 // Skip CSRF in test environment to simplify integration testing
 const conditionalCsrf = (req, res, next) => {
   if (process.env.NODE_ENV === 'test') return next();
+  // RFC 8058 one-click unsubscribe (POST /unsubscribe): mailbox providers POST
+  // `List-Unsubscribe=One-Click` directly to the header URL with no browser,
+  // cookies, or CSRF token. The endpoint is authenticated by the HMAC-signed
+  // token in the query and only performs an idempotent opt-out, so CSRF adds no
+  // protection here and would otherwise reject every one-click request.
+  if (req.method === 'POST' && req.path === '/unsubscribe') return next();
   csrfProtection(req, res, next);
 };
 

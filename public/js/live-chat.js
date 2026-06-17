@@ -18,6 +18,7 @@
     let reconnectAttempts = 0;
     const maxReconnectAttempts = 3;
     const reconnectIntervals = [2000, 5000, 10000]; // 2s, 5s, 10s
+    const reconnectJitterMs = 1000; // spread reconnects to avoid a thundering herd on server restart
     let reconnectTimer = null;
 
     let isPollingMode = false;
@@ -209,7 +210,7 @@
 
     function attemptReconnection() {
         if (reconnectAttempts < maxReconnectAttempts) {
-            const delay = reconnectIntervals[reconnectAttempts];
+            const delay = reconnectIntervals[reconnectAttempts] + Math.floor(Math.random() * reconnectJitterMs);
             reconnectAttempts++;
             console.log(`WS Connection lost. Attempting reconnect ${reconnectAttempts}/${maxReconnectAttempts} in ${delay}ms...`);
             updateStatus('connecting');

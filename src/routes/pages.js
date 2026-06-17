@@ -121,6 +121,16 @@ router.get('/account/confirm-email', (req, res) => {
 router.get('/unsubscribe', unsubscribeController.renderPage);
 
 /**
+ * POST /unsubscribe
+ * RFC 8058 one-click target. Mailbox providers (Gmail/Yahoo) POST
+ * `List-Unsubscribe=One-Click` here with the token in the query — no browser,
+ * cookies, or CSRF token. Authenticated by the HMAC-signed token; CSRF-exempt in
+ * src/server.js. Reuses the same token-verify + idempotent opt-out as the confirm
+ * endpoint, so a tampered token yields 400 and never opts anyone out.
+ */
+router.post('/unsubscribe', unsubscribeController.apply);
+
+/**
  * GET /account/directory
  * The member's own directory-listing editor has been consolidated into the
  * "Directory Listing & Privacy" section of /account/settings. Permanently

@@ -109,4 +109,43 @@ describe('emailTemplateService', () => {
             expect(r.html).toContain('&lt;script&gt;');
         });
     });
+
+    describe('List-Unsubscribe headers (RFC 8058 one-click)', () => {
+        const origEnv = { ...process.env };
+        afterEach(() => { process.env = { ...origEnv }; });
+
+        test('non-exempt member email carries List-Unsubscribe + one-click POST headers', () => {
+            process.env.APP_BASE_URL = 'https://temple.example.com';
+            const r = emailTemplateService.renderTemplate('announcement-notification', {
+                bodyHtml: '<p>x</p>', bodyText: 'x', unsubscribeToken: 'tok123'
+            });
+            expect(r.headers).toBeDefined();
+            expect(r.headers['List-Unsubscribe']).toBe('<https://temple.example.com/unsubscribe?token=tok123>');
+            expect(r.headers['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click');
+        });
+
+        test('exempt transactional email (password-reset) carries no unsubscribe headers', () => {
+            const r = emailTemplateService.renderTemplate('password-reset', { name: 'Dana', resetLink: 'https://x/y' });
+            expect(r.headers).toBeUndefined();
+        });
+
+        test('non-exempt template WITHOUT a token emits no header (no broken tokenless one-click)', () => {
+            // The donation receipt is enqueued with no unsubscribeToken; advertising a
+            // tokenless one-click URL that always 400s would hurt sender reputation.
+            const receipt = emailTemplateService.renderTemplate('receipt', { amount: '$18', receiptId: 'R1' });
+            expect(receipt.headers).toBeUndefined();
+
+            const tokenless = emailTemplateService.renderTemplate('announcement-notification', { bodyHtml: '<p>x</p>', bodyText: 'x' });
+            expect(tokenless.headers).toBeUndefined();
+        });
+
+        test('header URL matches the in-body unsubscribe link (single source of truth)', () => {
+            process.env.APP_BASE_URL = 'https://temple.example.com';
+            const r = emailTemplateService.renderTemplate('new-event', {
+                title: 'X', date: new Date('2099-07-10T19:00:00Z'), unsubscribeToken: 'tok-1'
+            });
+            expect(r.headers['List-Unsubscribe']).toContain('tok-1');
+            expect(r.html).toContain('tok-1');
+        });
+    });
 });

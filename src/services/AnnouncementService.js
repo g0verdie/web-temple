@@ -195,6 +195,7 @@ const fanOutAnnouncementEmails = async (members, payload) => {
                 subject: content.subject,
                 html: content.html,
                 text: content.text,
+                headers: content.headers,
                 priority: 2
             }).catch((e) => logger.error('Failed to queue announcement email', { error: e.message }));
         })

@@ -73,6 +73,12 @@ kill <PID>
 
 ### 2.2 Using PM2 (Production - Recommended)
 
+> **Run as a single instance — do not use PM2 cluster mode (`-i`/`pm2 scale`).**
+> Rate-limit counters and live-chat WebSocket connections are held in-process, so
+> multiple instances would each enforce limits separately and clients on different
+> instances wouldn't share a chat room. Scaling out requires moving rate-limiting
+> to a Redis store and adding a Redis pub/sub adapter for chat broadcast first.
+
 **Check Application Status:**
 ```bash
 pm2 status

@@ -18,9 +18,12 @@ const renderPage = (req, res) => {
 };
 
 /**
- * POST /api/unsubscribe/confirm — verify the signed token and apply the opt-out.
- * Public + token-authenticated (no requireAuth). A valid signature over a user
- * that no longer exists still returns success-shaped so existence isn't leaked.
+ * Verify the signed token and apply the opt-out. Backs two routes: the
+ * CSRF-protected POST /api/unsubscribe/confirm (the unsubscribe page's auto-POST)
+ * and the CSRF-exempt RFC 8058 one-click POST /unsubscribe (mailbox-provider
+ * one-click). Public + token-authenticated (no requireAuth). A valid signature
+ * over a user that no longer exists still returns success-shaped so existence
+ * isn't leaked.
  */
 const apply = async (req, res) => {
     const token = (req.body && req.body.token) || (req.query && req.query.token);
