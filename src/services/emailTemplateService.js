@@ -42,6 +42,14 @@ const buildUnsubscribeLink = (token) => {
     return url.toString();
 };
 
+// RFC 8058 one-click unsubscribe headers. The URL reuses buildUnsubscribeLink so
+// the header target and the in-body link are always the same endpoint+token.
+// Gmail/Yahoo (2024+ bulk rules) POST `List-Unsubscribe=One-Click` to this URL.
+const buildUnsubscribeHeaders = (token) => ({
+    'List-Unsubscribe': `<${buildUnsubscribeLink(token)}>`,
+    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+});
+
 const appendUnsubscribe = ({ html, text }, token) => {
     const link = buildUnsubscribeLink(token);
 
@@ -199,7 +207,8 @@ const renderTemplate = (templateKey, data = {}) => {
     return {
         subject: base.subject,
         html: withUnsubscribe.html,
-        text: withUnsubscribe.text
+        text: withUnsubscribe.text,
+        headers: buildUnsubscribeHeaders(data.unsubscribeToken)
     };
 };
 

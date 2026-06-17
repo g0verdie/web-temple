@@ -24,6 +24,9 @@ const startEmailQueueWorker = ({
         if (attachments && attachments.length) {
             payload.attachments = attachments;
         }
+        if (rendered.headers) {
+            payload.headers = rendered.headers;
+        }
 
         await mailer.sendEmail(payload);
         log.info(`Email job ${job.id} sent`, { jobId: job.id, to: payload.to, template });

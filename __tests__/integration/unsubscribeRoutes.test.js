@@ -98,4 +98,41 @@ describe('Unsubscribe routes', () => {
             expect(userService.unsubscribeAll).toHaveBeenCalledWith(USER_ID);
         });
     });
+
+    describe('POST /unsubscribe (RFC 8058 one-click target)', () => {
+        it('applies the opt-out for a valid token and returns 200 {ok:true}', async () => {
+            userService.unsubscribeAll.mockResolvedValue(true);
+            const token = signUnsubscribeToken(USER_ID);
+
+            const res = await request(app)
+                .post('/unsubscribe')
+                .query({ token })
+                .type('form')
+                .send('List-Unsubscribe=One-Click');
+
+            expect(res.status).toBe(200);
+            expect(res.body).toEqual({ ok: true });
+            expect(userService.unsubscribeAll).toHaveBeenCalledWith(USER_ID);
+        });
+
+        it('rejects a tampered token with 400 and does not opt out', async () => {
+            const token = signUnsubscribeToken(USER_ID);
+            const tampered = token.slice(0, -1) + (token.slice(-1) === 'A' ? 'B' : 'A');
+
+            const res = await request(app).post('/unsubscribe').query({ token: tampered });
+
+            expect(res.status).toBe(400);
+            expect(res.body).toEqual({ ok: false });
+            expect(userService.unsubscribeAll).not.toHaveBeenCalled();
+        });
+
+        it('is reachable for POST (not swallowed by the CMS-slug catch-all)', async () => {
+            userService.unsubscribeAll.mockResolvedValue(true);
+            const token = signUnsubscribeToken(USER_ID);
+
+            const res = await request(app).post('/unsubscribe').query({ token });
+
+            expect(res.status).not.toBe(404);
+        });
+    });
 });
