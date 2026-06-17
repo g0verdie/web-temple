@@ -10,19 +10,23 @@ const dbConfig = {
     password: process.env.DB_PASSWORD,
 };
 
-async function createAdmin() {
-    const client = new Client(dbConfig);
-
+// Create (or no-op if already present) an admin user from ADMIN_* env vars.
+// Mirrors the live insert shape in authService.registerUser — email,
+// password_hash, first_name, last_name, role — because the users table has no
+// username/password/is_active columns (the previous insert threw on every real DB).
+// Accepts an injected client for testing.
+async function createAdmin({ client = new Client(dbConfig) } = {}) {
     try {
         await client.connect();
         console.log('Connected to database.');
 
         const adminEmail = process.env.ADMIN_EMAIL;
         const adminPassword = process.env.ADMIN_PASSWORD;
-        const adminUsername = process.env.ADMIN_USERNAME;
+        const firstName = process.env.ADMIN_FIRST_NAME || null;
+        const lastName = process.env.ADMIN_LAST_NAME || null;
 
-        if (!adminEmail || !adminPassword || !adminUsername) {
-            console.error('Missing required admin credentials. Set ADMIN_EMAIL, ADMIN_USERNAME, and ADMIN_PASSWORD in the environment.');
+        if (!adminEmail || !adminPassword) {
+            console.error('Missing required admin credentials. Set ADMIN_EMAIL and ADMIN_PASSWORD in the environment (ADMIN_FIRST_NAME / ADMIN_LAST_NAME optional).');
             process.exit(1);
         }
 
@@ -33,15 +37,15 @@ async function createAdmin() {
             return;
         }
 
-        const hashedPassword = await bcrypt.hash(adminPassword, 10);
+        const passwordHash = await bcrypt.hash(adminPassword, 10);
 
         const insertQuery = `
-      INSERT INTO users (username, email, password, role, is_active, created_at, updated_at)
-      VALUES ($1, $2, $3, 'admin', true, NOW(), NOW())
-      RETURNING id, username, email;
+      INSERT INTO users (email, password_hash, first_name, last_name, role, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, 'admin', NOW(), NOW())
+      RETURNING id, email, role;
     `;
 
-        const res = await client.query(insertQuery, [adminUsername, adminEmail, hashedPassword]);
+        const res = await client.query(insertQuery, [adminEmail, passwordHash, firstName, lastName]);
         console.log('Admin user created successfully:', res.rows[0]);
 
     } catch (err) {
@@ -52,4 +56,8 @@ async function createAdmin() {
     }
 }
 
-createAdmin();
+if (require.main === module) {
+    createAdmin();
+}
+
+module.exports = { createAdmin };
