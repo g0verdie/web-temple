@@ -72,6 +72,21 @@ describe('create-admin script', () => {
         expect(insert.params).not.toContain('s3cret-pass');
     });
 
+    it('exits without inserting when admin credentials are missing', async () => {
+        delete process.env.ADMIN_EMAIL;
+        delete process.env.ADMIN_PASSWORD;
+        const exitSpy = jest.spyOn(process, 'exit').mockImplementation(() => { throw new Error('process.exit'); });
+        const { createAdmin } = require('../../scripts/create-admin');
+        const client = makeClient();
+
+        await expect(createAdmin({ client })).rejects.toThrow('process.exit');
+
+        expect(exitSpy).toHaveBeenCalledWith(1);
+        const insert = client.calls.find((c) => /INSERT INTO users/i.test(c.text));
+        expect(insert).toBeFalsy();
+        exitSpy.mockRestore();
+    });
+
     it('does not insert when an admin with that email already exists', async () => {
         process.env.ADMIN_EMAIL = 'exists@temple.org';
         process.env.ADMIN_PASSWORD = 'pw';

@@ -135,4 +135,31 @@ describe('Unsubscribe routes', () => {
             expect(res.status).not.toBe(404);
         });
     });
+
+    describe('CSRF exemption for POST /unsubscribe (production-mode behavior)', () => {
+        // conditionalCsrf reads NODE_ENV per-request, so flipping it to development
+        // activates csurf without re-requiring the app (mirrors directoryRouteProtection).
+        const origEnv = process.env.NODE_ENV;
+        afterEach(() => { process.env.NODE_ENV = origEnv; });
+
+        it('a normal POST is rejected (403) by csurf without a token — proves CSRF is active in this mode', async () => {
+            process.env.NODE_ENV = 'development';
+
+            const res = await request(app).post('/api/unsubscribe/confirm').send({ token: 'x' });
+
+            expect(res.status).toBe(403); // EBADCSRFTOKEN
+        });
+
+        it('POST /unsubscribe is exempt: a tokenless-CSRF one-click POST is not blocked and applies the opt-out', async () => {
+            process.env.NODE_ENV = 'development';
+            userService.unsubscribeAll.mockResolvedValue(true);
+            const token = signUnsubscribeToken(USER_ID);
+
+            const res = await request(app).post('/unsubscribe').query({ token });
+
+            expect(res.status).not.toBe(403);
+            expect(res.status).toBe(200);
+            expect(userService.unsubscribeAll).toHaveBeenCalledWith(USER_ID);
+        });
+    });
 });
