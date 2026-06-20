@@ -200,7 +200,37 @@ exports.getCalendarPage = async (req, res) => {
         // one still to come is Upcoming — correct for whichever month is being viewed
         // (a future month is all-Upcoming, a past month all-Past, this month splits at now).
         const upcoming = events.filter(e => e.date >= now);
-        const archive = events.filter(e => e.date < now);
+
+        // Build the month grid (weeks × 7 days) for the calendar table view
+        // (backlog item 5). UTC throughout, matching the UTC month windowing and
+        // month label, so the cells line up with the fetched range.
+        const gridYear = anchor.getUTCFullYear();
+        const gridMonth = anchor.getUTCMonth();
+        const firstWeekday = new Date(Date.UTC(gridYear, gridMonth, 1)).getUTCDay();
+        const daysInMonth = new Date(Date.UTC(gridYear, gridMonth + 1, 0)).getUTCDate();
+        const eventsByDay = {};
+        for (const ev of events) {
+            if (!ev.date) continue;
+            const day = ev.date.getUTCDate();
+            (eventsByDay[day] = eventsByDay[day] || []).push(ev);
+        }
+        const todayIsThisMonth = now.getUTCFullYear() === gridYear && now.getUTCMonth() === gridMonth;
+        const weeks = [];
+        let week = new Array(firstWeekday).fill(null);
+        for (let day = 1; day <= daysInMonth; day++) {
+            week.push({ day, events: eventsByDay[day] || [], isToday: todayIsThisMonth && day === now.getUTCDate() });
+            if (week.length === 7) { weeks.push(week); week = []; }
+        }
+        if (week.length) {
+            while (week.length < 7) week.push(null);
+            weeks.push(week);
+        }
+        const weekdays = [
+            { short: 'Sun', full: 'Sunday' }, { short: 'Mon', full: 'Monday' },
+            { short: 'Tue', full: 'Tuesday' }, { short: 'Wed', full: 'Wednesday' },
+            { short: 'Thu', full: 'Thursday' }, { short: 'Fri', full: 'Friday' },
+            { short: 'Sat', full: 'Saturday' }
+        ];
 
         // Prev/next month nav targets.
         const prevAnchor = new Date(anchor.getTime());
@@ -234,8 +264,9 @@ exports.getCalendarPage = async (req, res) => {
             bodyView: 'calendar/index',
             stylesheets: CALENDAR_STYLESHEETS,
             viewData: {
-                upcoming,
-                archive,
+                weeks,
+                weekdays,
+                monthHasEvents: events.length > 0,
                 isMember: includeMembersOnly,
                 currentMonthLabel: anchor.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }),
                 prevMonth: monthStr(prevAnchor),

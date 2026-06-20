@@ -1,11 +1,27 @@
 /* Calendar admin enhancements (CSP-safe, no inline handlers):
  *  - live preview of title/description as the user types
+ *  - location dropdown: reveal the custom field only when "Custom" is chosen
  *  - delete confirmation dialog
  * Progressive enhancement: the form works without JS. */
 (function () {
   'use strict';
 
   document.addEventListener('DOMContentLoaded', function () {
+    // Location dropdown: show the custom text field only when "Custom" is selected.
+    var locationSelect = document.querySelector('[data-location-select]');
+    var locationCustom = document.querySelector('[data-location-custom]');
+    if (locationSelect && locationCustom) {
+      var syncLocation = function () {
+        if (locationSelect.value === 'custom') {
+          locationCustom.removeAttribute('hidden');
+        } else {
+          locationCustom.setAttribute('hidden', '');
+        }
+      };
+      locationSelect.addEventListener('change', syncLocation);
+      syncLocation();
+    }
+
     // Live preview
     var titleInput = document.querySelector('[data-preview-source="title"]');
     var descInput = document.querySelector('[data-preview-source="description"]');

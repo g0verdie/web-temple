@@ -191,6 +191,102 @@
   color: #666;
 }
 
+/* Public calendar — month grid (table) view. The .calendar-events-list /
+   .event-card rules above are no longer used by calendar/index.ejs after the
+   grid rewrite; left in place rather than removed (may be reused elsewhere). */
+.calendar-grid-wrap {
+  overflow-x: auto;
+}
+
+.calendar-grid {
+  width: 100%;
+  min-width: 700px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.calendar-grid-caption {
+  text-align: left;
+  font-weight: 600;
+  padding: 0 0 0.5rem;
+}
+
+.calendar-grid th {
+  text-align: center;
+  padding: 0.5rem 0.25rem;
+  border: 1px solid #e2e2e2;
+  background: #f7f7f7;
+  font-weight: 600;
+}
+
+.calendar-grid td.calendar-cell {
+  border: 1px solid #e2e2e2;
+  vertical-align: top;
+  height: 6.5rem;
+  padding: 0.35rem;
+}
+
+.calendar-cell--empty {
+  background: #fafafa;
+}
+
+.calendar-cell--today {
+  background: #fff8e1;
+  outline: 2px solid var(--color-gold, #c9a227);
+  outline-offset: -2px;
+}
+
+.calendar-daynum {
+  display: block;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+}
+
+.calendar-today-tag {
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: #856404;
+}
+
+.calendar-cell-events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.calendar-event {
+  background: #eef2ff;
+  border-left: 3px solid var(--color-primary, #1b2a4a);
+  border-radius: 3px;
+  padding: 0.2rem 0.35rem;
+  font-size: 0.8rem;
+  line-height: 1.25;
+}
+
+.calendar-event--service {
+  background: #fdeef0;
+  border-left-color: #a3324b;
+}
+
+.calendar-event-time {
+  display: block;
+  font-variant-numeric: tabular-nums;
+  color: #555;
+}
+
+.calendar-event-title {
+  display: block;
+  font-weight: 600;
+}
+
+.calendar-event-location {
+  display: block;
+  color: #666;
+}
+
 /* Responsive: stack the form/preview and shrink the header on narrow screens */
 @media (max-width: 768px) {
   .calendar-form-layout {
