@@ -7,8 +7,10 @@ const request = require('supertest');
 const express = require('express');
 const path = require('path');
 const PastVideoService = require('../../src/services/pastVideos/PastVideoService');
+const StreamingService = require('../../src/services/StreamingService');
 
 jest.mock('../../src/services/pastVideos/PastVideoService');
+jest.mock('../../src/services/StreamingService');
 
 const app = express();
 app.set('view engine', 'ejs');
@@ -28,6 +30,8 @@ const embed = 'https://www.facebook.com/plugins/video.php?href=ENC&show_text=fal
 describe('GET /watch (public Past Services page)', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        // Default: no live stream. Individual live tests override this.
+        StreamingService.getPublicEmbedMetadata.mockResolvedValue({ status: 'offline', embedUrl: null });
     });
 
     it('(a) returns 200 for an unauthenticated request (no login redirect)', async () => {
@@ -90,5 +94,33 @@ describe('GET /watch (public Past Services page)', () => {
         const res = await request(app).get('/watch');
         expect(res.text).not.toContain('<script>alert(1)</script>');
         expect(res.text).toContain('&lt;script&gt;');
+    });
+
+    it('(h) renders the live embed at the top when a stream is live', async () => {
+        PastVideoService.getVideos.mockResolvedValue({ videos: [], degraded: false });
+        StreamingService.getPublicEmbedMetadata.mockResolvedValue({
+            status: 'live', title: 'Shabbat Service', embedUrl: 'https://www.facebook.com/plugins/video.php?href=LIVE'
+        });
+        const res = await request(app).get('/watch');
+        expect(res.status).toBe(200);
+        expect(res.text).toContain('Live Now');
+        expect(res.text).toContain('https://www.facebook.com/plugins/video.php?href=LIVE');
+        expect(res.text).toContain('Shabbat Service');
+    });
+
+    it('(i) shows no live section when the stream is offline', async () => {
+        PastVideoService.getVideos.mockResolvedValue({ videos: [], degraded: false });
+        StreamingService.getPublicEmbedMetadata.mockResolvedValue({ status: 'offline', embedUrl: null });
+        const res = await request(app).get('/watch');
+        expect(res.status).toBe(200);
+        expect(res.text).not.toContain('Live Now');
+    });
+
+    it('(j) returns 200 (never 500) when the live lookup throws', async () => {
+        PastVideoService.getVideos.mockResolvedValue({ videos: [], degraded: false });
+        StreamingService.getPublicEmbedMetadata.mockRejectedValue(new Error('boom'));
+        const res = await request(app).get('/watch');
+        expect(res.status).toBe(200);
+        expect(res.text).not.toContain('Live Now');
     });
 });

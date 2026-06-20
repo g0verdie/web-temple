@@ -63,7 +63,7 @@ describe('noindex on auth/account pages (U7)', () => {
         db.query.mockResolvedValue({ rows: [{ id: 'member-1', token_version: 1, role: 'member', email: 'm@x.com' }] });
         userService.getAccountSettings.mockResolvedValue({
             email: 'm@x.com', first_name: 'Member', last_name: 'One',
-            notification_preferences: { announcements: true, calendar_events: true, messages: true, recordings: true }
+            notification_preferences: { announcements: true, calendar_events: true, messages: true }
         });
         MemberDirectoryService.getMyProfile.mockResolvedValue({
             email: 'm@x.com', listed: false, show_phone: false, show_email: false,

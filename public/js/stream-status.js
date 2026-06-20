@@ -112,7 +112,7 @@
                 <p class="stream-helper" role="status" aria-live="polite" aria-atomic="true">${safeStream.message || ''}</p>
                 ${upcomingHtml}
                 ${safeStream.status === 'error' && safeStream.fallbackUrl ? `<a href="${safeStream.fallbackUrl}" class="stream-link cta-button">Watch on Facebook</a>` : ''}
-                ${safeStream.status === 'offline' && safeStream.archiveCta ? '<a href="/archive" class="stream-link cta-button">View Recordings</a>' : ''}
+                ${safeStream.status === 'offline' && safeStream.archiveCta ? '<a href="/watch" class="stream-link cta-button">Watch Past Services</a>' : ''}
             </div>
         `;
     };

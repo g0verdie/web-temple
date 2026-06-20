@@ -1,15 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const recordingController = require('../controllers/recordingController');
-const requireAuth = require('../middleware/requireAuth');
 
-// All archive routes require authentication
-router.use(requireAuth);
-
-// GET /archive
-router.get('/', recordingController.getArchiveList);
-
-// GET /archive/:id - playback detail page (Story 3.5)
-router.get('/:id', recordingController.getRecordingDetail);
+// The local recordings archive was retired in favour of the single public
+// Facebook-sourced /watch surface. Permanently redirect old archive URLs
+// (including member bookmarks of /archive/:id) to /watch.
+router.get('/', (req, res) => res.redirect(301, '/watch'));
+router.get('/:id', (req, res) => res.redirect(301, '/watch'));
 
 module.exports = router;

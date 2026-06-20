@@ -49,10 +49,6 @@
                 <input type="checkbox" name="messages" <%= settings.notification_preferences.messages ? 'checked' : '' %>>
                 Messages
             </label>
-            <label class="checkbox-row">
-                <input type="checkbox" name="recordings" <%= settings.notification_preferences.recordings ? 'checked' : '' %>>
-                Recordings
-            </label>
             <button type="submit" class="btn-primary">Save Preferences</button>
             <div class="form-message" id="preferencesMessage" role="alert"></div>
         </form>

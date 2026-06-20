@@ -3,6 +3,20 @@
         <h1 id="watch-heading">Past Services</h1>
         <p class="watch-intro">Watch recent services and videos from Temple B'nai Israel.</p>
 
+        <% if (typeof liveStream !== 'undefined' && liveStream) { %>
+            <div class="watch-live" role="region" aria-labelledby="watch-live-heading">
+                <div class="watch-live__header">
+                    <span class="stream-badge stream-badge--live" role="status" aria-live="polite">Live Now</span>
+                </div>
+                <div class="watch-player__frame">
+                    <iframe src="<%= liveStream.embedUrl %>" title="<%= liveStream.title %> livestream player"
+                        allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="eager"
+                        referrerpolicy="no-referrer"></iframe>
+                </div>
+                <h2 class="watch-live__title" id="watch-live-heading"><%= liveStream.title %></h2>
+            </div>
+        <% } %>
+
         <% if (videos && videos.length) { %>
             <% if (degraded) { %>
                 <p class="watch-notice" role="status">Showing saved past services — our live video list is temporarily unavailable.</p>

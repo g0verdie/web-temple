@@ -46,6 +46,25 @@ describe('stream-status client behavior', () => {
     expect(global.fetch).toHaveBeenCalledWith('/api/stream/status');
   });
 
+  it('renders the offline fallback CTA pointing at /watch (not the retired /archive)', async () => {
+    // beforeEach mocks an offline response with archiveCta:true.
+    document.body.innerHTML = '<section id="live-stream-container"></section>';
+
+    require('../../public/js/stream-status.js');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+
+    // Settle the immediate poll's fetch().then(json).then(updateDOM) chain.
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const container = document.getElementById('live-stream-container');
+    expect(container.innerHTML).toContain('href="/watch"');
+    expect(container.innerHTML).toContain('Watch Past Services');
+    expect(container.innerHTML).not.toContain('/archive');
+    expect(container.innerHTML).not.toContain('View Recordings');
+  });
+
   it('preserves the live iframe node when polling returns the same live stream', async () => {
     const liveResponse = {
       status: 'live',

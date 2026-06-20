@@ -97,39 +97,12 @@ describe('seed-demo script', () => {
     describe('content seeding (B2)', () => {
         const OWNER_ID = 'owner-uuid';
 
-        const recordingInserts = () =>
-            db.query.mock.calls.filter((c) => /INSERT INTO recordings/.test(c[0]));
         const eventInserts = () =>
             db.query.mock.calls.filter((c) => /INSERT INTO events/.test(c[0]));
         const eventDeletes = () =>
             db.query.mock.calls.filter((c) => /DELETE FROM events/.test(c[0]));
         const announcementInserts = () =>
             db.query.mock.calls.filter((c) => /INSERT INTO announcements/.test(c[0]));
-
-        test('seeds >=4 published recordings with recent service dates, owned by the content owner', async () => {
-            await seed.seedContent(db, OWNER_ID);
-
-            const inserts = recordingInserts();
-            expect(inserts.length).toBeGreaterThanOrEqual(4);
-
-            // Oldest seeded recording sits at ~8 weeks; add a day of slack so the
-            // boundary isn't flaky against time elapsed between seeding and asserting.
-            const eightWeeksAgo = Date.now() - (8 * 7 + 1) * 24 * 60 * 60 * 1000;
-            inserts.forEach((call) => {
-                // Idempotent upsert on the provider natural key.
-                expect(call[0]).toMatch(/ON CONFLICT \(provider_name, provider_recording_id\)/i);
-                const params = call[1];
-                // publish_state is set to 'published' (SQL literal).
-                expect(call[0]).toMatch(/'published'/);
-                // service_date is a recent Date
-                const dateParam = params.find((p) => p instanceof Date);
-                expect(dateParam).toBeInstanceOf(Date);
-                expect(dateParam.getTime()).toBeGreaterThanOrEqual(eightWeeksAgo);
-                expect(dateParam.getTime()).toBeLessThanOrEqual(Date.now() + 1000);
-                // updated_by FK = content owner
-                expect(params).toContain(OWNER_ID);
-            });
-        });
 
         test('seeds 6-8 events including >=1 future service, idempotent via delete-by-owner', async () => {
             await seed.seedContent(db, OWNER_ID);
@@ -193,25 +166,6 @@ describe('seed-demo script', () => {
 
             expect(spy).not.toHaveBeenCalled();
             spy.mockRestore();
-        });
-
-        test('re-running produces no duplicates (stable keys / delete-by-owner)', async () => {
-            await seed.seedContent(db, OWNER_ID);
-            const firstRunIds = recordingInserts().map(
-                (c) => c[1].find((p) => typeof p === 'string' && p.startsWith('seed-rec-'))
-            );
-
-            jest.clearAllMocks();
-            db.query.mockResolvedValue({ rows: [] });
-
-            await seed.seedContent(db, OWNER_ID);
-            const secondRunIds = recordingInserts().map(
-                (c) => c[1].find((p) => typeof p === 'string' && p.startsWith('seed-rec-'))
-            );
-
-            // Same stable provider_recording_id keys both runs => ON CONFLICT no-dupes.
-            expect(secondRunIds).toEqual(firstRunIds);
-            expect(new Set(secondRunIds).size).toBe(secondRunIds.length);
         });
     });
 });

@@ -108,7 +108,6 @@
             <li><a href="/contact" <%=activePath==='/contact' ? 'aria-current="page"' : '' %>>Contact</a></li>
             <li><a href="/donations" class="nav-donate" <%=activePath==='/donations' ? 'aria-current="page"' : '' %>>Donate</a></li>
             <% if (user) { %>
-            <li><a href="/archive" <%=activePath==='/archive' ? 'aria-current="page"' : '' %>>Archive</a></li>
             <li><a href="/directory" <%=activePath==='/directory' ? 'aria-current="page"' : '' %>>Directory</a></li>
             <li><a href="/account/settings" <%=activePath==='/account/settings' ? 'aria-current="page"' : '' %>>Account</a></li>
             <% if (user.role === 'admin' || user.role === 'rabbi') { %>

@@ -1,4 +1,5 @@
 const PastVideoService = require('../services/pastVideos/PastVideoService');
+const StreamingService = require('../services/StreamingService');
 const logger = require('../utils/logger');
 
 // The temple's public Facebook page — the empty/degraded state links here.
@@ -16,6 +17,18 @@ exports.getWatchPage = async (req, res) => {
         // PastVideoService is built not to throw, but never let /watch 500.
         logger.warn('watchController falling back to empty state', { error: error && error.message });
         degraded = true;
+    }
+
+    // Surface the current live stream on Watch too (the homepage keeps its
+    // hero). Only the live case is shown here; never let the lookup 500 /watch.
+    let liveStream = null;
+    try {
+        const meta = await StreamingService.getPublicEmbedMetadata();
+        if (meta && meta.status === 'live' && meta.embedUrl) {
+            liveStream = { embedUrl: meta.embedUrl, title: meta.title };
+        }
+    } catch (error) {
+        logger.warn('watchController live lookup failed', { error: error && error.message });
     }
 
     // VideoObject structured data (schema.org) for the featured (first) video.
@@ -42,7 +55,8 @@ exports.getWatchPage = async (req, res) => {
         viewData: {
             videos,
             degraded,
-            facebookPageUrl: FACEBOOK_PAGE_URL
+            facebookPageUrl: FACEBOOK_PAGE_URL,
+            liveStream
         }
     });
 };

@@ -19,9 +19,11 @@ jest.mock('../../src/config/redis', () => ({
 }));
 jest.mock('../../src/config/db', () => ({ query: jest.fn(), pool: { connect: jest.fn() } }));
 jest.mock('../../src/services/pastVideos/PastVideoService');
+jest.mock('../../src/services/StreamingService');
 
 const app = require('../../src/server');
 const PastVideoService = require('../../src/services/pastVideos/PastVideoService');
+const StreamingService = require('../../src/services/StreamingService');
 
 expect.extend(toHaveNoViolations);
 const AXE = { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } };
@@ -58,6 +60,22 @@ describe('Watch / Past Services page accessibility (WCAG AA)', () => {
         PastVideoService.getVideos.mockResolvedValue({ degraded: false, videos: [] });
         const res = await request(app).get('/watch');
         expect(res.status).toBe(200);
+        expect(await axe(res.text, AXE)).toHaveNoViolations();
+    }, 15000);
+
+    test('live state (live embed + past grid) has no violations', async () => {
+        PastVideoService.getVideos.mockResolvedValue({
+            degraded: false,
+            videos: [
+                { embedUrl: 'https://www.facebook.com/plugins/video.php?href=a', title: 'Shabbat Service', date: '2026-02-14T18:00:00Z', thumbnailUrl: '/images/video-placeholder.svg' }
+            ]
+        });
+        StreamingService.getPublicEmbedMetadata.mockResolvedValue({
+            status: 'live', title: 'Live Shabbat Service', embedUrl: 'https://www.facebook.com/plugins/video.php?href=live'
+        });
+        const res = await request(app).get('/watch');
+        expect(res.status).toBe(200);
+        expect(res.text).toContain('Live Now');
         expect(await axe(res.text, AXE)).toHaveNoViolations();
     }, 15000);
 
