@@ -8,8 +8,8 @@
  *
  * Idempotent: a second run produces no duplicates. Deliberately writes via
  * direct parameterized SQL (NOT the service layer) so it never enqueues member
- * email — AnnouncementService/EventService/RecordingService all fan out emails
- * on create/publish, which a seed must not trigger.
+ * email — AnnouncementService/EventService both fan out emails on
+ * create/publish, which a seed must not trigger.
  *
  * NOTE: this is an operational script under scripts/ (not src/), so console
  * output is acceptable here.
@@ -139,44 +139,13 @@ async function seedDemoAccounts(database) {
 }
 
 // ---------------------------------------------------------------------------
-// B2 — content seeding (recordings, calendar events, announcements)
+// B2 — content seeding (calendar events, announcements)
 // All written via direct parameterized SQL to bypass the service-layer email
 // fan-outs and keep full idempotency control. All rows are owned by the B1
 // content owner.
 // ---------------------------------------------------------------------------
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const WEEK_MS = 7 * DAY_MS;
-
-/**
- * Build the demo recordings (>=4), each with a stable provider key and a
- * service_date within the last ~8 weeks.
- * @returns {Array<Object>}
- */
-function buildRecordings() {
-    const now = Date.now();
-    const specs = [
-        { weeksAgo: 1, title: 'Shabbat Morning Service', torahPortion: 'Bereshit', duration: 4500 },
-        { weeksAgo: 2, title: 'Friday Night Kabbalat Shabbat', torahPortion: 'Noach', duration: 3600 },
-        { weeksAgo: 4, title: 'Shabbat Morning Service', torahPortion: 'Lech-Lecha', duration: 4800 },
-        { weeksAgo: 6, title: 'Community Healing Service', torahPortion: 'Vayera', duration: 3300 },
-        { weeksAgo: 8, title: 'Shabbat Morning Service', torahPortion: 'Chayei Sara', duration: 4200 }
-    ];
-
-    return specs.map((spec, index) => {
-        const n = index + 1;
-        return {
-            providerRecordingId: `seed-rec-${n}`,
-            title: spec.title,
-            description: `Recorded service — ${spec.torahPortion}. Seeded demo content.`,
-            serviceDate: new Date(now - spec.weeksAgo * WEEK_MS),
-            torahPortion: spec.torahPortion,
-            durationSeconds: spec.duration,
-            providerVideoUrl: `https://example.org/seed/recordings/${n}`,
-            previewUrl: `https://example.org/seed/recordings/${n}/preview.jpg`
-        };
-    });
-}
 
 /**
  * Build the demo calendar events (6-8): a mix of past and future, including at
@@ -311,47 +280,12 @@ function buildAnnouncements() {
 
 /**
  * Seed all demo content, owned by the B1 content owner. Idempotent:
- *  - recordings: ON CONFLICT (provider_name, provider_recording_id)
  *  - events: DELETE by created_by (the dedicated owner) then re-insert
  *  - announcements: ON CONFLICT (id) on fixed UUIDs
  * @param {{query: Function}} database
  * @param {string} contentOwnerId
  */
 async function seedContent(database, contentOwnerId) {
-    // Recordings (upsert on the provider natural key).
-    for (const rec of buildRecordings()) {
-        await database.query(
-            `INSERT INTO recordings (
-                provider_name, provider_recording_id, provider_video_url, preview_url,
-                title, description, service_date, torah_portion, duration_seconds,
-                publish_state, published_at, created_at, updated_at, updated_by
-            ) VALUES ('seed', $1, $2, $3, $4, $5, $6, $7, $8, 'published', NOW(), NOW(), NOW(), $9)
-            ON CONFLICT (provider_name, provider_recording_id) DO UPDATE SET
-                provider_video_url = EXCLUDED.provider_video_url,
-                preview_url = EXCLUDED.preview_url,
-                title = EXCLUDED.title,
-                description = EXCLUDED.description,
-                service_date = EXCLUDED.service_date,
-                torah_portion = EXCLUDED.torah_portion,
-                duration_seconds = EXCLUDED.duration_seconds,
-                publish_state = 'published',
-                published_at = NOW(),
-                updated_at = NOW(),
-                updated_by = EXCLUDED.updated_by`,
-            [
-                rec.providerRecordingId,
-                rec.providerVideoUrl,
-                rec.previewUrl,
-                rec.title,
-                rec.description,
-                rec.serviceDate,
-                rec.torahPortion,
-                rec.durationSeconds,
-                contentOwnerId
-            ]
-        );
-    }
-
     // Events have a SERIAL id with no natural key: clear this owner's events,
     // then re-insert. Only the seed owns that account, so this is safe.
     await database.query('DELETE FROM events WHERE created_by = $1', [contentOwnerId]);
@@ -450,7 +384,6 @@ module.exports = {
     assertSafeToRun,
     buildDemoAccounts,
     seedDemoAccounts,
-    buildRecordings,
     buildEvents,
     buildAnnouncements,
     seedContent,

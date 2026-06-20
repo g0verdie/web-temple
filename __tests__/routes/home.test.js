@@ -110,7 +110,7 @@ describe('Homepage Route Integration Tests', () => {
       expect(response.text).toContain('Live Stream');
       expect(response.text).toContain('Offline');
       expect(response.text).toContain('The livestream is currently offline. Please view our past recordings.');
-      expect(response.text).toContain('View Recordings');
+      expect(response.text).toContain('Watch Past Services');
     });
 
     it('should render error state correctly', async () => {
