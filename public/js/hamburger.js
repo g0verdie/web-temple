@@ -48,13 +48,6 @@ class HamburgerMenu {
         this.close();
       }
     });
-
-    // Handle window resize - close menu on desktop view
-    window.addEventListener('resize', () => {
-      if (window.innerWidth >= 768 && this.isOpen) {
-        this.close();
-      }
-    });
   }
 
   toggle() {
