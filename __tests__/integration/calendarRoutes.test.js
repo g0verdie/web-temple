@@ -35,6 +35,8 @@ describe('Public calendar page (U5)', () => {
         const res = await request(app).get('/calendar');
         expect(res.status).toBe(200);
         expect(res.text).toContain('Public Picnic');
+        expect(res.text).toContain('class="calendar-grid"'); // month grid (table) view
+        expect(res.text).toContain('<th scope="col">'); // weekday headers
         expect(res.text).toContain('Log in'); // anon members prompt
         const lastCall = EventService.getEventsInRange.mock.calls.at(-1);
         expect(lastCall[2]).toBe(false);
@@ -83,10 +85,11 @@ describe('Public calendar page (U5)', () => {
         expect(end.getTime()).toBeGreaterThan(start.getTime());
     });
 
-    it('edge: empty window renders an empty state', async () => {
+    it('edge: empty window renders the grid with an empty-state note', async () => {
         EventService.getEventsInRange.mockResolvedValue([]);
         const res = await request(app).get('/calendar');
         expect(res.status).toBe(200);
-        expect(res.text).toContain('No upcoming events');
+        expect(res.text).toContain('No events scheduled this month');
+        expect(res.text).toContain('class="calendar-grid"'); // grid still renders
     });
 });

@@ -1,7 +1,7 @@
 <%
-  const fmt = (d) => d ? new Date(d).toLocaleString('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
-  }) : '';
+  // Event times render in UTC, consistent with the controller's UTC month
+  // windowing and the month label (backlog item 5).
+  const timeFmt = (d) => d ? new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }) : '';
 %>
 <section class="calendar-page" role="region" aria-labelledby="calendar-heading">
   <div class="calendar-page-header">
@@ -19,59 +19,49 @@
     </div>
   <% } %>
 
-  <h3 class="section-title" id="upcoming-heading">Upcoming Events</h3>
-  <% if (upcoming && upcoming.length > 0) { %>
-    <ul class="calendar-events-list" role="list" aria-labelledby="upcoming-heading">
-      <% upcoming.forEach(function(event) { %>
-        <li class="event-card" role="listitem">
-          <div class="event-card-header">
-            <h4 class="event-title"><%= event.title %></h4>
-            <% if (event.visibility === 'members') { %>
-              <span class="badge badge-members">Members</span>
-            <% } %>
-          </div>
-          <p class="event-date">
-            <time datetime="<%= event.date ? new Date(event.date).toISOString() : '' %>"><%= fmt(event.date) %></time>
-          </p>
-          <% if (event.description) { %>
-            <p class="event-description"><%= event.description %></p>
-          <% } %>
-          <% if (event.location) { %>
-            <p class="event-location"><span aria-hidden="true">📍</span> <%= event.location %></p>
-          <% } %>
-          <% if (event.zoomUrl) { %>
-            <p class="event-zoom"><a href="<%= event.zoomUrl %>" rel="noopener noreferrer">Join online</a></p>
-          <% } %>
-        </li>
-      <% }); %>
-    </ul>
-  <% } else { %>
-    <p class="no-events">No upcoming events in this window. Check back soon!</p>
+  <% if (!monthHasEvents) { %>
+    <p class="no-events">No events scheduled this month.</p>
   <% } %>
 
-  <h3 class="section-title" id="archive-heading">Past Events</h3>
-  <% if (archive && archive.length > 0) { %>
-    <ul class="calendar-events-list calendar-archive-list" role="list" aria-labelledby="archive-heading">
-      <% archive.forEach(function(event) { %>
-        <li class="event-card event-card--past" role="listitem">
-          <div class="event-card-header">
-            <h4 class="event-title"><%= event.title %></h4>
-            <% if (event.visibility === 'members') { %>
-              <span class="badge badge-members">Members</span>
-            <% } %>
-          </div>
-          <p class="event-date">
-            <time datetime="<%= event.date ? new Date(event.date).toISOString() : '' %>"><%= fmt(event.date) %></time>
-          </p>
-          <% if (event.location) { %>
-            <p class="event-location"><span aria-hidden="true">📍</span> <%= event.location %></p>
-          <% } %>
-        </li>
-      <% }); %>
-    </ul>
-  <% } else { %>
-    <p class="no-events">No past events in this window.</p>
-  <% } %>
+  <div class="calendar-grid-wrap">
+    <table class="calendar-grid">
+      <caption class="calendar-grid-caption"><%= currentMonthLabel %></caption>
+      <thead>
+        <tr>
+          <% weekdays.forEach(function(wd) { %>
+            <th scope="col"><abbr title="<%= wd.full %>"><%= wd.short %></abbr></th>
+          <% }); %>
+        </tr>
+      </thead>
+      <tbody>
+        <% weeks.forEach(function(week) { %>
+          <tr>
+            <% week.forEach(function(cell) { %>
+              <% if (!cell) { %>
+                <td class="calendar-cell calendar-cell--empty"></td>
+              <% } else { %>
+                <td class="calendar-cell<%= cell.isToday ? ' calendar-cell--today' : '' %>">
+                  <span class="calendar-daynum"><%= cell.day %><% if (cell.isToday) { %> <span class="calendar-today-tag">(today)</span><% } %></span>
+                  <% if (cell.events.length) { %>
+                    <ul class="calendar-cell-events">
+                      <% cell.events.forEach(function(event) { %>
+                        <li class="calendar-event calendar-event--<%= event.type || 'event' %>">
+                          <% if (event.date) { %><time class="calendar-event-time" datetime="<%= new Date(event.date).toISOString() %>"><%= timeFmt(event.date) %></time><% } %>
+                          <span class="calendar-event-title"><%= event.title %></span>
+                          <% if (event.visibility === 'members') { %><span class="badge badge-members">Members</span><% } %>
+                          <% if (event.location) { %><span class="calendar-event-location"><span aria-hidden="true">📍</span> <%= event.location %></span><% } %>
+                        </li>
+                      <% }); %>
+                    </ul>
+                  <% } %>
+                </td>
+              <% } %>
+            <% }); %>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
 </section>
 
 <script src="/js/calendar.js"></script>
