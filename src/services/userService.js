@@ -10,7 +10,6 @@ const DEFAULT_NOTIFICATION_PREFERENCES = {
     announcements: true,
     calendar_events: true,
     messages: true,
-    recordings: true,
     // UI flag (not a notification channel): once true, the member-directory opt-in
     // nudge stays dismissed. Listed here so normalize/merge preserve it across
     // notification-preference updates rather than resurrecting the nudge.
@@ -137,7 +136,6 @@ const unsubscribeAll = async (userId) => {
         ...DEFAULT_NOTIFICATION_PREFERENCES,
         announcements: false,
         calendar_events: false,
-        recordings: false,
         messages: false
     };
 

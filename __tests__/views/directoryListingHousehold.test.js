@@ -26,7 +26,7 @@ describe('Directory listing edit view: structured household markup', () => {
         db.query.mockResolvedValue({ rows: [{ id: 'member-1', token_version: 1, role: 'member', email: 'm@x.com' }] });
         userService.getAccountSettings.mockResolvedValue({
             email: 'm@x.com', first_name: 'Member', last_name: 'One',
-            notification_preferences: { announcements: true, calendar_events: true, messages: true, recordings: true }
+            notification_preferences: { announcements: true, calendar_events: true, messages: true }
         });
     });
 

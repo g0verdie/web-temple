@@ -67,7 +67,6 @@ describe('userService.getAccountSettings', () => {
             announcements: true,
             calendar_events: true,
             messages: true,
-            recordings: true,
             directory_nudge_dismissed: false
         });
     });
@@ -115,10 +114,10 @@ describe('userService.updatePreferences', () => {
 
         const prefs = await userService.updatePreferences('user-1', { messages: false });
 
-        expect(prefs).toEqual({ announcements: true, calendar_events: true, messages: false, recordings: true, directory_nudge_dismissed: false });
+        expect(prefs).toEqual({ announcements: true, calendar_events: true, messages: false, directory_nudge_dismissed: false });
         expect(db.query).toHaveBeenCalledWith(
             'UPDATE users SET notification_preferences = $1, updated_at = NOW() WHERE id = $2 RETURNING id',
-            [{ announcements: true, calendar_events: true, messages: false, recordings: true, directory_nudge_dismissed: false }, 'user-1']
+            [{ announcements: true, calendar_events: true, messages: false, directory_nudge_dismissed: false }, 'user-1']
         );
     });
 
@@ -131,16 +130,16 @@ describe('userService.updatePreferences', () => {
     // announcement fan-out (KTD4 SQL filter) honors it immediately.
     it('persists announcements:false while preserving other preferences', async () => {
         db.query
-            .mockResolvedValueOnce({ rows: [{ notification_preferences: { announcements: true, recordings: true } }] })
+            .mockResolvedValueOnce({ rows: [{ notification_preferences: { announcements: true, calendar_events: true } }] })
             .mockResolvedValueOnce({ rows: [{ id: 'user-1' }] });
 
         const prefs = await userService.updatePreferences('user-1', { announcements: false });
 
         expect(prefs.announcements).toBe(false);
-        expect(prefs.recordings).toBe(true);
+        expect(prefs.calendar_events).toBe(true);
         expect(db.query).toHaveBeenCalledWith(
             'UPDATE users SET notification_preferences = $1, updated_at = NOW() WHERE id = $2 RETURNING id',
-            [expect.objectContaining({ announcements: false, recordings: true }), 'user-1']
+            [expect.objectContaining({ announcements: false, calendar_events: true }), 'user-1']
         );
     });
 });
@@ -150,7 +149,7 @@ describe('userService.unsubscribeAll', () => {
         jest.clearAllMocks();
     });
 
-    it('sets all four bulk notification keys to false and returns true', async () => {
+    it('sets all three bulk notification keys to false and returns true', async () => {
         db.query.mockResolvedValue({ rows: [{ id: 'user-1' }] });
 
         const result = await userService.unsubscribeAll('user-1');
@@ -162,7 +161,6 @@ describe('userService.unsubscribeAll', () => {
                 expect.objectContaining({
                     announcements: false,
                     calendar_events: false,
-                    recordings: false,
                     messages: false
                 }),
                 'user-1'
@@ -197,7 +195,6 @@ describe('userService.unsubscribeAll', () => {
             expect(call[1][0]).toEqual(expect.objectContaining({
                 announcements: false,
                 calendar_events: false,
-                recordings: false,
                 messages: false
             }));
         }
