@@ -137,8 +137,9 @@ header {
   margin: 0 auto;
   padding: 0 var(--spacing-md);
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  gap: var(--spacing-md);
   min-height: 60px;
 }
 
@@ -649,36 +650,9 @@ footer {
 /* Responsive design - Mobile first */
 /* Base styles above are for mobile (375px+) */
 
-/* Tablet (768px+) - Show desktop menu, hide hamburger */
+/* Tablet (768px+) - larger type. The nav lives behind the hamburger at every
+   width (per design), so there is no desktop menu row to swap in here. */
 @media (min-width: 768px) {
-  .hamburger-btn {
-    display: none;
-  }
-
-  .nav-menu {
-    display: flex !important;
-    position: static;
-    flex-direction: row;
-    background-color: transparent;
-    box-shadow: none;
-    padding: 0;
-    gap: var(--spacing-md);
-  }
-  
-  .nav-menu li {
-    width: auto;
-  }
-  
-  .nav-menu a {
-    padding: var(--spacing-xs) var(--spacing-sm);
-    min-height: auto;
-    border-bottom: none;
-  }
-  
-  .nav-container {
-    flex-wrap: nowrap;
-  }
-  
   .site-title {
     font-size: 1.5rem;
   }

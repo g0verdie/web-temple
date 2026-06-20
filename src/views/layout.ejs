@@ -88,17 +88,17 @@
   <header role="banner">
     <nav role="navigation" aria-label="Main navigation">
       <div class="nav-container">
+        <button class="hamburger-btn" aria-label="Menu" aria-expanded="false" aria-controls="nav-menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
         <h1 class="site-title">
           <a href="/" class="site-logo-link" aria-label="Temple B'nai Israel — home">
             <img src="/images/tbi-logo.png" alt="Temple B'nai Israel" class="site-logo" width="600" height="137">
             <svg class="site-home-icon" viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true" focusable="false"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
           </a>
         </h1>
-        <button class="hamburger-btn" aria-label="Menu" aria-expanded="false" aria-controls="nav-menu">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
         <% const activePath=(typeof currentPath !=='undefined' ? currentPath : '' ); %>
           <ul class="nav-menu" id="nav-menu">
             <li><a href="/" <%=activePath==='/' ? 'aria-current="page"' : '' %>>Home</a></li>
