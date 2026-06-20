@@ -271,3 +271,74 @@ describe('EventService notifications (U6)', () => {
         expect(db.query.mock.calls[0][0]).toContain("notification_preferences->>'calendar_events'");
     });
 });
+
+describe('EventService split date/time inputs (backlog item 3)', () => {
+    const insertVals = () => db.query.mock.calls[0][1];
+
+    test('combines starts_date + starts_time into a valid starts_at', async () => {
+        db.query.mockResolvedValueOnce({ rows: [row({ id: 10 })] }).mockResolvedValueOnce({ rows: [] });
+        await EventService.create(
+            { title: 'Split', starts_date: '2099-05-01', starts_time: '18:30', visibility: 'public', event_type: 'event' },
+            'user-1'
+        );
+        const startsAt = insertVals()[2];
+        expect(startsAt).toBeInstanceOf(Date);
+        expect(isNaN(startsAt.getTime())).toBe(false);
+    });
+
+    test('combines ends_date + ends_time into ends_at', async () => {
+        db.query.mockResolvedValueOnce({ rows: [row({ id: 11 })] }).mockResolvedValueOnce({ rows: [] });
+        await EventService.create(
+            { title: 'Split', starts_date: '2099-05-01', starts_time: '18:30', ends_date: '2099-05-01', ends_time: '20:00' },
+            'user-1'
+        );
+        expect(insertVals()[3]).toBeInstanceOf(Date);
+    });
+
+    test('rejects when split end is before split start', async () => {
+        await expect(EventService.create(
+            { title: 'x', starts_date: '2099-05-02', starts_time: '18:00', ends_date: '2099-05-01', ends_time: '18:00' }
+        )).rejects.toThrow('End date must be after start date');
+    });
+
+    test('throws Invalid start date when no start provided in any form', async () => {
+        await expect(EventService.create({ title: 'x' })).rejects.toThrow('Invalid start date');
+    });
+
+    test('still accepts the legacy combined starts_at', async () => {
+        db.query.mockResolvedValueOnce({ rows: [row({ id: 12 })] }).mockResolvedValueOnce({ rows: [] });
+        await EventService.create({ title: 'Legacy', starts_at: '2099-01-01T18:00' }, 'user-1');
+        expect(insertVals()[2]).toBeInstanceOf(Date);
+    });
+});
+
+describe('EventService location dropdown (backlog item 4)', () => {
+    const locationVal = () => db.query.mock.calls[0][1][6];
+
+    test('location_choice "Temple" maps to the Temple location', async () => {
+        db.query.mockResolvedValueOnce({ rows: [row({ id: 13 })] }).mockResolvedValueOnce({ rows: [] });
+        await EventService.create({ title: 'x', starts_at: '2099-01-01T18:00', location_choice: 'Temple' }, 'user-1');
+        expect(locationVal()).toBe('Temple');
+    });
+
+    test('location_choice "custom" uses (trimmed) location_custom', async () => {
+        db.query.mockResolvedValueOnce({ rows: [row({ id: 14 })] }).mockResolvedValueOnce({ rows: [] });
+        await EventService.create(
+            { title: 'x', starts_at: '2099-01-01T18:00', location_choice: 'custom', location_custom: '  Community Center  ' },
+            'user-1'
+        );
+        expect(locationVal()).toBe('Community Center');
+    });
+
+    test('location_choice "" (none) maps to null', async () => {
+        db.query.mockResolvedValueOnce({ rows: [row({ id: 15 })] }).mockResolvedValueOnce({ rows: [] });
+        await EventService.create({ title: 'x', starts_at: '2099-01-01T18:00', location_choice: '' }, 'user-1');
+        expect(locationVal()).toBeNull();
+    });
+
+    test('still accepts the legacy location field', async () => {
+        db.query.mockResolvedValueOnce({ rows: [row({ id: 16 })] }).mockResolvedValueOnce({ rows: [] });
+        await EventService.create({ title: 'x', starts_at: '2099-01-01T18:00', location: 'Hall' }, 'user-1');
+        expect(locationVal()).toBe('Hall');
+    });
+});

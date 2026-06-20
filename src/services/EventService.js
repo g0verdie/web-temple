@@ -281,14 +281,26 @@ class EventService {
             throw new Error('Title cannot exceed 255 characters');
         }
 
-        const startsAt = parseEventDate(eventData.starts_at || eventData.date);
+        // Accept either a combined datetime (legacy callers / API) or the split
+        // date + time fields posted by the admin form (backlog item 3).
+        const combineDateTime = (dateStr, timeStr) => {
+            if (!dateStr) return null;
+            return `${dateStr}T${timeStr || '00:00'}`;
+        };
+        const startsInput = eventData.starts_at || eventData.date
+            || combineDateTime(eventData.starts_date, eventData.starts_time);
+        const startsAt = parseEventDate(startsInput);
         if (isNaN(startsAt.getTime())) {
             throw new Error('Invalid start date');
         }
 
+        let endsInput = eventData.ends_at;
+        if (!endsInput && eventData.ends_date) {
+            endsInput = combineDateTime(eventData.ends_date, eventData.ends_time);
+        }
         let endsAt = null;
-        if (eventData.ends_at) {
-            endsAt = parseEventDate(eventData.ends_at);
+        if (endsInput) {
+            endsAt = parseEventDate(endsInput);
             if (isNaN(endsAt.getTime())) {
                 throw new Error('Invalid end date');
             }
@@ -307,6 +319,21 @@ class EventService {
             throw new Error('Invalid event type');
         }
 
+        // Location dropdown (Temple / Custom) maps to the stored string; legacy
+        // callers still pass `location` directly (backlog item 4).
+        let location;
+        if (eventData.location_choice !== undefined) {
+            if (eventData.location_choice === 'Temple') {
+                location = 'Temple';
+            } else if (eventData.location_choice === 'custom') {
+                location = eventData.location_custom;
+            } else {
+                location = null;
+            }
+        } else {
+            location = eventData.location;
+        }
+
         return {
             title,
             description: eventData.description ? String(eventData.description) : null,
@@ -314,7 +341,7 @@ class EventService {
             endsAt,
             visibility,
             eventType,
-            location: eventData.location ? String(eventData.location).trim() : null,
+            location: location ? String(location).trim() : null,
             zoomUrl: eventData.zoom_url ? String(eventData.zoom_url).trim() : null
         };
     }
