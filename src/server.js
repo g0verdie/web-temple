@@ -30,8 +30,12 @@ const HOST = process.env.HOST || 'localhost';
 const sentry = require('./config/sentry');
 sentry.initSentry();
 
-// Trust proxy (required for secure cookies and rate limiting behind Nginx)
-app.enable('trust proxy');
+// Trust proxy (required for secure cookies and rate limiting behind Nginx).
+// Pinned to 1 hop: a single reverse proxy (Nginx) sits in front per the deploy
+// plan. Trusting *all* proxies (app.enable) lets clients spoof X-Forwarded-For
+// to bypass the per-IP rate limiters. Bump to 2 if a CDN (e.g. Cloudflare) is
+// added in front of Nginx.
+app.set('trust proxy', 1);
 
 // Start system metrics logging
 if (process.env.NODE_ENV !== 'test') {

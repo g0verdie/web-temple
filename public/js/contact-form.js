@@ -37,11 +37,13 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.textContent = 'Sending...';
 
         try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
             const response = await fetch('/contact', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'CSRF-Token': csrfToken
                 },
                 body: JSON.stringify(data)
             });
