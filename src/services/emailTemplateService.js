@@ -66,10 +66,20 @@ const UNSUBSCRIBE_EXEMPT = new Set([
     'password-reset',
     'password-changed-notification',
     'reset',
-    'email-change-confirmation'
+    'email-change-confirmation',
+    'verify-email'
 ]);
 
 const templates = {
+    'verify-email': (data = {}) => ({
+        subject: 'Verify your Temple account email',
+        html: `<p>Shalom${data.name ? ` ${data.name}` : ''}.</p>
+               <p>Thank you for registering with Temple B'nai Israel. Please confirm your email address to continue:</p>
+               <p><a href="${data.verifyLink}">Verify Email</a></p>
+               <p>This link will expire in 24 hours. After you verify, a temple administrator will review and approve your membership.</p>
+               <p>If you did not create this account, you can safely ignore this email.</p>`,
+        text: `Shalom${data.name ? ` ${data.name}` : ''}.\n\nThank you for registering with Temple B'nai Israel. Please confirm your email address to continue:\n${data.verifyLink}\n\nThis link will expire in 24 hours. After you verify, a temple administrator will review and approve your membership.\n\nIf you did not create this account, you can safely ignore this email.`
+    }),
     welcome: (data = {}) => ({
         subject: 'Welcome to Temple B\'nai Israel',
         html: `<p>Shalom${data.name ? ` ${data.name}` : ''}!</p><p>Welcome to Temple B'nai Israel.</p>`,

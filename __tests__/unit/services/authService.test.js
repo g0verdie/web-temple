@@ -28,7 +28,7 @@ jest.mock('../../../src/config/db', () => {
             return { rows: user ? [{ id: user.id }] : [] };
         }
 
-        if (text.startsWith('SELECT id, email, password_hash, role, first_name, last_name, token_version, onboarding_complete, failed_login_attempts, lockout_until FROM users WHERE email = $1')) {
+        if (text.startsWith('SELECT id, email, password_hash, role, first_name, last_name, token_version, onboarding_complete, failed_login_attempts, lockout_until, status FROM users WHERE email = $1')) {
             const email = params[0];
             const user = users.find((u) => u.email === email);
             return { rows: user ? [user] : [] };

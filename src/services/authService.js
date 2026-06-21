@@ -11,6 +11,42 @@ const LOCKOUT_DURATION_MINUTES = 15;
  */
 
 /**
+ * Issue an email-verification token (Gate 1) and queue the verification email.
+ * Mirrors requestPasswordReset's token mechanism (opaque random token, 24h expiry,
+ * single-use, prior tokens invalidated). Shared by registerUser and resendVerification.
+ */
+const sendVerificationEmail = async (userId, email, firstName) => {
+    await db.query(
+        'UPDATE email_verifications SET used = true WHERE user_id = $1 AND used = false',
+        [userId]
+    );
+
+    const token = require('crypto').randomBytes(32).toString('hex');
+    const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    await db.query(
+        'INSERT INTO email_verifications (user_id, token, expires_at) VALUES ($1, $2, $3)',
+        [userId, token, tokenExpiry]
+    );
+
+    const { enqueueEmail } = require('./emailQueueService');
+    const { renderTemplate } = require('./emailTemplateService');
+    const verifyLink = `${process.env.APP_URL || 'http://localhost:3000'}/auth/verify-email?token=${token}`;
+    const emailContent = renderTemplate('verify-email', {
+        name: firstName || 'Member',
+        verifyLink
+    });
+
+    enqueueEmail({
+        to: email,
+        subject: emailContent.subject,
+        html: emailContent.html,
+        text: emailContent.text,
+        priority: 1
+    }).catch(err => logger.error('Failed to queue verification email', { error: err }));
+};
+
+/**
  * Register a new user
  * @param {Object} userData - User registration data
  * @param {string} userData.email - User email
@@ -59,10 +95,10 @@ const registerUser = async (userData) => {
 
     // Insert user into database
     const result = await db.query(
-        `INSERT INTO users (email, password_hash, first_name, last_name, role, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-         RETURNING id, email, first_name, last_name, role, onboarding_complete, token_version, created_at`,
-        [email, password_hash, first_name || null, last_name || null, 'member']
+        `INSERT INTO users (email, password_hash, first_name, last_name, role, status, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+         RETURNING id, email, first_name, last_name, role, status, onboarding_complete, token_version, created_at`,
+        [email, password_hash, first_name || null, last_name || null, 'member', 'pending_verification']
     );
 
     const user = result.rows[0];
@@ -76,6 +112,15 @@ const registerUser = async (userData) => {
         description: `User registered: ${email}`,
         ip_address,
     }).catch(err => logger.error('Audit log error', { error: err }));
+
+    // Gate 1: issue an email-verification token and send the link. Best-effort — a
+    // token/email failure must not undo the already-created account; the user can use
+    // "resend verification" to get a fresh link.
+    try {
+        await sendVerificationEmail(user.id, email, user.first_name);
+    } catch (err) {
+        logger.error('Failed to issue verification token at registration (user can resend)', { error: err, user_id: user.id });
+    }
 
     // Item 6: opt into the member directory at registration. A bare {listed:true}
     // creates the profile row; per-field "show my…" prefs stay on the account page.
@@ -110,7 +155,7 @@ const authenticateUser = async (credentials) => {
 
     // Find user by email
     const result = await db.query(
-        'SELECT id, email, password_hash, role, first_name, last_name, token_version, onboarding_complete, failed_login_attempts, lockout_until FROM users WHERE email = $1',
+        'SELECT id, email, password_hash, role, first_name, last_name, token_version, onboarding_complete, failed_login_attempts, lockout_until, status FROM users WHERE email = $1',
         [email]
     );
 
@@ -177,6 +222,27 @@ const authenticateUser = async (credentials) => {
             ip_address,
         }).catch(err => logger.error('Audit log error', { error: err }));
         throw new Error('Invalid email or password');
+    }
+
+    // Two-gate registration: only an 'active' account may obtain a session. Legacy rows
+    // predating the status column (null) are treated as active. Checked AFTER the password
+    // match so account state never leaks to an unauthenticated guesser.
+    const status = user.status || 'active';
+    if (status !== 'active') {
+        logAudit({
+            user_id: user.id,
+            action: AUDIT_ACTIONS.USER_LOGIN,
+            description: `Login blocked (status=${status}): ${email}`,
+            ip_address,
+        }).catch(err => logger.error('Audit log error', { error: err }));
+
+        if (status === 'pending_verification') {
+            throw new Error('Please verify your email address before logging in. Check your inbox for the verification link.');
+        }
+        if (status === 'pending_approval') {
+            throw new Error('Your account is awaiting approval by a temple administrator. You will receive an email once approved.');
+        }
+        throw new Error('Your registration was not approved. Please contact the temple office.');
     }
 
     // Reset failed attempts and update last login time
@@ -544,10 +610,129 @@ const resetPassword = async (options) => {
     }
 };
 
+/**
+ * Verify an email-verification token (Gate 1). Flips the account from
+ * pending_verification to pending_approval (hand-off to the admin approval gate).
+ * Mirrors resetPassword's token lookup; idempotent for an already-verified account.
+ * @param {Object} options
+ * @param {string} options.token
+ * @param {string} options.ip_address
+ * @returns {Promise<Object>} { status: 'verified' | 'already' }
+ */
+const verifyEmailToken = async (options) => {
+    const { token, ip_address } = options;
+    if (!token) {
+        throw new Error('Invalid or expired verification link');
+    }
+
+    const result = await db.query(
+        `SELECT ev.id, ev.user_id, ev.expires_at, ev.used, u.status
+         FROM email_verifications ev
+         JOIN users u ON ev.user_id = u.id
+         WHERE ev.token = $1`,
+        [token]
+    );
+
+    if (result.rows.length === 0) {
+        throw new Error('Invalid or expired verification link');
+    }
+
+    const record = result.rows[0];
+
+    // Idempotency: if the account already moved past pending_verification, treat a
+    // re-click of the (now used) link as success rather than an error.
+    if (record.status !== 'pending_verification') {
+        return { status: 'already' };
+    }
+
+    if (record.used) {
+        throw new Error('Invalid or expired verification link');
+    }
+    if (new Date(record.expires_at) < new Date()) {
+        throw new Error('Invalid or expired verification link');
+    }
+
+    const client = await db.pool.connect();
+    try {
+        await client.query('BEGIN');
+        await client.query(
+            "UPDATE users SET status = 'pending_approval', updated_at = NOW() WHERE id = $1 AND status = 'pending_verification'",
+            [record.user_id]
+        );
+        await client.query(
+            'UPDATE email_verifications SET used = true WHERE id = $1',
+            [record.id]
+        );
+        await client.query('COMMIT');
+    } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+    } finally {
+        client.release();
+    }
+
+    logAudit({
+        user_id: record.user_id,
+        action: AUDIT_ACTIONS.EMAIL_VERIFIED,
+        entity_type: 'user',
+        entity_id: record.user_id,
+        description: 'Email verified; awaiting admin approval',
+        ip_address,
+    }).catch(err => logger.error('Audit log error', { error: err }));
+
+    return { status: 'verified' };
+};
+
+/**
+ * Resend a verification email. Mirrors requestPasswordReset's opaque response: always
+ * returns the same message and only issues a token when the email maps to a still-
+ * unverified account (no account-existence or status disclosure).
+ * @param {Object} options
+ * @param {string} options.email
+ * @param {string} options.ip_address
+ * @returns {Promise<Object>} { message }
+ */
+const resendVerification = async (options) => {
+    const { email, ip_address } = options;
+    const opaque = { message: 'If an unverified account exists for this email, a new verification link has been sent.' };
+
+    if (!email) {
+        return opaque;
+    }
+
+    const result = await db.query(
+        'SELECT id, first_name, status FROM users WHERE email = $1',
+        [email]
+    );
+
+    if (result.rows.length === 0 || result.rows[0].status !== 'pending_verification') {
+        return opaque;
+    }
+
+    const user = result.rows[0];
+    try {
+        await sendVerificationEmail(user.id, email, user.first_name);
+        logAudit({
+            user_id: user.id,
+            action: AUDIT_ACTIONS.VERIFICATION_RESENT,
+            entity_type: 'user',
+            entity_id: user.id,
+            description: `Verification email resent: ${email}`,
+            ip_address,
+        }).catch(err => logger.error('Audit log error', { error: err }));
+    } catch (err) {
+        logger.error('Failed to resend verification email', { error: err });
+    }
+
+    return opaque;
+};
+
 module.exports = {
     registerUser,
     authenticateUser,
     changePassword,
     requestPasswordReset,
     resetPassword,
+    verifyEmailToken,
+    resendVerification,
 };

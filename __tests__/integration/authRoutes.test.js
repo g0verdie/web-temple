@@ -56,7 +56,7 @@ describe('Authentication API Integration Tests', () => {
     });
 
     describe('POST /api/auth/register', () => {
-        it('should successfully register a new user with all fields', async () => {
+        it('registers a new user WITHOUT auto-login (two-gate registration, item 6)', async () => {
             const newUser = {
                 email: 'test-registration-full@example.com',
                 password: 'SecurePass123!@#',
@@ -78,17 +78,12 @@ describe('Authentication API Integration Tests', () => {
                 .expect(201);
 
             expect(response.body.success).toBe(true);
-            expect(response.body.message).toBe('Registration successful');
-            expect(response.body.user).toHaveProperty('id');
-            expect(response.body.user.email).toBe(newUser.email);
-            expect(response.body.user.first_name).toBe(newUser.first_name);
-            expect(response.body.user.role).toBe('member');
-
-            const cookies = response.headers['set-cookie'];
-            expect(cookies).toBeDefined();
-            expect(cookies.some(cookie => cookie.startsWith('auth_token='))).toBe(true);
-
-            expect(enqueueEmail).toHaveBeenCalledTimes(1);
+            expect(response.body.message).toMatch(/check your email/i);
+            // No session and no user payload at registration — the account is pending
+            // verification, not logged in.
+            expect(response.body.user).toBeUndefined();
+            const cookies = response.headers['set-cookie'] || [];
+            expect(cookies.some(cookie => cookie.startsWith('auth_token='))).toBe(false);
         });
 
         it('threads the directory opt-in (item 6): directory_listed:true reaches registerUser', async () => {
