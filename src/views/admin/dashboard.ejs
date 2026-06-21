@@ -236,6 +236,7 @@
                                             </td>
                                             <td>
                                                 <form method="POST" action="/admin/email-queue/<%= job.id %>/retry">
+                                                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                                     <button class="btn btn-sm btn-warning" type="submit">Retry</button>
                                                 </form>
                                             </td>
