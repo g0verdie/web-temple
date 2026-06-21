@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, logout, requestPasswordReset } = require('../controllers/authController');
+const { register, login, logout, requestPasswordReset, resendVerification } = require('../controllers/authController');
 
 const rateLimit = require('express-rate-limit');
 
@@ -42,5 +42,11 @@ router.post('/password-reset-request', authLimiter, requestPasswordReset);
  * Reset password with token
  */
 router.post('/reset-password', authLimiter, require('../controllers/authController').resetPassword);
+
+/**
+ * POST /api/auth/resend-verification
+ * Resend the email-verification link (opaque response, two-gate registration)
+ */
+router.post('/resend-verification', authLimiter, resendVerification);
 
 module.exports = router;

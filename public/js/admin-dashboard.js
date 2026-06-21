@@ -39,6 +39,7 @@
                 setText('metric-last-backup', formatDate(data.lastBackupAt));
                 setText('priority-pending-chat', data.pendingChat);
                 setText('priority-pending-messages', data.pendingMessages);
+                setText('priority-pending-approvals', data.pendingApprovals);
             })
             .catch(function () { /* transient failure — keep last-known values */ });
     }

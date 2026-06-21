@@ -5,6 +5,7 @@ const sessionTimeout = require('../middleware/sessionTimeout');
 const userService = require('../services/userService');
 const MemberDirectoryService = require('../services/MemberDirectoryService');
 const unsubscribeController = require('../controllers/unsubscribeController');
+const authController = require('../controllers/authController');
 const logger = require('../utils/logger');
 
 /**
@@ -57,6 +58,26 @@ router.get('/auth/reset-password', (req, res) => {
     res.render('layout', {
         title: 'Set New Password - Temple B\'nai Israel',
         bodyView: 'auth/reset-password',
+        viewData: {},
+        noindex: true,
+        stylesheets: ['/css/auth.css']
+    });
+});
+
+/**
+ * GET /auth/verify-email
+ * Verify an email address from the link in the verification email (Gate 1).
+ */
+router.get('/auth/verify-email', authController.verifyEmailPage);
+
+/**
+ * GET /auth/resend-verification
+ * Display the "resend verification email" form.
+ */
+router.get('/auth/resend-verification', (req, res) => {
+    res.render('layout', {
+        title: 'Resend Verification Email - Temple B\'nai Israel',
+        bodyView: 'auth/resend-verification',
         viewData: {},
         noindex: true,
         stylesheets: ['/css/auth.css']

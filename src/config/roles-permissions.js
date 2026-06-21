@@ -53,7 +53,12 @@ const Permissions = Object.freeze({
 
     // Member directory admin view + moderation — a dedicated permission so it can be
     // delegated without granting broad admin (see member-directory plan KTD7).
-    MANAGE_DIRECTORY: 'manage_directory'
+    MANAGE_DIRECTORY: 'manage_directory',
+
+    // Member account management — approve/reject pending registrations (two-gate
+    // registration, backlog item 6). Dedicated permission so it can be delegated
+    // (e.g. to a future membership director) without granting full admin.
+    MANAGE_MEMBERS: 'manage_members'
 });
 
 // ============================================================================
@@ -70,7 +75,8 @@ const rolePermissionMap = {
         Permissions.VIEW_DONATIONS,
         Permissions.MANAGE_STREAMING,  // See Permissions block for rationale
         Permissions.MODERATE_CHAT,
-        Permissions.MANAGE_DIRECTORY
+        Permissions.MANAGE_DIRECTORY,
+        Permissions.MANAGE_MEMBERS
     ],
     [Roles.RABBI]: [
         // FR26: Rabbi can post announcements, manage calendars, reply to messages, view donations
@@ -80,7 +86,8 @@ const rolePermissionMap = {
         Permissions.VIEW_DONATIONS,
         Permissions.MANAGE_STREAMING,  // See Permissions block for rationale
         Permissions.MODERATE_CHAT,
-        Permissions.MANAGE_DIRECTORY
+        Permissions.MANAGE_DIRECTORY,
+        Permissions.MANAGE_MEMBERS
     ],
     [Roles.SOCIAL_CHAIR]: [
         // FR27: Social Chair (Phase 2) can post announcements and manage public calendar only

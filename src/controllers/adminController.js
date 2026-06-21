@@ -63,6 +63,7 @@ const gatherLiveMetrics = async () => {
     const DonationService = require('../services/DonationService');
     const userService = require('../services/userService');
     const messageService = require('../services/messageService');
+    const memberAdminService = require('../services/memberAdminService');
     const ChatService = require('../services/ChatService');
     const StreamingService = require('../services/StreamingService');
     const chatSocketServer = require('../services/chatSocketServer');
@@ -93,10 +94,11 @@ const gatherLiveMetrics = async () => {
     // Each metric is independently guarded, so these run concurrently (NFR-P6 <2s).
     // Use the lightweight MTD-only query (decrypts just this month's donations) on
     // the 30s-polled path — not the full all-time dashboard aggregator.
-    const [donationsMtdCents, newMembersThisMonth, pendingMessages, pendingChat, stream] = await Promise.all([
+    const [donationsMtdCents, newMembersThisMonth, pendingMessages, pendingApprovals, pendingChat, stream] = await Promise.all([
         safe('donations', () => DonationService.getMtdTotalCents(), 0),
         safe('newMembers', () => userService.getNewMemberCountThisMonth(), 0),
         safe('pendingMessages', () => messageService.getNewMessageCount(), 0),
+        safe('pendingApprovals', () => memberAdminService.getPendingApprovalCount(), 0),
         safe('pendingChat', () => ChatService.getPendingMessageCount(), 0),
         safeStream()
     ]);
@@ -106,6 +108,7 @@ const gatherLiveMetrics = async () => {
         donationsMtdCents,
         activeChatUsers: stream.activeChatUsers,
         pendingMessages,
+        pendingApprovals,
         pendingChat,
         serverUptimeSeconds: Math.floor(process.uptime()),
         activeStream: stream.activeStream
@@ -159,6 +162,7 @@ exports.getDashboard = async (req, res) => {
                     donationsMtdCents: m.donationsMtdCents,
                     activeChatUsers: m.activeChatUsers,
                     pendingMessages: m.pendingMessages,
+                    pendingApprovals: m.pendingApprovals,
                     pendingChat: m.pendingChat,
                     serverUptime: formatUptime(m.serverUptimeSeconds),
                     lastBackupAt: lastBackup ? lastBackup.timestamp : null
@@ -166,6 +170,7 @@ exports.getDashboard = async (req, res) => {
                 priorities: {
                     pendingChat: m.pendingChat,
                     pendingMessages: m.pendingMessages,
+                    pendingApprovals: m.pendingApprovals,
                     upcomingEvents,
                     alerts
                 }
@@ -195,6 +200,7 @@ exports.getDashboardMetricsJson = async (req, res) => {
             donationsMtdCents: m.donationsMtdCents,
             activeChatUsers: m.activeChatUsers,
             pendingMessages: m.pendingMessages,
+            pendingApprovals: m.pendingApprovals,
             pendingChat: m.pendingChat,
             serverUptime: formatUptime(m.serverUptimeSeconds),
             lastBackupAt

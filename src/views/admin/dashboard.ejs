@@ -10,8 +10,10 @@
             <% const hasAlerts = priorities && priorities.alerts && (priorities.alerts.backupFailed || priorities.alerts.failedEmailJobs > 0); %>
             <% const hasChat = hasPermission(Permissions.MODERATE_CHAT); %>
             <% const hasMessages = hasPermission(Permissions.MANAGE_MESSAGES); %>
+            <% const hasMembers = hasPermission(Permissions.MANAGE_MEMBERS); %>
+            <% const pendingApprovals = (priorities && priorities.pendingApprovals) || 0; %>
             <% const upcoming = (priorities && priorities.upcomingEvents) || []; %>
-            <% const nothingPending = !hasAlerts && (!hasChat || priorities.pendingChat === 0) && (!hasMessages || priorities.pendingMessages === 0) && upcoming.length === 0; %>
+            <% const nothingPending = !hasAlerts && (!hasChat || priorities.pendingChat === 0) && (!hasMessages || priorities.pendingMessages === 0) && (!hasMembers || pendingApprovals === 0) && upcoming.length === 0; %>
 
             <% if (hasAlerts) { %>
                 <div class="alert alert-danger" role="alert">
@@ -35,6 +37,15 @@
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <span>New contact messages <span class="text-muted">(inbox coming soon)</span></span>
                         <span class="badge bg-secondary" id="priority-pending-messages"><%= priorities.pendingMessages %></span>
+                    </li>
+                <% } %>
+                <% if (hasMembers) { %>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>New members awaiting approval</span>
+                        <span>
+                            <span class="badge bg-warning text-dark me-2" id="priority-pending-approvals"><%= pendingApprovals %></span>
+                            <a href="/admin/members" class="btn btn-sm btn-outline-primary">Review</a>
+                        </span>
                     </li>
                 <% } %>
                 <li class="list-group-item">
@@ -120,6 +131,7 @@
             <% if (hasPermission(Permissions.MANAGE_CALENDAR)) { %><a href="/admin/calendar" class="btn btn-outline-primary me-2 mb-2">Calendar</a><% } %>
             <% if (hasPermission(Permissions.VIEW_DONATIONS)) { %><a href="/admin/donations" class="btn btn-outline-primary me-2 mb-2">Donations</a><% } %>
             <% if (hasPermission(Permissions.MANAGE_DIRECTORY)) { %><a href="/admin/directory" class="btn btn-outline-primary me-2 mb-2">Member Directory</a><% } %>
+            <% if (hasPermission(Permissions.MANAGE_MEMBERS)) { %><a href="/admin/members" class="btn btn-outline-primary me-2 mb-2">Pending Members</a><% } %>
             <% if (hasPermission(Permissions.MANAGE_STREAMING)) { %><a href="/admin/streaming" class="btn btn-outline-primary me-2 mb-2">Livestreams</a><% } %>
             <% if (hasPermission(Permissions.MODERATE_CHAT)) { %><a href="/admin/chat-moderation" class="btn btn-outline-primary me-2 mb-2">Chat Moderation</a><% } %>
             <% if (hasPermission(Permissions.MANAGE_CONTENT)) { %><a href="/admin/pages" class="btn btn-outline-primary me-2 mb-2">Pages</a><% } %>

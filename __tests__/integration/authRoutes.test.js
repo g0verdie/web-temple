@@ -56,7 +56,7 @@ describe('Authentication API Integration Tests', () => {
     });
 
     describe('POST /api/auth/register', () => {
-        it('should successfully register a new user with all fields', async () => {
+        it('registers a new user WITHOUT auto-login (two-gate registration, item 6)', async () => {
             const newUser = {
                 email: 'test-registration-full@example.com',
                 password: 'SecurePass123!@#',
@@ -78,17 +78,12 @@ describe('Authentication API Integration Tests', () => {
                 .expect(201);
 
             expect(response.body.success).toBe(true);
-            expect(response.body.message).toBe('Registration successful');
-            expect(response.body.user).toHaveProperty('id');
-            expect(response.body.user.email).toBe(newUser.email);
-            expect(response.body.user.first_name).toBe(newUser.first_name);
-            expect(response.body.user.role).toBe('member');
-
-            const cookies = response.headers['set-cookie'];
-            expect(cookies).toBeDefined();
-            expect(cookies.some(cookie => cookie.startsWith('auth_token='))).toBe(true);
-
-            expect(enqueueEmail).toHaveBeenCalledTimes(1);
+            expect(response.body.message).toMatch(/check your email/i);
+            // No session and no user payload at registration — the account is pending
+            // verification, not logged in.
+            expect(response.body.user).toBeUndefined();
+            const cookies = response.headers['set-cookie'] || [];
+            expect(cookies.some(cookie => cookie.startsWith('auth_token='))).toBe(false);
         });
 
         it('threads the directory opt-in (item 6): directory_listed:true reaches registerUser', async () => {
@@ -206,6 +201,24 @@ describe('Authentication API Integration Tests', () => {
                 .expect(401);
 
             expect(response.body.success).toBe(false);
+        });
+
+        it('returns 403 + guidance for a pending_verification account (two-gate)', async () => {
+            authenticateUser.mockRejectedValue(new Error('Please verify your email address before logging in. Check your inbox for the verification link.'));
+            const res = await request(app).post('/api/auth/login').send({ email: 'a@x.com', password: 'x' }).expect(403);
+            expect(res.body.message).toMatch(/verify your email/i);
+        });
+
+        it('returns 403 + guidance for a pending_approval account', async () => {
+            authenticateUser.mockRejectedValue(new Error('Your account is awaiting approval by a temple administrator. You will receive an email once approved.'));
+            const res = await request(app).post('/api/auth/login').send({ email: 'a@x.com', password: 'x' }).expect(403);
+            expect(res.body.message).toMatch(/awaiting approval/i);
+        });
+
+        it('returns 403 for a rejected account', async () => {
+            authenticateUser.mockRejectedValue(new Error('Your registration was not approved. Please contact the temple office.'));
+            const res = await request(app).post('/api/auth/login').send({ email: 'a@x.com', password: 'x' }).expect(403);
+            expect(res.body.message).toMatch(/not approved/i);
         });
     });
 

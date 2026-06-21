@@ -1,7 +1,5 @@
-const { registerUser, authenticateUser, requestPasswordReset: requestResetService, resetPassword: resetPasswordService } = require('../services/authService');
+const { registerUser, authenticateUser, requestPasswordReset: requestResetService, resetPassword: resetPasswordService, verifyEmailToken: verifyEmailService, resendVerification: resendVerificationService } = require('../services/authService');
 const { createSession, invalidateSession } = require('../services/sessionService');
-const { enqueueEmail } = require('../services/emailQueueService');
-const { renderTemplate } = require('../services/emailTemplateService');
 const { logAudit, AUDIT_ACTIONS } = require('../services/auditService');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
@@ -34,8 +32,9 @@ const register = async (req, res) => {
             });
         }
 
-        // Register user via authService
-        const user = await registerUser({
+        // Register user via authService (creates a pending_verification account and
+        // queues the verification email internally)
+        await registerUser({
             email,
             password,
             first_name,
@@ -44,62 +43,12 @@ const register = async (req, res) => {
             ip_address: req.ip || req.connection.remoteAddress
         });
 
-        // Generate UUID-like token ID for blacklisting
-        const jti = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
-
-        // Generate JWT token
-        const token = jwt.sign(
-            {
-                user_id: user.id,
-                email: user.email,
-                role: user.role,
-                onboarding_complete: user.onboarding_complete || false,
-                token_version: user.token_version,
-                jti: jti
-            },
-            JWT_SECRET,
-            { expiresIn: JWT_EXPIRES_IN }
-        );
-
-        // Create Redis session
-        await createSession(user);
-
-        // Set secure HTTP-only cookie
-        res.cookie('auth_token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-            sameSite: 'strict',
-            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days in milliseconds
-        });
-
-        // Send welcome email (fire and forget)
-        const emailContent = renderTemplate('welcome', {
-            name: first_name || email
-        });
-
-        enqueueEmail({
-            to: email,
-            subject: emailContent.subject,
-            html: emailContent.html,
-            text: emailContent.text,
-            priority: 2 // Medium priority
-        }).catch(err => {
-            logger.error('Failed to queue welcome email', { error: err });
-            // Don't fail registration if email fails
-        });
-
-        // Return success with user data (without password)
+        // Two-gate registration: NO auto-login. The account is created as
+        // pending_verification and the verification email was queued inside
+        // registerUser. The welcome email is deferred to admin approval.
         res.status(201).json({
             success: true,
-            message: 'Registration successful',
-            user: {
-                id: user.id,
-                email: user.email,
-                first_name: user.first_name,
-                last_name: user.last_name,
-                role: user.role,
-                onboarding_complete: user.onboarding_complete || false
-            }
+            message: 'Registration received. Please check your email to verify your address. After you verify, a temple administrator will review your membership.'
         });
 
     } catch (error) {
@@ -194,6 +143,18 @@ const login = async (req, res) => {
         logger.error('Login error', { error });
 
         if (error.message.includes('Account is temporarily locked')) {
+            return res.status(403).json({
+                success: false,
+                message: error.message
+            });
+        }
+
+        // Two-gate registration states (verify email / awaiting approval / rejected):
+        // surface the specific guidance with 403 rather than the generic 401, so the UI
+        // can tell the user what to do next.
+        if (error.message.includes('verify your email') ||
+            error.message.includes('awaiting approval') ||
+            error.message.includes('was not approved')) {
             return res.status(403).json({
                 success: false,
                 message: error.message
@@ -332,10 +293,66 @@ const resetPassword = async (req, res) => {
     }
 };
 
+/**
+ * Verify an email address from the link in the verification email (Gate 1).
+ * GET /auth/verify-email?token=...
+ * Renders a result page. The token is the credential, so verification happens on GET
+ * (idempotent: a re-click of an already-used link shows "already verified").
+ */
+const verifyEmailPage = async (req, res) => {
+    const token = req.query.token || '';
+    try {
+        const result = await verifyEmailService({
+            token,
+            ip_address: req.ip || req.connection.remoteAddress
+        });
+        return res.render('layout', {
+            title: 'Email Verified - Temple B\'nai Israel',
+            bodyView: 'auth/verify-email-result',
+            viewData: { ok: true, already: result.status === 'already' },
+            noindex: true,
+            stylesheets: ['/css/auth.css']
+        });
+    } catch (error) {
+        logger.warn('Email verification failed', { error: error.message });
+        return res.status(400).render('layout', {
+            title: 'Verification Failed - Temple B\'nai Israel',
+            bodyView: 'auth/verify-email-result',
+            viewData: { ok: false, message: error.message },
+            noindex: true,
+            stylesheets: ['/css/auth.css']
+        });
+    }
+};
+
+/**
+ * Resend a verification email.
+ * POST /api/auth/resend-verification
+ * Always returns the same opaque message (no account-existence disclosure).
+ */
+const resendVerification = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const result = await resendVerificationService({
+            email,
+            ip_address: req.ip || req.connection.remoteAddress
+        });
+        res.json({ success: true, message: result.message });
+    } catch (error) {
+        logger.error('Resend verification error', { error });
+        res.status(500).json({
+            success: false,
+            message: 'An error occurred. Please try again later.'
+        });
+    }
+};
+
 module.exports = {
     register,
     login,
     logout,
     requestPasswordReset,
-    resetPassword
+    resetPassword,
+    verifyEmailPage,
+    resendVerification
 };

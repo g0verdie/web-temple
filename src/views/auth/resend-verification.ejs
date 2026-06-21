@@ -1,0 +1,32 @@
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <h1 class="h3 mb-3 fw-normal text-center">Resend Verification Email</h1>
+          <p class="text-muted text-center mb-4">Enter your email address and we'll send a new verification link if your account still needs verifying.</p>
+
+          <div id="alertMessage" class="alert d-none" role="alert"></div>
+
+          <form id="resendForm" novalidate>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <div class="mb-3">
+              <label for="email" class="form-label">Email address</label>
+              <input type="email" class="form-control" id="email" name="email" required autocomplete="email">
+              <div class="invalid-feedback">Please enter a valid email address.</div>
+            </div>
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary" id="submitBtn">Send Verification Link</button>
+            </div>
+          </form>
+
+          <div class="text-center mt-3">
+            <a href="/login" class="text-decoration-none">Back to Login</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/auth-resend-verification.js"></script>
