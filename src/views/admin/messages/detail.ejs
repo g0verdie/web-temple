@@ -1,0 +1,36 @@
+<div class="container mt-5">
+  <p><a href="/admin/messages">&larr; Back to inbox</a></p>
+  <h1><%= message.subject %></h1>
+  <p class="text-muted">
+    From <strong><%= message.name %></strong> &lt;<%= message.email %>&gt; ·
+    <time datetime="<%= message.created_at ? new Date(message.created_at).toISOString() : '' %>"><%= message.created_at ? new Date(message.created_at).toLocaleString() : '' %></time> ·
+    Status: <span class="badge bg-secondary"><%= message.status %></span>
+  </p>
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <% String(message.message || '').split('\n').forEach(function (line) { %><p class="mb-1"><%= line %></p><% }); %>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2 flex-wrap">
+    <a class="btn btn-primary" href="mailto:<%= message.email %>?subject=<%= encodeURIComponent('Re: ' + message.subject) %>">Reply by email</a>
+
+    <form method="POST" action="/admin/messages/<%= message.id %>/status">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="status" value="replied">
+      <button type="submit" class="btn btn-outline-success">Mark replied</button>
+    </form>
+
+    <form method="POST" action="/admin/messages/<%= message.id %>/status">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="status" value="archived">
+      <button type="submit" class="btn btn-outline-secondary">Archive</button>
+    </form>
+
+    <form method="POST" action="/admin/messages/<%= message.id %>/delete">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button type="submit" class="btn btn-outline-danger">Delete</button>
+    </form>
+  </div>
+</div>

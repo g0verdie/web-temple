@@ -55,6 +55,20 @@ describe('DonationService', () => {
         test('rejects an invalid donation type', async () => {
             await expect(svc.createPending({ amountCents: 1800, donationType: 'bogus' })).rejects.toThrow(/type/);
         });
+
+        test('stores a trimmed designation (item 11)', async () => {
+            db.query.mockResolvedValue({ rows: [{ id: 'd1', created_at: new Date() }] });
+            await svc.createPending({ amountCents: 1800, donationType: 'one-time', isAnonymous: true, designation: '  Building Fund  ' });
+            const params = db.query.mock.calls[0][1];
+            expect(params[params.length - 1]).toBe('Building Fund'); // designation is the last bound param
+        });
+
+        test('stores null designation when omitted', async () => {
+            db.query.mockResolvedValue({ rows: [{ id: 'd1', created_at: new Date() }] });
+            await svc.createPending({ amountCents: 1800, donationType: 'one-time', isAnonymous: true });
+            const params = db.query.mock.calls[0][1];
+            expect(params[params.length - 1]).toBeNull();
+        });
     });
 
     describe('finalize (idempotent)', () => {
@@ -133,6 +147,17 @@ describe('DonationService', () => {
             expect(csv.split('\n')[0]).toContain('amount_usd');
             expect(csv).toContain('18.00');
             expect(csv).toContain('Anonymous');
+        });
+
+        test('exposes designation in the list + CSV (item 11)', async () => {
+            mockClient.query
+                .mockResolvedValueOnce({ rows: [{ count: '1' }] })
+                .mockResolvedValueOnce({ rows: [{ id: 'd2', encrypted_amount_cents: encrypt('3600'), encrypted_donor_email: null, donation_type: 'one-time', recurring_frequency: null, is_anonymous: true, status: 'completed', created_at: new Date(), designation: 'Building Fund' }] });
+            const { donations } = await svc.listDonations({ page: 1, limit: 20 });
+            expect(donations[0].designation).toBe('Building Fund');
+            const csv = svc.toCsv(donations);
+            expect(csv.split('\n')[0]).toContain('designation');
+            expect(csv).toContain('Building Fund');
         });
     });
 

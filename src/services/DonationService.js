@@ -55,8 +55,10 @@ const safeDecrypt = (value) => {
 
 const isMajor = (amountCents) => Number(amountCents) > MAJOR_THRESHOLD_CENTS;
 
+const DESIGNATION_MAX = 200;
+
 /** Create a PENDING donation before the (mock) checkout. */
-const createPending = async ({ amountCents, donationType, recurringFrequency = null, isAnonymous = false, donorEmail = null, currency = 'USD', checkoutToken = null }) => {
+const createPending = async ({ amountCents, donationType, recurringFrequency = null, isAnonymous = false, donorEmail = null, currency = 'USD', checkoutToken = null, designation = null }) => {
     const amount = validateAmount(amountCents);
     if (!VALID_TYPES.has(donationType)) throw new Error('Invalid donation type');
     if (!VALID_CURRENCIES.has(currency)) throw new Error('Invalid currency');
@@ -65,13 +67,18 @@ const createPending = async ({ amountCents, donationType, recurringFrequency = n
     const encryptedEmail = (!isAnonymous && donorEmail) ? encrypt(String(donorEmail)) : null;
     // checkoutToken binds the pending row to its creator's cookie (KTD9 ownership).
     const metadata = checkoutToken ? { checkoutToken } : null;
+    // Optional donor-supplied reason/fund (item 11). Not financial PII — stored plaintext
+    // so it stays queryable/exportable for accounting; trimmed and length-capped.
+    const cleanDesignation = (typeof designation === 'string' && designation.trim())
+        ? designation.trim().slice(0, DESIGNATION_MAX)
+        : null;
 
     const result = await db.query(
         `INSERT INTO donations
-            (encrypted_amount_cents, encrypted_donor_email, currency, donation_type, recurring_frequency, is_anonymous, status, metadata)
-         VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7)
+            (encrypted_amount_cents, encrypted_donor_email, currency, donation_type, recurring_frequency, is_anonymous, status, metadata, designation)
+         VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7, $8)
          RETURNING id, created_at`,
-        [encryptedAmount, encryptedEmail, currency, donationType, recurring, !!isAnonymous, metadata]
+        [encryptedAmount, encryptedEmail, currency, donationType, recurring, !!isAnonymous, metadata, cleanDesignation]
     );
     return result.rows[0];
 };
@@ -251,7 +258,7 @@ const listDonations = async ({ status = 'completed', donationType, isAnonymous, 
         const totalCount = parseInt(countRes.rows[0].count, 10) || 0;
         const dataRes = await client.query(
             `SELECT id, encrypted_amount_cents, encrypted_donor_email, donation_type, recurring_frequency,
-                    is_anonymous, status, created_at
+                    is_anonymous, status, created_at, designation
              FROM donations ${whereStr}
              ORDER BY created_at DESC
              LIMIT $${i} OFFSET $${i + 1}`,
@@ -265,6 +272,7 @@ const listDonations = async ({ status = 'completed', donationType, isAnonymous, 
             recurringFrequency: r.recurring_frequency,
             isAnonymous: r.is_anonymous,
             status: r.status,
+            designation: r.designation || '',
             createdAt: r.created_at
         }));
         return { donations, totalCount, totalPages: Math.ceil(totalCount / limit), currentPage: page };
@@ -275,7 +283,7 @@ const listDonations = async ({ status = 'completed', donationType, isAnonymous, 
 
 /** CSV for accounting export. */
 const toCsv = (donations) => {
-    const header = 'id,date,amount_usd,donor,type,recurring_frequency,status';
+    const header = 'id,date,amount_usd,donor,type,recurring_frequency,status,designation';
     const escape = (v) => {
         let s = String(v == null ? '' : v);
         // Neutralize spreadsheet formula injection (e.g. a donor email like "=HYPERLINK(...)").
@@ -289,7 +297,8 @@ const toCsv = (donations) => {
         d.donor,
         d.donationType,
         d.recurringFrequency || '',
-        d.status
+        d.status,
+        d.designation || ''
     ].map(escape).join(','));
     return [header, ...lines].join('\n');
 };

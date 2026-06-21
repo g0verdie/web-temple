@@ -35,8 +35,11 @@
                 <% } %>
                 <% if (hasMessages) { %>
                     <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span>New contact messages <span class="text-muted">(inbox coming soon)</span></span>
-                        <span class="badge bg-secondary" id="priority-pending-messages"><%= priorities.pendingMessages %></span>
+                        <span>New contact messages</span>
+                        <span>
+                            <span class="badge bg-secondary me-2" id="priority-pending-messages"><%= priorities.pendingMessages %></span>
+                            <a href="/admin/messages" class="btn btn-sm btn-outline-primary">Open inbox</a>
+                        </span>
                     </li>
                 <% } %>
                 <% if (hasMembers) { %>
@@ -132,6 +135,7 @@
             <% if (hasPermission(Permissions.VIEW_DONATIONS)) { %><a href="/admin/donations" class="btn btn-outline-primary me-2 mb-2">Donations</a><% } %>
             <% if (hasPermission(Permissions.MANAGE_DIRECTORY)) { %><a href="/admin/directory" class="btn btn-outline-primary me-2 mb-2">Member Directory</a><% } %>
             <% if (hasPermission(Permissions.MANAGE_MEMBERS)) { %><a href="/admin/members" class="btn btn-outline-primary me-2 mb-2">Pending Members</a><% } %>
+            <% if (hasPermission(Permissions.MANAGE_MESSAGES)) { %><a href="/admin/messages" class="btn btn-outline-primary me-2 mb-2">Messages</a><% } %>
             <% if (hasPermission(Permissions.MANAGE_STREAMING)) { %><a href="/admin/streaming" class="btn btn-outline-primary me-2 mb-2">Livestreams</a><% } %>
             <% if (hasPermission(Permissions.MODERATE_CHAT)) { %><a href="/admin/chat-moderation" class="btn btn-outline-primary me-2 mb-2">Chat Moderation</a><% } %>
             <% if (hasPermission(Permissions.MANAGE_CONTENT)) { %><a href="/admin/pages" class="btn btn-outline-primary me-2 mb-2">Pages</a><% } %>
@@ -290,7 +294,7 @@
                     <div class="card-body">
                         <a href="/admin/announcements" id="tour-announcements" class="btn btn-primary me-2 mb-2">Post Announcement</a>
                         <a href="/admin/calendar" id="tour-calendar" class="btn btn-primary me-2 mb-2">Manage Calendar</a>
-                        <span id="tour-messages" class="btn btn-secondary disabled me-2 mb-2" aria-disabled="true" title="Message inbox is coming soon">Message Inbox (coming soon)</span>
+                        <a href="/admin/messages" id="tour-messages" class="btn btn-primary me-2 mb-2">Message Inbox</a>
                     </div>
                 </div>
                 <!-- driver.js for the onboarding tour — vendored, served from 'self' (CSP-safe) -->
