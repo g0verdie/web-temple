@@ -64,7 +64,7 @@ describe('create-admin script', () => {
         await createAdmin({ client });
 
         const insert = client.calls.find((c) => /INSERT INTO users/i.test(c.text));
-        expect(insert.text.toLowerCase()).toContain("'admin'");
+        expect(insert.params).toContain('admin'); // role defaults to 'admin' (now a bound param, not a SQL literal)
         const hashed = insert.params.find((p) => typeof p === 'string' && p.startsWith('$2'));
         expect(hashed).toBeTruthy();
         expect(await bcrypt.compare('s3cret-pass', hashed)).toBe(true);
@@ -97,5 +97,33 @@ describe('create-admin script', () => {
 
         const insert = client.calls.find((c) => /INSERT INTO users/i.test(c.text));
         expect(insert).toBeFalsy();
+    });
+
+    it('provisions a non-admin role when ADMIN_ROLE is set (item 13)', async () => {
+        process.env.ADMIN_EMAIL = 'md@temple.org';
+        process.env.ADMIN_PASSWORD = 's3cret-pass';
+        process.env.ADMIN_ROLE = 'membership_director';
+        const { createAdmin } = require('../../scripts/create-admin');
+        const client = makeClient();
+
+        await createAdmin({ client });
+
+        const insert = client.calls.find((c) => /INSERT INTO users/i.test(c.text));
+        expect(insert.params).toContain('membership_director');
+    });
+
+    it('rejects an invalid ADMIN_ROLE without inserting', async () => {
+        process.env.ADMIN_EMAIL = 'x@temple.org';
+        process.env.ADMIN_PASSWORD = 's3cret-pass';
+        process.env.ADMIN_ROLE = 'superuser';
+        const exitSpy = jest.spyOn(process, 'exit').mockImplementation(() => { throw new Error('process.exit'); });
+        const { createAdmin } = require('../../scripts/create-admin');
+        const client = makeClient();
+
+        await expect(createAdmin({ client })).rejects.toThrow('process.exit');
+        expect(exitSpy).toHaveBeenCalledWith(1);
+        const insert = client.calls.find((c) => /INSERT INTO users/i.test(c.text));
+        expect(insert).toBeFalsy();
+        exitSpy.mockRestore();
     });
 });

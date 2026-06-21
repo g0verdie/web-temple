@@ -128,4 +128,44 @@ describe('Admin directory routes', () => {
             expect(MemberDirectoryService.moderateProfile).not.toHaveBeenCalled();
         });
     });
+
+    describe('admin edit any listing (item 8)', () => {
+        it('blocks a member from the edit form (403)', async () => {
+            const res = await request(app).get('/admin/directory/u2/edit').set('Cookie', [`auth_token=${memberToken}`]);
+            expect(res.status).toBe(403);
+            expect(MemberDirectoryService.getProfileForAdmin).not.toHaveBeenCalled();
+        });
+
+        it('blocks a member from saving an edit (403)', async () => {
+            const res = await request(app).post('/admin/directory/u2').set('Cookie', [`auth_token=${memberToken}`]).send({ bio: 'x' });
+            expect(res.status).toBe(403);
+            expect(MemberDirectoryService.saveProfileForAdmin).not.toHaveBeenCalled();
+        });
+
+        it('admin sees the edit form for any member (listed or not)', async () => {
+            MemberDirectoryService.getProfileForAdmin.mockResolvedValue({
+                user_id: 'u2', first_name: 'Pat', last_name: 'Private', email: 'pat@x.com',
+                listed: false, show_phone: false, show_email: false, show_household: false,
+                show_address: false, show_birthday: false,
+                phone: '', address: '', birthday: '', bio: '', interests: '', household: []
+            });
+            const res = await request(app).get('/admin/directory/u2/edit').set('Cookie', [`auth_token=${adminToken}`]);
+            expect(res.status).toBe(200);
+            expect(res.text).toContain('pat@x.com');
+        });
+
+        it('admin save maps checkboxes to booleans, calls saveProfileForAdmin, and redirects', async () => {
+            MemberDirectoryService.saveProfileForAdmin.mockResolvedValue({ user_id: 'u2', listed: true });
+            const res = await request(app).post('/admin/directory/u2')
+                .set('Cookie', [`auth_token=${adminToken}`])
+                .send({ listed: 'on', bio: 'Updated bio', household: '[]' });
+            expect(res.status).toBe(302);
+            expect(res.header.location).toMatch(/\/admin\/directory\/u2\/edit\?saved=1/);
+            expect(MemberDirectoryService.saveProfileForAdmin).toHaveBeenCalledWith(
+                'u2',
+                expect.objectContaining({ listed: true, bio: 'Updated bio' }),
+                'admin-1'
+            );
+        });
+    });
 });

@@ -38,4 +38,10 @@ router.get('/export.csv', requireDirectoryAdmin, exportLimiter, adminDirectoryCo
 router.get('/export.json', requireDirectoryAdmin, exportLimiter, adminDirectoryController.exportJson);
 router.post('/moderate', requireDirectoryAdmin, adminDirectoryController.moderate);
 
+// Admin edit of any member's listing (item 8). Registered after /moderate so the
+// literal path wins over the :userId param; /export.* GETs are likewise unaffected
+// (they are single-segment and registered above).
+router.get('/:userId/edit', requireDirectoryAdmin, adminDirectoryController.editForm);
+router.post('/:userId', requireDirectoryAdmin, adminDirectoryController.update);
+
 module.exports = router;

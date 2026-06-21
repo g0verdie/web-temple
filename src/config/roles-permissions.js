@@ -18,6 +18,7 @@ const Roles = Object.freeze({
     RABBI: 'rabbi',
     SOCIAL_CHAIR: 'social_chair',
     TREASURER: 'treasurer',
+    MEMBERSHIP_DIRECTOR: 'membership_director', // Item 13: admin minus live-stream ops
     MEMBER: 'member' // Default role for regular users
 });
 
@@ -98,6 +99,20 @@ const rolePermissionMap = {
     [Roles.TREASURER]: [
         // Treasurer can view donations
         Permissions.VIEW_DONATIONS
+    ],
+    [Roles.MEMBERSHIP_DIRECTOR]: [
+        // Item 13: "same as admin, minus live stream (and archive) management." Granted
+        // every admin permission EXCEPT MANAGE_STREAMING and MODERATE_CHAT (both
+        // live-stream operations). Archive management no longer exists (the recordings
+        // area was consolidated into the Watch surface), so nothing further to exclude.
+        Permissions.VIEW_METRICS,
+        Permissions.MANAGE_MESSAGES,
+        Permissions.POST_ANNOUNCEMENTS,
+        Permissions.MANAGE_CALENDAR,
+        Permissions.MANAGE_CONTENT,
+        Permissions.VIEW_DONATIONS,
+        Permissions.MANAGE_DIRECTORY,
+        Permissions.MANAGE_MEMBERS
     ],
     [Roles.MEMBER]: [
         // Regular members have no administrative permissions

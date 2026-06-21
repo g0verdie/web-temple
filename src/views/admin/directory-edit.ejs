@@ -1,0 +1,66 @@
+<div class="directory-container">
+  <h1>Edit Member Listing — Admin</h1>
+  <p class="subtitle">Editing the directory listing for
+    <strong><%= [profile.first_name, profile.last_name].filter(Boolean).join(' ') || profile.email %></strong>
+    (<%= profile.email %>).</p>
+
+  <% if (typeof saved !== 'undefined' && saved) { %>
+    <div class="alert alert-success" role="alert">Listing updated.</div>
+  <% } %>
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-danger" role="alert"><%= error %></div>
+  <% } %>
+
+  <form method="POST" action="/admin/directory/<%= profile.user_id %>" class="settings-form">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <!-- Preserve the structured household unchanged (the member edits it on their own
+         page; admins clear it via moderation). Re-submitted so an admin edit of other
+         fields doesn't wipe it. -->
+    <input type="hidden" name="household" value="<%= JSON.stringify(profile.household || []) %>">
+
+    <label class="checkbox-row">
+      <input type="checkbox" name="listed" <%= profile.listed ? 'checked' : '' %>>
+      <strong>Listed in the member directory</strong>
+    </label>
+
+    <div class="form-row">
+      <label for="phone">Phone</label>
+      <input type="tel" id="phone" name="phone" value="<%= profile.phone || '' %>" maxlength="32">
+    </div>
+    <div class="form-row">
+      <label for="address">Address</label>
+      <input type="text" id="address" name="address" value="<%= profile.address || '' %>" maxlength="200">
+    </div>
+    <div class="form-row">
+      <label for="birthday">Birthday</label>
+      <input type="text" id="birthday" name="birthday" value="<%= profile.birthday || '' %>" placeholder="YYYY-MM-DD or MM-DD" aria-describedby="birthday-hint">
+      <p class="hint" id="birthday-hint">Full date (YYYY-MM-DD), or month-day (MM-DD) to omit the year.</p>
+    </div>
+    <div class="form-row">
+      <label for="bio">About</label>
+      <textarea id="bio" name="bio" rows="4" maxlength="500"><%= profile.bio || '' %></textarea>
+    </div>
+    <div class="form-row">
+      <label for="interests">Committees / Interests</label>
+      <input type="text" id="interests" name="interests" value="<%= profile.interests || '' %>" maxlength="200" aria-describedby="interests-hint">
+      <p class="hint" id="interests-hint">Comma-separated.</p>
+    </div>
+
+    <fieldset class="visibility-fieldset">
+      <legend><h2>What other members can see</h2></legend>
+      <label class="checkbox-row"><input type="checkbox" name="show_phone" <%= profile.show_phone ? 'checked' : '' %>> Show phone</label>
+      <label class="checkbox-row"><input type="checkbox" name="show_address" <%= profile.show_address ? 'checked' : '' %>> Show address</label>
+      <label class="checkbox-row"><input type="checkbox" name="show_birthday" <%= profile.show_birthday ? 'checked' : '' %>> Show birthday (month &amp; day)</label>
+      <label class="checkbox-row"><input type="checkbox" name="show_email" <%= profile.show_email ? 'checked' : '' %>> Show email</label>
+      <label class="checkbox-row"><input type="checkbox" name="show_household" <%= profile.show_household ? 'checked' : '' %>> Show household</label>
+      <label class="checkbox-row"><input type="checkbox" name="household_consent" <%= profile.show_household ? 'checked' : '' %>> Household members have consented to being listed</label>
+    </fieldset>
+
+    <% if (profile.household && profile.household.length) { %>
+      <p class="hint">Household on file: <%= profile.household.map(function (h) { return h.name; }).join(', ') %> (preserved on save).</p>
+    <% } %>
+
+    <button type="submit" class="btn-primary">Save Listing</button>
+    <a href="/admin/directory" class="btn-secondary">Cancel</a>
+  </form>
+</div>
