@@ -29,6 +29,23 @@
         </fieldset>
 
         <fieldset>
+            <legend>Reason for your gift (optional)</legend>
+            <div class="form-row">
+                <label for="designation">Designate your donation</label>
+                <input type="text" id="designation" name="designation" list="designation-options"
+                    maxlength="200" autocomplete="off" placeholder="Choose a fund or type your own">
+                <datalist id="designation-options">
+                    <option value="General Fund"></option>
+                    <option value="Building Fund"></option>
+                    <option value="Yahrzeit / In Memory"></option>
+                    <option value="Religious School"></option>
+                    <option value="Rabbi's Discretionary Fund"></option>
+                    <option value="Holiday Appeal"></option>
+                </datalist>
+            </div>
+        </fieldset>
+
+        <fieldset>
             <legend>Your details</legend>
             <label class="checkbox-row"><input type="checkbox" name="is_anonymous" id="is_anonymous"> Give anonymously</label>
             <div class="form-row" id="donor_email_row">

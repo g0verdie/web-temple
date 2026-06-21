@@ -31,7 +31,7 @@
     <% if (donations && donations.length > 0) { %>
         <table class="admin-donation-table">
             <thead>
-                <tr><th scope="col">Date</th><th scope="col">Amount</th><th scope="col">Donor</th><th scope="col">Type</th></tr>
+                <tr><th scope="col">Date</th><th scope="col">Amount</th><th scope="col">Donor</th><th scope="col">Type</th><th scope="col">Designation</th></tr>
             </thead>
             <tbody>
                 <% donations.forEach(d => { %>
@@ -40,6 +40,7 @@
                         <td>$<%= (d.amountCents / 100).toFixed(2) %></td>
                         <td><%= d.donor %></td>
                         <td><%= d.donationType %><%= d.recurringFrequency ? ' (' + d.recurringFrequency + ')' : '' %></td>
+                        <td><%= d.designation || '—' %></td>
                     </tr>
                 <% }) %>
             </tbody>

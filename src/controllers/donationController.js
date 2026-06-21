@@ -32,6 +32,7 @@ exports.startCheckout = async (req, res) => {
         const donationType = body.donation_type === 'recurring' ? 'recurring' : 'one-time';
         const isAnonymous = body.is_anonymous === 'on' || body.is_anonymous === 'true' || body.is_anonymous === true;
         const donorEmail = isAnonymous ? null : (str(body.donor_email).trim() || null);
+        const designation = str(body.designation).trim() || null;
 
         // A non-anonymous donation must carry a valid email (receipt destination + correct
         // donor counting); otherwise the donor would be miscounted as anonymous.
@@ -45,7 +46,7 @@ exports.startCheckout = async (req, res) => {
         const checkoutToken = crypto.randomBytes(16).toString('hex');
         let pending;
         try {
-            pending = await DonationService.createPending({ amountCents, donationType, isAnonymous, donorEmail, checkoutToken });
+            pending = await DonationService.createPending({ amountCents, donationType, isAnonymous, donorEmail, checkoutToken, designation });
         } catch (validationErr) {
             return res.status(400).render('error', { title: '400 - Invalid Donation', message: validationErr.message });
         }
