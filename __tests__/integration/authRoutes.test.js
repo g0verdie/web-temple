@@ -202,6 +202,24 @@ describe('Authentication API Integration Tests', () => {
 
             expect(response.body.success).toBe(false);
         });
+
+        it('returns 403 + guidance for a pending_verification account (two-gate)', async () => {
+            authenticateUser.mockRejectedValue(new Error('Please verify your email address before logging in. Check your inbox for the verification link.'));
+            const res = await request(app).post('/api/auth/login').send({ email: 'a@x.com', password: 'x' }).expect(403);
+            expect(res.body.message).toMatch(/verify your email/i);
+        });
+
+        it('returns 403 + guidance for a pending_approval account', async () => {
+            authenticateUser.mockRejectedValue(new Error('Your account is awaiting approval by a temple administrator. You will receive an email once approved.'));
+            const res = await request(app).post('/api/auth/login').send({ email: 'a@x.com', password: 'x' }).expect(403);
+            expect(res.body.message).toMatch(/awaiting approval/i);
+        });
+
+        it('returns 403 for a rejected account', async () => {
+            authenticateUser.mockRejectedValue(new Error('Your registration was not approved. Please contact the temple office.'));
+            const res = await request(app).post('/api/auth/login').send({ email: 'a@x.com', password: 'x' }).expect(403);
+            expect(res.body.message).toMatch(/not approved/i);
+        });
     });
 
     describe('POST /api/auth/logout', () => {

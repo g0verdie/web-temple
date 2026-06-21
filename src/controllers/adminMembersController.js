@@ -31,7 +31,9 @@ exports.listPending = async (req, res) => {
 exports.approve = async (req, res) => {
     try {
         const ok = await memberAdminService.approveMember(req.params.id, req.user ? req.user.id : null, req.ip);
-        res.redirect(`/admin/members?success=${encodeURIComponent(ok ? 'Member approved' : 'Member was not pending approval')}`);
+        const key = ok ? 'success' : 'error';
+        const msg = ok ? 'Member approved' : 'Member was no longer pending approval';
+        res.redirect(`/admin/members?${key}=${encodeURIComponent(msg)}`);
     } catch (error) {
         logger.error('Error approving member', { error });
         res.redirect(`/admin/members?error=${encodeURIComponent('Unable to approve member')}`);
@@ -41,7 +43,9 @@ exports.approve = async (req, res) => {
 exports.reject = async (req, res) => {
     try {
         const ok = await memberAdminService.rejectMember(req.params.id, req.user ? req.user.id : null, req.ip);
-        res.redirect(`/admin/members?success=${encodeURIComponent(ok ? 'Member rejected' : 'Member was not pending')}`);
+        const key = ok ? 'success' : 'error';
+        const msg = ok ? 'Member rejected' : 'Member was no longer pending';
+        res.redirect(`/admin/members?${key}=${encodeURIComponent(msg)}`);
     } catch (error) {
         logger.error('Error rejecting member', { error });
         res.redirect(`/admin/members?error=${encodeURIComponent('Unable to reject member')}`);

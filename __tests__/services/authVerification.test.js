@@ -61,7 +61,7 @@ describe('authenticateUser two-gate status gate (item 6)', () => {
 });
 
 describe('verifyEmailToken (Gate 1)', () => {
-    const okClient = () => ({ query: jest.fn().mockResolvedValue({}), release: jest.fn() });
+    const okClient = () => ({ query: jest.fn().mockResolvedValue({ rowCount: 1 }), release: jest.fn() });
 
     test('valid token flips pending_verification -> pending_approval and commits', async () => {
         db.query.mockResolvedValueOnce({ rows: [{ id: 'ev1', user_id: 'u1', expires_at: new Date(Date.now() + 3600000), used: false, status: 'pending_verification' }] });
@@ -71,6 +71,14 @@ describe('verifyEmailToken (Gate 1)', () => {
         expect(res.status).toBe('verified');
         expect(client.query).toHaveBeenCalledWith(expect.stringContaining("status = 'pending_approval'"), ['u1']);
         expect(client.query).toHaveBeenCalledWith('COMMIT');
+    });
+
+    test('concurrent consume (UPDATE matches 0 rows) returns "already" rather than a misleading "verified"', async () => {
+        db.query.mockResolvedValueOnce({ rows: [{ id: 'ev1', user_id: 'u1', expires_at: new Date(Date.now() + 3600000), used: false, status: 'pending_verification' }] });
+        const client = { query: jest.fn().mockResolvedValue({ rowCount: 0 }), release: jest.fn() };
+        db.pool.connect.mockResolvedValueOnce(client);
+        const res = await verifyEmailToken({ token: 'tok' });
+        expect(res.status).toBe('already');
     });
 
     test('unknown token throws an opaque error', async () => {

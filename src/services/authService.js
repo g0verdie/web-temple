@@ -653,12 +653,14 @@ const verifyEmailToken = async (options) => {
     }
 
     const client = await db.pool.connect();
+    let transitioned = false;
     try {
         await client.query('BEGIN');
-        await client.query(
+        const upd = await client.query(
             "UPDATE users SET status = 'pending_approval', updated_at = NOW() WHERE id = $1 AND status = 'pending_verification'",
             [record.user_id]
         );
+        transitioned = !!(upd && upd.rowCount > 0);
         await client.query(
             'UPDATE email_verifications SET used = true WHERE id = $1',
             [record.id]
@@ -669,6 +671,12 @@ const verifyEmailToken = async (options) => {
         throw error;
     } finally {
         client.release();
+    }
+
+    // If the row was concurrently consumed between the SELECT and the UPDATE, treat
+    // this as an idempotent re-verification rather than logging a duplicate event.
+    if (!transitioned) {
+        return { status: 'already' };
     }
 
     logAudit({
