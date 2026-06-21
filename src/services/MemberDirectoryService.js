@@ -241,11 +241,13 @@ const getMyProfile = async (userId) => {
 };
 
 /**
- * Create/update the caller's own profile. Validates, encrypts PII, upserts, audits.
+ * Validate, encrypt, and upsert a profile row for `userId`. Shared by saveMyProfile
+ * (self-edit) and saveProfileForAdmin (admin edit) — the only difference between them
+ * is the audit actor, so the write logic lives here once.
  * `household_consent` must be true when enabling show_household (defense-in-depth for
  * the UI acknowledgement that no non-consenting person is named — see plan R3).
  */
-const saveMyProfile = async (userId, input = {}) => {
+const _upsertProfile = async (userId, input = {}) => {
     const flags = normalizeFlags(input);
     if (flags.show_household && input.household_consent !== true) {
         throw new Error('Household consent acknowledgement is required to show household');
@@ -292,6 +294,15 @@ const saveMyProfile = async (userId, input = {}) => {
             flags.show_birthday, birthdayEncrypted]
     );
 
+    return { user_id: result.rows[0].user_id, flags };
+};
+
+/**
+ * Create/update the caller's own profile (self-edit). Audited as the member.
+ */
+const saveMyProfile = async (userId, input = {}) => {
+    const { user_id, flags } = await _upsertProfile(userId, input);
+
     logAudit({
         user_id: userId,
         action: AUDIT_ACTIONS.DIRECTORY_LISTING_UPDATED,
@@ -300,7 +311,26 @@ const saveMyProfile = async (userId, input = {}) => {
         description: `Directory profile saved (listed: ${flags.listed})`
     }).catch(err => logger.error('Audit log error:', err));
 
-    return { user_id: result.rows[0].user_id, ...flags };
+    return { user_id, ...flags };
+};
+
+/**
+ * ADMIN-ONLY (item 8): edit ANY member's directory listing. Same write logic as the
+ * member's own save, but audited as the acting admin/rabbi. Reachable only from a
+ * requirePermission(MANAGE_DIRECTORY)-gated controller.
+ */
+const saveProfileForAdmin = async (targetUserId, input = {}, actorId = null) => {
+    const { user_id, flags } = await _upsertProfile(targetUserId, input);
+
+    logAudit({
+        user_id: actorId,
+        action: AUDIT_ACTIONS.DIRECTORY_LISTING_UPDATED,
+        entity_type: 'member_profile',
+        entity_id: targetUserId,
+        description: `Directory profile edited by admin (listed: ${flags.listed})`
+    }).catch(err => logger.error('Audit log error:', err));
+
+    return { user_id, ...flags };
 };
 
 /**
@@ -602,6 +632,7 @@ const toExportJson = (profiles) => (profiles || []).map(toExportRecord);
 module.exports = {
     getMyProfile,
     saveMyProfile,
+    saveProfileForAdmin,
     listListedProfiles,
     getListedProfile,
     getProfileForAdmin,

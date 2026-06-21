@@ -22,6 +22,7 @@
                     <th scope="col">Name</th>
                     <th scope="col">Email</th>
                     <th scope="col">Listed</th>
+                    <th scope="col">Listing</th>
                     <th scope="col">Moderation</th>
                 </tr>
             </thead>
@@ -31,6 +32,7 @@
                         <td><%= member.first_name %> <%= member.last_name %></td>
                         <td><%= member.email %></td>
                         <td><%= member.listed ? 'Yes' : 'No' %></td>
+                        <td><a class="btn-link" href="/admin/directory/<%= member.user_id %>/edit">Edit listing</a></td>
                         <td>
                             <% if (member.has_profile) { %>
                                 <form method="POST" action="/admin/directory/moderate" class="moderate-form">

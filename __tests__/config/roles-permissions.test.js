@@ -151,6 +151,30 @@ describe('Roles & Permissions Configuration', () => {
         });
     });
 
+    describe('MEMBERSHIP_DIRECTOR role (item 13)', () => {
+        it('is defined', () => {
+            expect(Roles.MEMBERSHIP_DIRECTOR).toBe('membership_director');
+        });
+
+        it('has admin-like membership/content management permissions', () => {
+            const perms = getRolePermissions(Roles.MEMBERSHIP_DIRECTOR);
+            expect(perms).toContain(Permissions.MANAGE_MEMBERS);
+            expect(perms).toContain(Permissions.MANAGE_DIRECTORY);
+            expect(perms).toContain(Permissions.POST_ANNOUNCEMENTS);
+            expect(perms).toContain(Permissions.MANAGE_CALENDAR);
+            expect(perms).toContain(Permissions.MANAGE_MESSAGES);
+            expect(perms).toContain(Permissions.MANAGE_CONTENT);
+            expect(perms).toContain(Permissions.VIEW_DONATIONS);
+            expect(perms).toContain(Permissions.VIEW_METRICS);
+        });
+
+        it('does NOT have live-stream capabilities (manage streaming / moderate chat)', () => {
+            const perms = getRolePermissions(Roles.MEMBERSHIP_DIRECTOR);
+            expect(perms).not.toContain(Permissions.MANAGE_STREAMING);
+            expect(perms).not.toContain(Permissions.MODERATE_CHAT);
+        });
+    });
+
     describe('Role to Permission Mapping Completeness', () => {
         it('should have role mapping for all roles', () => {
             const roles = [Roles.ADMIN, Roles.RABBI, Roles.SOCIAL_CHAIR, Roles.MEMBER];

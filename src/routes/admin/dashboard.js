@@ -11,7 +11,10 @@ const { Roles } = require('../../config/roles-permissions');
 const requireAdminAccess = [
     requireAuth,
     sessionTimeout(),
-    requireAnyRole([Roles.ADMIN, Roles.RABBI])
+    // The dashboard landing + metrics/audit are role-gated (the per-feature areas are
+    // permission-gated). The membership director (item 13) needs the dashboard too, so
+    // it is included here alongside admin/rabbi.
+    requireAnyRole([Roles.ADMIN, Roles.RABBI, Roles.MEMBERSHIP_DIRECTOR])
 ];
 
 // Dashboard Route

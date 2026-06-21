@@ -32,6 +32,25 @@ describe('MemberDirectoryService', () => {
         db.pool.connect.mockResolvedValue(mockClient);
     });
 
+    describe('saveProfileForAdmin (item 8)', () => {
+        test("writes the TARGET user's profile and audits as the acting admin", async () => {
+            db.query.mockResolvedValue({ rows: [{ user_id: 'target-1' }] });
+            await svc.saveProfileForAdmin('target-1', { phone: '555-9999', bio: 'Admin edit', listed: true }, 'admin-9');
+            const [sql, params] = db.query.mock.calls[0];
+            expect(sql).toContain('INSERT INTO member_profiles');
+            expect(params[0]).toBe('target-1'); // upserts the TARGET user, not the actor
+            expect(decrypt(params[6])).toBe('555-9999');
+            expect(logAudit).toHaveBeenCalledWith(
+                expect.objectContaining({ action: 'DIRECTORY_LISTING_UPDATED', user_id: 'admin-9', entity_id: 'target-1' })
+            );
+        });
+
+        test('enforces household consent (same validation as self-edit)', async () => {
+            await expect(svc.saveProfileForAdmin('target-1', { show_household: true }, 'admin-9'))
+                .rejects.toThrow(/consent/i);
+        });
+    });
+
     describe('saveMyProfile', () => {
         test('encrypts phone/household at rest and audits the change', async () => {
             db.query.mockResolvedValue({ rows: [{ user_id: 'u1' }] });

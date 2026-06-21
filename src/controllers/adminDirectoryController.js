@@ -115,3 +115,76 @@ exports.exportJson = async (req, res) => {
         return res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to export the member directory.' });
     }
 };
+
+/**
+ * GET /admin/directory/:userId/edit — admin/rabbi edit form for ANY member's listing
+ * (item 8). Backed by getProfileForAdmin (full decrypted profile; returns defaults for
+ * a member with no profile row yet).
+ */
+exports.editForm = async (req, res) => {
+    try {
+        const profile = await MemberDirectoryService.getProfileForAdmin(req.params.userId);
+        if (!profile) {
+            return res.status(404).render('404', { title: '404 - Member Not Found' });
+        }
+        res.render('layout', {
+            title: 'Edit Member Listing - Admin',
+            bodyView: 'admin/directory-edit',
+            stylesheets: ['/css/directory.css', '/css/account.css'],
+            viewData: {
+                profile,
+                error: null,
+                saved: req.query.saved === '1',
+                csrfToken: req.csrfToken ? req.csrfToken() : null
+            }
+        });
+    } catch (error) {
+        logger.error('Error loading admin directory edit form', { error });
+        res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to load the edit form.' });
+    }
+};
+
+/**
+ * POST /admin/directory/:userId — save an admin edit to any member's listing (item 8).
+ * Maps HTML-form checkbox values ("on") to booleans, preserves the structured household
+ * via the hidden field, and writes through saveProfileForAdmin (audited as the admin).
+ */
+exports.update = async (req, res) => {
+    const toBool = (v) => v === 'on' || v === 'true' || v === true;
+    const targetUserId = req.params.userId;
+    const body = req.body || {};
+    try {
+        await MemberDirectoryService.saveProfileForAdmin(targetUserId, {
+            listed: toBool(body.listed),
+            show_phone: toBool(body.show_phone),
+            show_email: toBool(body.show_email),
+            show_household: toBool(body.show_household),
+            show_address: toBool(body.show_address),
+            show_birthday: toBool(body.show_birthday),
+            household_consent: toBool(body.household_consent),
+            phone: body.phone,
+            address: body.address,
+            birthday: body.birthday,
+            bio: body.bio,
+            interests: body.interests,
+            household: body.household
+        }, req.user && req.user.id);
+        return res.redirect(`/admin/directory/${encodeURIComponent(targetUserId)}/edit?saved=1`);
+    } catch (error) {
+        logger.warn('Admin directory edit rejected', { error: error.message });
+        try {
+            const profile = await MemberDirectoryService.getProfileForAdmin(targetUserId);
+            if (!profile) {
+                return res.status(404).render('404', { title: '404 - Member Not Found' });
+            }
+            return res.status(400).render('layout', {
+                title: 'Edit Member Listing - Admin',
+                bodyView: 'admin/directory-edit',
+                stylesheets: ['/css/directory.css', '/css/account.css'],
+                viewData: { profile, error: error.message, saved: false, csrfToken: req.csrfToken ? req.csrfToken() : null }
+            });
+        } catch (e) {
+            return res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to update the listing.' });
+        }
+    }
+};
