@@ -1,4 +1,5 @@
 const GraphApiSource = require('../../../src/services/pastVideos/GraphApiSource');
+const logger = require('../../../src/utils/logger');
 
 describe('GraphApiSource', () => {
     const originalEnv = process.env;
@@ -126,5 +127,29 @@ describe('GraphApiSource', () => {
     it('throws tokenInvalid when env credentials are missing', async () => {
         delete process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
         await expect(source.listVideos()).rejects.toMatchObject({ tokenInvalid: true });
+    });
+
+    it('warns (but does not throw) when FACEBOOK_PAGE_ID is not numeric — the vanity-slug silent-failure guard', async () => {
+        process.env.FACEBOOK_PAGE_ID = 'florencetemple'; // a vanity name, not the numeric Page ID
+        global.fetch.mockResolvedValue(okResponse([]));
+        const warn = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+        try {
+            await source.listVideos();
+            expect(warn.mock.calls.some(([msg]) => String(msg).includes('FACEBOOK_PAGE_ID is not numeric'))).toBe(true);
+        } finally {
+            warn.mockRestore();
+        }
+    });
+
+    it('does not warn about the Page ID when it is numeric', async () => {
+        // process.env.FACEBOOK_PAGE_ID is the numeric '123456789' from beforeEach
+        global.fetch.mockResolvedValue(okResponse([]));
+        const warn = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+        try {
+            await source.listVideos();
+            expect(warn.mock.calls.some(([msg]) => String(msg).includes('FACEBOOK_PAGE_ID is not numeric'))).toBe(false);
+        } finally {
+            warn.mockRestore();
+        }
     });
 });

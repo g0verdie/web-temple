@@ -30,6 +30,13 @@ class GraphApiSource extends PastVideoSource {
             throw err;
         }
 
+        // A vanity slug or share-link as the Page ID silently yields blank cards (the Graph edge
+        // returns no embeddable videos), and every mocked test still passes green. Surface the
+        // misconfiguration here — warn only, never throw, so behavior is otherwise unchanged.
+        if (!/^\d+$/.test(pageId)) {
+            logger.warn('GraphApiSource FACEBOOK_PAGE_ID is not numeric — expected the numeric Page ID, not a vanity name or share-slug');
+        }
+
         const url = `https://graph.facebook.com/${version}/${encodeURIComponent(pageId)}/videos`
             + `?fields=id,description,created_time,picture,status&limit=${PAGE_SIZE}`;
 
