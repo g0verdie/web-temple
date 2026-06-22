@@ -175,4 +175,19 @@ describe('Page Controller', () => {
       expect(mockClient.query).toHaveBeenCalledWith('COMMIT');
     });
   });
+
+  describe('getAllPagesForAdmin', () => {
+    it('returns all pages (published and draft) for the admin index', async () => {
+      const rows = [
+        { slug: 'about', title: 'About the Temple', published: false, updated_at: new Date() },
+        { slug: 'privacy', title: 'Privacy Policy', published: true, updated_at: new Date() },
+      ];
+      db.query.mockResolvedValueOnce({ rows });
+
+      const pages = await pageController.getAllPagesForAdmin();
+
+      expect(db.query).toHaveBeenCalledWith(expect.stringContaining('FROM static_pages'));
+      expect(pages).toEqual(rows);
+    });
+  });
 });

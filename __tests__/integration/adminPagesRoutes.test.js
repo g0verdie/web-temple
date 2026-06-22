@@ -3,6 +3,7 @@ const pageController = require('../../src/controllers/pageController');
 
 jest.mock('../../src/controllers/pageController', () => ({
     getPageForAdmin: jest.fn(),
+    getAllPagesForAdmin: jest.fn(),
     getVersionHistory: jest.fn(),
     updatePage: jest.fn(),
     publishPage: jest.fn(),
@@ -20,6 +21,10 @@ describe('Admin Pages Routes', () => {
             content: '<p>About</p>',
             published: true
         });
+        pageController.getAllPagesForAdmin.mockResolvedValue([
+            { slug: 'about', title: 'About the Temple', published: false, updated_at: new Date('2026-06-01') },
+            { slug: 'privacy', title: 'Privacy Policy', published: true, updated_at: new Date('2026-06-01') }
+        ]);
         pageController.getVersionHistory.mockResolvedValue([]);
         pageController.updatePage.mockResolvedValue({ id: 'page-1', title: 'About' });
         pageController.publishPage.mockResolvedValue({ id: 'page-1', title: 'About', published: true });
@@ -28,6 +33,17 @@ describe('Admin Pages Routes', () => {
 
     afterEach(() => {
         jest.clearAllMocks();
+    });
+
+    it('GET /admin/pages lists the static pages with edit links', async () => {
+        const res = await request(app).get('/admin/pages');
+
+        expect(res.status).toBe(200);
+        expect(res.text).toContain('About the Temple');
+        expect(res.text).toContain('Privacy Policy');
+        expect(res.text).toContain('/admin/pages/about');
+        expect(res.text).toContain('/admin/pages/privacy');
+        expect(pageController.getAllPagesForAdmin).toHaveBeenCalled();
     });
 
     it('GET /admin/pages/:slug renders edit page', async () => {

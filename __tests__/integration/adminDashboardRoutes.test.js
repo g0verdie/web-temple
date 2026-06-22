@@ -77,6 +77,22 @@ describe('Admin dashboard routes (Story 9.1)', () => {
             expect(res.text).toContain('Admin Dashboard');
             expect(res.text).toContain('Today\'s Priorities');
         });
+
+        test('admin → the failed-job retry form carries a CSRF token', async () => {
+            db.query.mockResolvedValue({ rows: [{ id: 'admin-1', token_version: 1, role: 'admin', email: 'admin-1@x.com' }] });
+            emailQueueService.getQueueStats.mockResolvedValue({
+                counts: { failed: 1 },
+                failed: [{ id: '42', data: { to: 'x@y.com' }, attemptsMade: 3, failedReason: 'boom' }]
+            });
+            const res = await request(app).get('/admin').set('Cookie', [`auth_token=${adminToken}`]);
+            expect(res.status).toBe(200);
+            // Without a _csrf field the global csurf middleware 403s the retry POST in
+            // production. Scope the assertion to the retry form so it can't false-pass
+            // on another form rendered by the layout.
+            const retryForm = res.text.match(/<form[^>]*\/admin\/email-queue\/42\/retry[\s\S]*?<\/form>/);
+            expect(retryForm).not.toBeNull();
+            expect(retryForm[0]).toContain('name="_csrf"');
+        });
     });
 
     describe('error page payload (Item 10)', () => {

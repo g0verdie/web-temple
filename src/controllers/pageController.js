@@ -296,9 +296,29 @@ async function restoreVersion(slug, versionNumber, userId) {
   }
 }
 
+/**
+ * List all static pages (published and draft) for the admin index
+ * @returns {Promise<Array>} - Pages with slug, title, published, updated_at
+ */
+async function getAllPagesForAdmin() {
+  try {
+    const query = `
+      SELECT slug, title, published, updated_at
+      FROM static_pages
+      ORDER BY title ASC
+    `;
+    const result = await db.query(query);
+    return result.rows;
+  } catch (error) {
+    logger.error('Error listing pages for admin', { error });
+    throw error;
+  }
+}
+
 module.exports = {
   getPublishedPage,
   getPageForAdmin,
+  getAllPagesForAdmin,
   updatePage,
   publishPage,
   getVersionHistory,

@@ -4,6 +4,9 @@
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('page-edit-form');
     const slug = form ? form.dataset.slug : '';
+    // Global csurf protects every state-changing request; mirror login.js/contact-form.js
+    // and send the layout's csrf-token meta as a CSRF-Token header on each write.
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
     const quill = new Quill('#editor', {
         theme: 'snow',
@@ -47,6 +50,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'CSRF-Token': csrfToken,
                 },
                 body: JSON.stringify({ title, content })
             });
@@ -103,6 +107,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'CSRF-Token': csrfToken,
                 },
                 body: JSON.stringify({ published: true })
             });
@@ -130,6 +135,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'CSRF-Token': csrfToken,
                 },
                 body: JSON.stringify({ published: false })
             });
@@ -159,6 +165,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'CSRF-Token': csrfToken,
                     },
                     body: JSON.stringify({})
                 });

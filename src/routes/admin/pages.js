@@ -22,6 +22,24 @@ const requirePageManagementAccess = [
 ];
 
 /**
+ * GET /admin/pages
+ * Index of all editable static pages
+ */
+router.get('/', requirePageManagementAccess, async (req, res, next) => {
+  try {
+    const pages = await pageController.getAllPagesForAdmin();
+    res.render('layout', {
+      title: 'Manage Pages',
+      bodyView: 'admin/pages/list',
+      viewData: { pages },
+    });
+  } catch (error) {
+    logger.error('Error loading admin pages index', { error });
+    next(error);
+  }
+});
+
+/**
  * GET /admin/pages/:slug
  * Edit view for a specific page
  */
