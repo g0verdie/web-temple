@@ -2,6 +2,7 @@
      data-csrf="<%= typeof csrfToken !== 'undefined' && csrfToken ? csrfToken : '' %>"
      data-id="<%= announcement ? announcement.id : '' %>">
 
+    <%- include('../partials/back-to-dashboard') %>
     <h1><%= announcement ? 'Edit Announcement' : 'New Announcement' %></h1>
 
     <div id="announcementFormMessage" class="form-message" role="alert" aria-live="assertive"></div>
