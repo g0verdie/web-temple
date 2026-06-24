@@ -338,6 +338,68 @@ main {
   padding: var(--spacing-lg) var(--spacing-md);
 }
 
+/* App shell. Mobile-first: a single column — the header stacks above the content and
+   the nav stays behind the hamburger (base styles above). On desktop the header
+   becomes a persistent left sidebar (see the 768px block below). */
+.app-shell {
+  display: block;
+}
+
+.app-main {
+  min-width: 0;
+}
+
+/* Desktop (768px+): header becomes a persistent left sidebar, content fills the rest.
+   The hamburger is hidden and the menu shows as a static vertical column. */
+@media (min-width: 768px) {
+  .app-shell {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  header {
+    flex: 0 0 240px;
+    width: 240px;
+    min-height: 100vh;
+    max-height: 100vh;
+    overflow-y: auto;
+    position: sticky;
+    top: 0;
+    padding: var(--spacing-md) 0;
+  }
+
+  .app-main {
+    flex: 1 1 auto;
+  }
+
+  /* Stack the brand above a full vertical menu. */
+  .nav-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-md);
+    max-width: none;
+    min-height: 0;
+    padding: 0;
+  }
+
+  .site-title {
+    padding: 0 var(--spacing-md);
+  }
+
+  .hamburger-btn {
+    display: none;
+  }
+
+  /* The menu lives in the sidebar flow (no absolute dropdown). */
+  .nav-menu {
+    display: flex;
+    position: static;
+    width: 100%;
+    padding: 0;
+    box-shadow: none;
+  }
+}
+
 /* Hero section - Mobile first (375px) */
 .hero {
   /* Temple building photo with a dark navy overlay so the white text/CTA stay

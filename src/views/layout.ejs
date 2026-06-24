@@ -85,6 +85,7 @@
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
+  <div class="app-shell">
   <header role="banner">
     <nav role="navigation" aria-label="Main navigation">
       <div class="nav-container">
@@ -122,6 +123,7 @@
     </nav>
   </header>
 
+  <div class="app-main">
   <main id="main-content" role="main">
     <%- include(bodyView, viewData) %>
   </main>
@@ -137,6 +139,8 @@
       </nav>
     </div>
   </footer>
+  </div><!-- .app-main -->
+  </div><!-- .app-shell -->
 
   <script src="/js/hamburger.js"></script>
   <% if (typeof user !== 'undefined' && user) { %>
