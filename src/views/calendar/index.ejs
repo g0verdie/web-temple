@@ -46,10 +46,21 @@
                     <ul class="calendar-cell-events">
                       <% cell.events.forEach(function(event) { %>
                         <li class="calendar-event calendar-event--<%= event.type || 'event' %>">
-                          <% if (event.date) { %><time class="calendar-event-time" datetime="<%= new Date(event.date).toISOString() %>"><%= timeFmt(event.date) %></time><% } %>
-                          <span class="calendar-event-title"><%= event.title %></span>
-                          <% if (event.visibility === 'members') { %><span class="badge badge-members">Members</span><% } %>
-                          <% if (event.location) { %><span class="calendar-event-location"><span aria-hidden="true">📍</span> <%= event.location %></span><% } %>
+                          <button type="button" class="calendar-event-trigger"
+                            data-title="<%= event.title %>"
+                            data-datetime="<%= event.date ? new Date(event.date).toISOString() : '' %>"
+                            data-time="<%= timeFmt(event.date) %>"
+                            data-description="<%= event.description || '' %>"
+                            data-location="<%= event.location || '' %>"
+                            data-visibility="<%= event.visibility || '' %>"
+                            <% if (event.streamId) { %>data-stream-id="<%= event.streamId %>" data-stream-status="<%= event.streamStatus || '' %>"<% } %>
+                            aria-haspopup="dialog">
+                            <% if (event.date) { %><time class="calendar-event-time" datetime="<%= new Date(event.date).toISOString() %>"><%= timeFmt(event.date) %></time><% } %>
+                            <span class="calendar-event-title"><%= event.title %></span>
+                            <% if (event.streamId) { %><span class="calendar-event-stream" aria-hidden="true">●</span><% } %>
+                            <% if (event.visibility === 'members') { %><span class="badge badge-members">Members</span><% } %>
+                            <% if (event.location) { %><span class="calendar-event-location"><span aria-hidden="true">📍</span> <%= event.location %></span><% } %>
+                          </button>
                         </li>
                       <% }); %>
                     </ul>
@@ -62,6 +73,21 @@
       </tbody>
     </table>
   </div>
+
+  <div class="calendar-event-modal" id="calendarEventModal" role="dialog" aria-modal="true" aria-labelledby="calendarEventModalTitle" hidden>
+    <div class="calendar-event-modal-content">
+      <button type="button" class="calendar-event-modal-close" id="calendarEventModalClose" aria-label="Close">&times;</button>
+      <h3 class="calendar-event-modal-title" id="calendarEventModalTitle"></h3>
+      <p class="calendar-event-modal-time" id="calendarEventModalTime"></p>
+      <p class="calendar-event-modal-location" id="calendarEventModalLocation" hidden></p>
+      <p class="calendar-event-modal-members" id="calendarEventModalMembers" hidden>Members-only event</p>
+      <p class="calendar-event-modal-description" id="calendarEventModalDescription" hidden></p>
+      <div class="calendar-event-modal-actions">
+        <a class="calendar-event-modal-link" id="calendarEventModalStreamLink" hidden>View stream</a>
+      </div>
+    </div>
+  </div>
 </section>
 
 <script src="/js/calendar.js"></script>
+<script src="/js/calendar-event-modal.js"></script>

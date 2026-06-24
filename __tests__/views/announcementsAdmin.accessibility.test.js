@@ -12,8 +12,10 @@ const { axe, toHaveNoViolations } = require('jest-axe');
 expect.extend(toHaveNoViolations);
 
 const render = (view, data) => {
-    const tpl = fs.readFileSync(path.join(__dirname, `../../src/views/admin/announcements/${view}.ejs`), 'utf8');
-    const body = ejs.render(tpl, data);
+    const filename = path.join(__dirname, `../../src/views/admin/announcements/${view}.ejs`);
+    const tpl = fs.readFileSync(filename, 'utf8');
+    // Pass filename so EJS resolves the shared partial include the way Express does.
+    const body = ejs.render(tpl, data, { filename });
     return `<!doctype html><html lang="en"><head><title>Admin Announcements</title></head><body><main>${body}</main></body></html>`;
 };
 

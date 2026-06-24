@@ -1,4 +1,5 @@
 <div class="container announcements-admin" data-csrf="<%= typeof csrfToken !== 'undefined' && csrfToken ? csrfToken : '' %>">
+    <%- include('../partials/back-to-dashboard') %>
     <div class="announcements-admin__header">
         <h1>Announcements</h1>
         <a href="/admin/announcements/new" class="btn btn-primary">New Announcement</a>

@@ -338,6 +338,68 @@ main {
   padding: var(--spacing-lg) var(--spacing-md);
 }
 
+/* App shell. Mobile-first: a single column — the header stacks above the content and
+   the nav stays behind the hamburger (base styles above). On desktop the header
+   becomes a persistent left sidebar (see the 768px block below). */
+.app-shell {
+  display: block;
+}
+
+.app-main {
+  min-width: 0;
+}
+
+/* Desktop (768px+): header becomes a persistent left sidebar, content fills the rest.
+   The hamburger is hidden and the menu shows as a static vertical column. */
+@media (min-width: 768px) {
+  .app-shell {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  header {
+    flex: 0 0 240px;
+    width: 240px;
+    min-height: 100vh;
+    max-height: 100vh;
+    overflow-y: auto;
+    position: sticky;
+    top: 0;
+    padding: var(--spacing-md) 0;
+  }
+
+  .app-main {
+    flex: 1 1 auto;
+  }
+
+  /* Stack the brand above a full vertical menu. */
+  .nav-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-md);
+    max-width: none;
+    min-height: 0;
+    padding: 0;
+  }
+
+  .site-title {
+    padding: 0 var(--spacing-md);
+  }
+
+  .hamburger-btn {
+    display: none;
+  }
+
+  /* The menu lives in the sidebar flow (no absolute dropdown). */
+  .nav-menu {
+    display: flex;
+    position: static;
+    width: 100%;
+    padding: 0;
+    box-shadow: none;
+  }
+}
+
 /* Hero section - Mobile first (375px) */
 .hero {
   /* Temple building photo with a dark navy overlay so the white text/CTA stay
@@ -884,4 +946,36 @@ img[loading="lazy"] {
   border-radius: 4px;
   min-height: 300px;
   background-color: #f9f9f9;
+}
+
+/* Admin "Back to Dashboard" link.
+   Self-contained here in the global stylesheet (not admin.css) so it renders
+   consistently on every admin page regardless of which page-specific stylesheet
+   that page loads. Mirrors the .btn.btn-outline-secondary look from admin.css. */
+.back-to-dashboard {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.6rem 1.2rem;
+  margin-bottom: var(--spacing-md);
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-light);
+  text-decoration: none;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.back-to-dashboard:hover,
+.back-to-dashboard:focus-visible {
+  background: var(--color-bg-alt);
+  color: var(--color-primary);
+}
+
+.back-to-dashboard:focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
 }

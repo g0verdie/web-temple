@@ -94,6 +94,14 @@ class HamburgerMenu {
   }
 
   handleMenuKeydown(e) {
+    // On desktop the menu is a static left sidebar and the hamburger is hidden
+    // (display:none → offsetParent null). The dropdown keyboard model (arrow cycling,
+    // tab-to-close, focusing the hidden toggle) shouldn't apply there — let the menu
+    // behave as a normal list of links.
+    if (!this.btn || this.btn.offsetParent === null) {
+      return;
+    }
+
     // Escape closes menu
     if (e.key === 'Escape') {
       e.preventDefault();

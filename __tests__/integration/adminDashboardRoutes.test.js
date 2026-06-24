@@ -95,6 +95,25 @@ describe('Admin dashboard routes (Story 9.1)', () => {
         });
     });
 
+    describe('Back to Dashboard button', () => {
+        beforeEach(() => {
+            db.query.mockResolvedValue({ rows: [{ id: 'admin-1', token_version: 1, role: 'admin', email: 'admin-1@x.com' }] });
+        });
+
+        test('the /admin dashboard itself does NOT render a Back to Dashboard button', async () => {
+            const res = await request(app).get('/admin').set('Cookie', [`auth_token=${adminToken}`]);
+            expect(res.status).toBe(200);
+            expect(res.text).not.toContain('class="back-to-dashboard"');
+        });
+
+        test('a non-dashboard admin page renders the Back to Dashboard button linking to /admin', async () => {
+            ChatService.getPendingMessages.mockResolvedValue([]);
+            const res = await request(app).get('/admin/chat-moderation').set('Cookie', [`auth_token=${adminToken}`]);
+            expect(res.status).toBe(200);
+            expect(res.text).toContain('<a href="/admin" class="back-to-dashboard">');
+        });
+    });
+
     describe('error page payload (Item 10)', () => {
         beforeEach(() => {
             db.query.mockResolvedValue({ rows: [{ id: 'admin-1', token_version: 1, role: 'admin', email: 'admin-1@x.com' }] });
