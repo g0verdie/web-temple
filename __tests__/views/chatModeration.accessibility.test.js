@@ -14,11 +14,10 @@ expect.extend(toHaveNoViolations);
 // Renders the admin chat-moderation partial in isolation (wrapped in a minimal
 // document so document-level axe rules don't false-positive on the fragment).
 const renderModeration = (messages) => {
-    const tpl = fs.readFileSync(
-        path.join(__dirname, '../../src/views/admin/chat-moderation.ejs'),
-        'utf8'
-    );
-    const body = ejs.render(tpl, { messages });
+    const filename = path.join(__dirname, '../../src/views/admin/chat-moderation.ejs');
+    const tpl = fs.readFileSync(filename, 'utf8');
+    // Pass filename so EJS resolves the shared partial include the way Express does.
+    const body = ejs.render(tpl, { messages }, { filename });
     return `<!doctype html><html lang="en"><head><title>Chat Moderation</title></head><body><main>${body}</main></body></html>`;
 };
 
