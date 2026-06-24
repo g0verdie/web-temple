@@ -242,6 +242,7 @@ const calendarRoutes = require('./routes/calendar');
 const directoryRoutes = require('./routes/directory');
 const donationRoutes = require('./routes/donations');
 const watchRoutes = require('./routes/watch');
+const streamsRoutes = require('./routes/streams');
 const legalRoutes = require('./routes/legal');
 
 app.use('/', homeRoutes);
@@ -249,6 +250,7 @@ app.use('/about', aboutRoutes);
 app.use('/contact', contactRoutes);
 app.use('/calendar', calendarRoutes);
 app.use('/watch', watchRoutes);
+app.use('/streams', streamsRoutes);
 app.use('/', legalRoutes);
 app.use('/', pagesRoutes);
 app.use('/admin', adminDashboardRoutes);

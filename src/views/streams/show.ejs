@@ -1,0 +1,37 @@
+<section class="watch-page" aria-labelledby="stream-heading">
+  <div class="container">
+    <p><a href="/calendar">&larr; Back to Calendar</a></p>
+
+    <div class="watch-live__header">
+      <span class="stream-badge stream-badge--<%= statusBadge %>" role="status"><%= statusLabel %></span>
+    </div>
+
+    <h1 id="stream-heading"><%= stream.title %></h1>
+
+    <% if (stream.scheduled_start) { %>
+      <p class="stream-time">
+        <time datetime="<%= new Date(stream.scheduled_start).toISOString() %>"><%= new Date(stream.scheduled_start).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short', timeZone: 'UTC' }) %> (UTC)</time>
+      </p>
+    <% } %>
+
+    <% if (embedUrl) { %>
+      <div class="watch-player__frame">
+        <iframe src="<%= embedUrl %>" title="<%= stream.title %> livestream player"
+          allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="eager"
+          referrerpolicy="no-referrer"></iframe>
+      </div>
+    <% } else if (stream.status === 'scheduled') { %>
+      <p class="watch-intro">This stream hasn't started yet. Check back at the scheduled time.</p>
+    <% } else if (stream.status === 'completed') { %>
+      <p class="watch-intro">This stream has ended. Visit <a href="/watch">Past Services</a> to watch recordings.</p>
+    <% } else if (stream.status === 'canceled') { %>
+      <p class="watch-intro">This stream was canceled.</p>
+    <% } else { %>
+      <p class="watch-intro">This stream isn't available to watch right now.</p>
+    <% } %>
+
+    <% if (watchUrl) { %>
+      <p class="stream-watch-link"><a href="<%= watchUrl %>" target="_blank" rel="noopener">Watch on Facebook</a></p>
+    <% } %>
+  </div>
+</section>

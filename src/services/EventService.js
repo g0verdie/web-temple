@@ -209,7 +209,29 @@ class EventService {
         }
         query += ' ORDER BY starts_at ASC';
         const result = await db.query(query, values);
-        return result.rows.map(mapRow);
+        const events = result.rows.map(mapRow);
+
+        // Annotate events that have a linked active/scheduled stream with the stream id
+        // and status, so the calendar can deep-link them to the stream view page
+        // (/streams/:id). A failure reading streams must not break the calendar — fall
+        // back to the un-annotated events (mirrors getEvents()).
+        try {
+            const scheduledStreams = await StreamingService.getScheduledStreams();
+            for (const stream of scheduledStreams) {
+                const isLive = stream.status === 'scheduled' || stream.status === 'active';
+                if (!isLive || !stream.event_id) continue;
+                const matched = events.find(e => Number(e.id) === Number(stream.event_id));
+                if (matched) {
+                    matched.streamId = stream.id;
+                    matched.streamStatus = stream.status;
+                    matched.hasLiveStream = true;
+                }
+            }
+        } catch (error) {
+            logger.error('Failed to merge scheduled streams into calendar range', { error: error.message });
+        }
+
+        return events;
     }
 
     /**

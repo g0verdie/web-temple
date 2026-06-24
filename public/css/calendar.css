@@ -304,3 +304,139 @@
     align-items: flex-start;
   }
 }
+
+/* Clickable calendar events (open the event popup). The <li>.calendar-event keeps its
+   colored chip styling; the button fills it, stripped of default chrome. */
+.calendar-event-trigger {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.calendar-event-trigger:hover .calendar-event-title,
+.calendar-event-trigger:focus-visible .calendar-event-title {
+  text-decoration: underline;
+}
+
+.calendar-event-trigger:focus-visible {
+  outline: var(--focus-outline, 3px solid #b8860b);
+  outline-offset: 2px;
+}
+
+/* Small dot marking an event that has an associated live stream. */
+.calendar-event-stream {
+  color: #a3324b;
+  font-size: 0.7em;
+  vertical-align: middle;
+  margin-left: 0.2rem;
+}
+
+/* Event detail popup (toggled via the hidden attribute in JS — CSP-clean), mirroring
+   the household-modal pattern in account.css. */
+.calendar-event-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(26, 54, 93, 0.45);
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.calendar-event-modal[hidden] {
+  display: none;
+}
+
+.calendar-event-modal-content {
+  position: relative;
+  background: #fff;
+  border-radius: 12px;
+  border-top: 4px solid var(--color-gold, #d69e2e);
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 460px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+}
+
+.calendar-event-modal-title {
+  margin-top: 0;
+  padding-right: 2rem;
+  color: var(--color-primary, #1a365d);
+}
+
+.calendar-event-modal-time {
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.calendar-event-modal-location,
+.calendar-event-modal-members,
+.calendar-event-modal-description {
+  margin: 0 0 0.5rem;
+}
+
+.calendar-event-modal-members {
+  color: var(--color-gold-dark, #856823);
+  font-weight: 600;
+}
+
+.calendar-event-modal-description {
+  white-space: pre-line;
+}
+
+.calendar-event-modal-actions {
+  margin-top: 1rem;
+}
+
+.calendar-event-modal-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  background: var(--color-primary, #1a365d);
+  color: #fff;
+}
+
+.calendar-event-modal-link:hover {
+  background: var(--color-secondary, #2c5282);
+}
+
+.calendar-event-modal-link:focus-visible {
+  outline: var(--focus-outline, 3px solid #b8860b);
+  outline-offset: 2px;
+}
+
+.calendar-event-modal-link[hidden] {
+  display: none;
+}
+
+.calendar-event-modal-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  min-width: 44px;
+  min-height: 44px;
+  background: transparent;
+  border: 0;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--color-text-light, #4a5568);
+  cursor: pointer;
+}
+
+.calendar-event-modal-close:focus-visible {
+  outline: var(--focus-outline, 3px solid #b8860b);
+  outline-offset: 2px;
+}

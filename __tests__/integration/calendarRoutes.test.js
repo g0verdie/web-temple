@@ -85,6 +85,18 @@ describe('Public calendar page (U5)', () => {
         expect(end.getTime()).toBeGreaterThan(start.getTime());
     });
 
+    it('renders events as clickable triggers, with a stream link + modal when streamed', async () => {
+        EventService.getEventsInRange.mockResolvedValue([
+            { id: 5, title: 'Clickable Event', date: futureDate, visibility: 'public', description: 'Come join', streamId: 42, streamStatus: 'scheduled' }
+        ]);
+        const res = await request(app).get('/calendar');
+        expect(res.status).toBe(200);
+        expect(res.text).toContain('class="calendar-event-trigger"');
+        expect(res.text).toContain('data-stream-id="42"');
+        expect(res.text).toContain('id="calendarEventModal"');
+        expect(res.text).toContain('/js/calendar-event-modal.js');
+    });
+
     it('edge: empty window renders the grid with an empty-state note', async () => {
         EventService.getEventsInRange.mockResolvedValue([]);
         const res = await request(app).get('/calendar');
