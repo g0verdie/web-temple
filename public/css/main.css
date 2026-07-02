@@ -21,6 +21,12 @@
   --color-gold-dark: #856823; /* gold-as-text/links on light surfaces (white 5.25:1, #f7fafc 5.01:1, #f0f0f0 4.60:1 — all AA) */
   --color-gold-focus: #b8860b; /* focus outline — clears 3:1 on white AND navy */
   --color-live: #c0492f; /* live-now indicator dot (on navy) */
+  /* Destructive action colour (I15 action-colour contract). One canonical red for
+     the whole site, reconciling admin.css #b3261e and streaming.css #dc2626 to the
+     higher-contrast value (white text ~6.4:1, AA). Only the .c-btn--destructive
+     variant emits it, so red never appears as decoration. */
+  --color-danger: #b3261e; /* destructive fill — white-on-red passes AA */
+  --color-danger-hover: #8f1d17; /* destructive fill on hover/active */
   --color-accent: var(--color-gold); /* alias kept for existing var(--color-accent) usages */
   --color-text: #2d3748; /* Dark gray text */
   --color-text-light: #4a5568; /* Medium gray */

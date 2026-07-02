@@ -1,0 +1,18 @@
+<%
+  /*
+   * page-header partial — one shared page-title header (I15, R1), replacing the
+   * bespoke per-page header classes (.about-hero, .calendar-page-header, …). One
+   * variant system: the default is the standard title bar; `variant` appends a
+   * page-header--<variant> modifier for a context tweak without a new component.
+   * Locals: title (text). Optional subtitle (text), variant (modifier suffix).
+   */
+  const _phTitle = typeof title !== 'undefined' ? title : '';
+  const _phSubtitle = (typeof subtitle !== 'undefined' && subtitle) ? subtitle : null;
+  const _phVariant = (typeof variant !== 'undefined' && variant) ? ' page-header--' + variant : '';
+-%>
+<header class="page-header<%= _phVariant %>">
+  <h1 class="page-header__title"><%= _phTitle %></h1>
+  <% if (_phSubtitle) { -%>
+  <p class="page-header__subtitle"><%= _phSubtitle %></p>
+  <% } -%>
+</header>

@@ -13,7 +13,7 @@
         <option value="<%= s %>" <%= filterStatus === s ? 'selected' : '' %>><%= s %></option>
       <% }); %>
     </select>
-    <button type="submit">Apply</button>
+    <%- include('../../partials/button', { variant: 'navigational', label: 'Apply', type: 'submit' }) %>
   </form>
 
   <% if (messages && messages.length > 0) { %>

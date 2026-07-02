@@ -1,0 +1,30 @@
+<%
+  /*
+   * button partial — the site's shared action control (I15). One class contract
+   * for both <button> submits and <a> links (R2, R3) so a navigational link and
+   * a navigational button read identically and no action falls back to browser
+   * defaults. Semantic variants only — the action-color contract (R5):
+   *   primary       → gold  (the page's main CTA; matches the I9 Give button)
+   *   navigational  → navy  (go somewhere / secondary action)
+   *   destructive   → red   (the ONLY path that emits --color-danger; R6)
+   *
+   * Locals: label (text). variant (default 'primary'; unknown falls back to
+   * 'primary', so red is never reachable by accident). href → renders <a href>
+   * instead of <button>. type → button type when not a link (default 'submit').
+   * size → 'sm' for the compact row-action size. className → extra layout hooks
+   * only (never colour, which is class-enforced above).
+   */
+  const _btnAllowed = ['primary', 'navigational', 'destructive'];
+  const _btnVariant = (typeof variant !== 'undefined' && _btnAllowed.includes(variant)) ? variant : 'primary';
+  const _btnLabel = typeof label !== 'undefined' ? label : '';
+  const _btnHref = (typeof href !== 'undefined' && href) ? href : null;
+  const _btnType = (typeof type !== 'undefined' && type) ? type : 'submit';
+  const _btnSize = (typeof size !== 'undefined' && size === 'sm') ? ' c-btn--sm' : '';
+  const _btnExtra = (typeof className !== 'undefined' && className) ? ' ' + className : '';
+  const _btnClass = 'c-btn c-btn--' + _btnVariant + _btnSize + _btnExtra;
+-%>
+<% if (_btnHref) { -%>
+<a class="<%= _btnClass %>" href="<%= _btnHref %>"><%= _btnLabel %></a>
+<% } else { -%>
+<button type="<%= _btnType %>" class="<%= _btnClass %>"><%= _btnLabel %></button>
+<% } -%>

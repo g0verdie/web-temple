@@ -42,10 +42,10 @@
                 <td><%= event.type %></td>
                 <td><%= event.location || '—' %></td>
                 <td class="action-buttons">
-                  <a href="/admin/calendar/<%= event.id %>/edit" class="btn btn-secondary btn-sm btn-outline">Edit</a>
+                  <%- include('../../partials/button', { variant: 'navigational', label: 'Edit', href: '/admin/calendar/' + event.id + '/edit', size: 'sm' }) %>
                   <form action="/admin/calendar/<%= event.id %>/delete" method="POST" class="js-confirm-delete" data-confirm="Delete event &quot;<%= event.title %>&quot;? It can be restored from the archive.">
                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    <%- include('../../partials/button', { variant: 'destructive', label: 'Delete', type: 'submit', size: 'sm' }) %>
                   </form>
                 </td>
               </tr>

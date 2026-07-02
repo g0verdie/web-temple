@@ -1,0 +1,18 @@
+<%
+  /*
+   * empty-state partial — shared "no results / nothing here yet" block (I15, R4),
+   * replacing the hand-rolled inline <p class="directory-empty"> paragraphs.
+   * Locals: message (text). Optional actionHref + actionLabel render a single
+   * navigational action through the button partial, so the empty state's call to
+   * action obeys the same action-colour contract as every other action.
+   */
+  const _esMessage = typeof message !== 'undefined' ? message : '';
+  const _esActionHref = (typeof actionHref !== 'undefined' && actionHref) ? actionHref : null;
+  const _esActionLabel = (typeof actionLabel !== 'undefined' && actionLabel) ? actionLabel : null;
+-%>
+<div class="empty-state">
+  <p class="empty-state__message"><%= _esMessage %></p>
+  <% if (_esActionHref && _esActionLabel) { -%>
+  <%- include('button', { variant: 'navigational', label: _esActionLabel, href: _esActionHref, size: 'sm', className: 'empty-state__action' }) %>
+  <% } -%>
+</div>

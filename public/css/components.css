@@ -1,0 +1,89 @@
+/*
+ * components.css — shared EJS component kit (I15).
+ *
+ * Loaded globally from src/views/layout.ejs (right after main.css) so the kit
+ * reaches every context — public, admin, and footer — closing the admin-only
+ * `.btn*` and undefined-`.btn-link` gaps. Cascade note: this loads BEFORE any
+ * page-scoped stylesheet in the layout's `stylesheets` array, and the kit uses
+ * its own `c-btn`/`page-header`/`empty-state` class names, so it neither
+ * overrides nor is overridden by the legacy admin.css `.btn*` taxonomy.
+ *
+ * Tokens come from main.css :root (navy --color-primary, --color-gold,
+ * --color-danger). This file adds no new colours beyond the three-value
+ * action-colour contract.
+ */
+
+/* ── Kit control reset (R8) ───────────────────────────────────────────────────
+ * OS-default control chrome is neutralised ONLY on the kit's own `.c-btn` class
+ * (below), never on the bare element. This file is loaded site-wide via
+ * layout.ejs, so a global element reset would strip every not-yet-converted
+ * native <button>/submit input down to affordance-less text. Scoping the reset
+ * to `.c-btn` means unclassed controls keep their default browser affordance. */
+
+/* ── Button (R2, R3, R5) ─────────────────────────────────────────────────────
+ * One class contract for <button> submits and <a> links. Colour is class-
+ * enforced by the three variants below and nowhere else. */
+.c-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1.2rem;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  min-height: 44px;
+  cursor: pointer;
+  text-decoration: none; /* keeps <a> variants from rendering the UA blue underline */
+  -webkit-appearance: none;
+  appearance: none;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s, transform 0.1s;
+}
+.c-btn:active { transform: translateY(1px); }
+.c-btn:focus-visible { outline: var(--focus-outline); outline-offset: var(--focus-offset); }
+
+/* primary = gold — the page's main CTA, matching the I9 Give button (navy-on-gold). */
+.c-btn--primary { background: var(--color-gold); color: var(--color-primary); }
+.c-btn--primary:hover { background: var(--color-gold-focus); }
+
+/* navigational = navy — go somewhere / secondary action; also the fix for the
+ * admin directory Export/Edit links that used to fall back to UA blue. */
+.c-btn--navigational { background: var(--color-primary); color: #fff; }
+.c-btn--navigational:hover { background: var(--color-secondary); }
+
+/* destructive = red — the ONLY variant that emits --color-danger (R6). */
+.c-btn--destructive { background: var(--color-danger); color: #fff; }
+.c-btn--destructive:hover { background: var(--color-danger-hover); }
+
+/* Compact row-action size. */
+.c-btn--sm { padding: 0.35rem 0.8rem; font-size: 0.85rem; min-height: 36px; }
+
+/* ── Page header (R1) ────────────────────────────────────────────────────────
+ * One shared page-title header; the default is the standard title bar. */
+.page-header {
+  margin-bottom: var(--spacing-md);
+}
+.page-header__title {
+  font-family: var(--font-serif);
+  color: var(--color-primary);
+  margin: 0;
+}
+.page-header__subtitle {
+  color: var(--color-text-light);
+  margin: 0.35rem 0 0;
+}
+
+/* ── Empty state (R4) ────────────────────────────────────────────────────────
+ * Shared "no results / nothing here yet" block. */
+.empty-state {
+  padding: var(--spacing-md) 0;
+  color: var(--color-text-light);
+}
+.empty-state__message {
+  margin: 0;
+}
+.empty-state__action {
+  margin-top: var(--spacing-sm);
+}

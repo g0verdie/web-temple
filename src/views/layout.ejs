@@ -69,6 +69,8 @@
       <link rel="icon" type="image/svg+xml" href="/favicon.svg">
       <!-- Main CSS -->
       <link rel="stylesheet" href="/css/main.css">
+      <!-- Shared component kit (I15): loaded globally, before any page-scoped sheet -->
+      <link rel="stylesheet" href="/css/components.css">
       <% if (typeof stylesheets !=='undefined' && stylesheets.length) { %>
         <% stylesheets.forEach((stylesheet)=> { %>
           <link rel="stylesheet" href="<%= stylesheet %>">

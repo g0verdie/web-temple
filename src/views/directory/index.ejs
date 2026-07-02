@@ -47,9 +47,9 @@
             <!-- Shown by directory-search.js when the live filter matches nothing. -->
             <p class="directory-empty" id="directoryLiveEmpty" hidden>No members match your search. Try a different name or interest.</p>
         <% } else if (filters.search) { %>
-            <p class="directory-empty">No members match "<%= filters.search %>". Try a different name or interest.</p>
+            <%- include('../partials/empty-state', { message: 'No members match "' + filters.search + '". Try a different name or interest.' }) %>
         <% } else { %>
-            <p class="directory-empty">No members are listed in the directory yet. <a href="/account/settings#directory-listing">Be the first to add your listing.</a></p>
+            <%- include('../partials/empty-state', { message: 'No members are listed in the directory yet.', actionHref: '/account/settings#directory-listing', actionLabel: 'Be the first to add your listing.' }) %>
         <% } %>
     </div>
 </div>

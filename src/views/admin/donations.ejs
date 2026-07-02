@@ -25,7 +25,7 @@
         </select>
         <input type="date" name="startDate" value="<%= filters.startDate %>" aria-label="Start date">
         <input type="date" name="endDate" value="<%= filters.endDate %>" aria-label="End date">
-        <button type="submit">Filter</button>
+        <%- include('../partials/button', { variant: 'navigational', label: 'Filter', type: 'submit' }) %>
         <a href="/admin/donations/export.csv" class="btn-link">Export CSV</a>
     </form>
 

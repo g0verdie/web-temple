@@ -1,19 +1,18 @@
 <div class="directory-container">
     <%- include('partials/back-to-dashboard') %>
-    <h1>Member Directory — Admin</h1>
-    <p class="subtitle">All members, listed or not. Moderate a profile by unlisting it or clearing offending free text.</p>
+    <%- include('../partials/page-header', { title: 'Member Directory — Admin', subtitle: 'All members, listed or not. Moderate a profile by unlisting it or clearing offending free text.' }) %>
 
     <div class="directory-filters">
         <form method="GET" action="/admin/directory" role="search">
             <input type="text" name="search" value="<%= filters.search || '' %>" placeholder="Search by name, email, or interest..." aria-label="Search members">
-            <button type="submit">Search</button>
+            <%- include('../partials/button', { variant: 'navigational', label: 'Search', type: 'submit' }) %>
         </form>
     </div>
 
     <div class="directory-export">
         <span class="directory-export-label">Export listed members (only fields each member chose to show):</span>
-        <a class="btn-link" href="/admin/directory/export.csv">Export CSV</a>
-        <a class="btn-link" href="/admin/directory/export.json">Export JSON</a>
+        <%- include('../partials/button', { variant: 'navigational', label: 'Export CSV', href: '/admin/directory/export.csv', size: 'sm' }) %>
+        <%- include('../partials/button', { variant: 'navigational', label: 'Export JSON', href: '/admin/directory/export.json', size: 'sm' }) %>
     </div>
 
     <% if (members && members.length > 0) { %>
@@ -33,7 +32,7 @@
                         <td><%= member.first_name %> <%= member.last_name %></td>
                         <td><%= member.email %></td>
                         <td><%= member.listed ? 'Yes' : 'No' %></td>
-                        <td><a class="btn-link" href="/admin/directory/<%= member.user_id %>/edit">Edit listing</a></td>
+                        <td><%- include('../partials/button', { variant: 'navigational', label: 'Edit listing', href: '/admin/directory/' + member.user_id + '/edit', size: 'sm' }) %></td>
                         <td>
                             <% if (member.has_profile) { %>
                                 <form method="POST" action="/admin/directory/moderate" class="moderate-form">
@@ -43,7 +42,7 @@
                                     <label class="checkbox-row"><input type="checkbox" name="clearFields" value="bio"> Clear bio</label>
                                     <label class="checkbox-row"><input type="checkbox" name="clearFields" value="interests"> Clear interests</label>
                                     <label class="checkbox-row"><input type="checkbox" name="clearFields" value="household_encrypted"> Clear household</label>
-                                    <button type="submit">Apply</button>
+                                    <%- include('../partials/button', { variant: 'destructive', label: 'Apply', type: 'submit' }) %>
                                 </form>
                             <% } else { %>
                                 <span class="muted">No directory profile</span>
@@ -54,7 +53,7 @@
             </tbody>
         </table>
     <% } else { %>
-        <p class="directory-empty">No members found.</p>
+        <%- include('../partials/empty-state', { message: 'No members found.' }) %>
     <% } %>
 
     <% if (totalPages > 1) { %>
