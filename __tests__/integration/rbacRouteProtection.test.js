@@ -62,6 +62,10 @@ jest.mock('../../src/middleware/sessionTimeout', () => {
     });
 });
 
+// Stub the redis-backed live-stream lookup so GET /admin never spins up the real
+// CacheService path (whose async log otherwise leaks across suites).
+jest.mock('../../src/services/StreamingService', () => ({ getPublicEmbedMetadata: jest.fn().mockResolvedValue(null) }));
+
 describe('RBAC Route Protection Integration Tests', () => {
     beforeEach(() => {
         jest.clearAllMocks();

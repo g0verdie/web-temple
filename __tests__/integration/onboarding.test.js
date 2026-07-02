@@ -12,6 +12,7 @@ jest.mock('../../src/config/db');
 jest.mock('../../src/services/sessionService');
 jest.mock('../../src/services/auditService');
 jest.mock('../../src/workers/emailQueueWorker');
+jest.mock('../../src/services/StreamingService', () => ({ getPublicEmbedMetadata: jest.fn().mockResolvedValue(null) }));
 
 const JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret';
 

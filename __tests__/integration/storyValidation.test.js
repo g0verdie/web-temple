@@ -31,6 +31,7 @@ jest.mock('../../src/services/auditService', () => ({
     queryLogs: jest.fn().mockResolvedValue({ logs: [], total: 0 }),
     AUDIT_ACTIONS: { UNAUTHORIZED_ACCESS: 'UNAUTHORIZED_ACCESS' }
 }));
+jest.mock('../../src/services/StreamingService', () => ({ getPublicEmbedMetadata: jest.fn().mockResolvedValue(null) }));
 
 const auditService = require('../../src/services/auditService');
 

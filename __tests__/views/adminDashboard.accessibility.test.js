@@ -17,6 +17,7 @@ jest.mock('../../src/services/ChatService', () => ({ getPendingMessageCount: jes
 jest.mock('../../src/services/EventService', () => ({ getUpcomingEvents: jest.fn() }));
 jest.mock('../../src/services/backupLogService', () => ({ getLastSuccessfulBackup: jest.fn(), getLastBackupAttempt: jest.fn() }));
 jest.mock('../../src/services/emailQueueService', () => ({ getQueueStats: jest.fn(), retryFailedJob: jest.fn() }));
+jest.mock('../../src/services/StreamingService', () => ({ getPublicEmbedMetadata: jest.fn().mockResolvedValue(null) }));
 
 const app = require('../../src/server');
 const db = require('../../src/config/db');

@@ -21,6 +21,8 @@ jest.mock('../../src/config/redis', () => ({
     keys: jest.fn().mockResolvedValue([])
 }));
 
+jest.mock('../../src/services/StreamingService', () => ({ getPublicEmbedMetadata: jest.fn().mockResolvedValue(null) }));
+
 const app = require('../../src/server');
 
 describe('Admin Routes Integration', () => {
