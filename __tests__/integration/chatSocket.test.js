@@ -186,6 +186,45 @@ describe('Chat WebSocket Server Integration Tests', () => {
             expect(wsClient.send).toHaveBeenCalledWith(expect.stringContaining('connection_established'));
         });
 
+        it('ignores a JWT supplied only in the query string and connects as a guest (AE1)', async () => {
+            // A valid token in the query string must NOT authenticate the user;
+            // with a valid guestName the connection resolves to a guest instead.
+            const token = jwt.sign({ user_id: 'attacker-1', role: 'rabbi', email: 'x@e.com' }, JWT_SECRET);
+            const req = { url: `/ws/chat?streamId=10&guestName=Mallory&auth_token=${token}` };
+            const socket = makeSocket();
+
+            const connectionPromise = new Promise((resolve) => {
+                wss.once('connection', (wsClient, request, connectionContext) => {
+                    resolve(connectionContext);
+                });
+            });
+
+            await emitUpgradeAsync(req, socket);
+
+            const connectionContext = await connectionPromise;
+            expect(connectionContext.userId).toBeNull();
+            expect(connectionContext.role).toBe('guest');
+            expect(connectionContext.displayName).toBe('Mallory');
+            // The guest path never touches the DB — proves the token was ignored.
+            expect(db.query).not.toHaveBeenCalled();
+        });
+
+        it('rejects an upgrade whose only credential is a query-string JWT and no guestName (AE1)', async () => {
+            const token = jwt.sign({ user_id: 'attacker-2', role: 'admin', email: 'y@e.com' }, JWT_SECRET);
+            const req = { url: `/ws/chat?streamId=10&auth_token=${token}` };
+            const socket = makeSocket();
+
+            let connected = false;
+            const onConn = () => { connected = true; };
+            wss.once('connection', onConn);
+            await emitUpgradeAsync(req, socket);
+            wss.removeListener('connection', onConn);
+
+            expect(socket.write).toHaveBeenCalledWith(expect.stringContaining('HTTP/1.1 401'));
+            expect(socket.destroy).toHaveBeenCalled();
+            expect(connected).toBe(false);
+        });
+
         it('rejects an authenticated upgrade when token_version is stale (revoked session)', async () => {
             const token = jwt.sign({ user_id: 'user-stale', role: 'rabbi', email: 'r@e.com', token_version: 1 }, JWT_SECRET);
             const req = { url: '/ws/chat?streamId=10', headers: { cookie: `auth_token=${token}` } };

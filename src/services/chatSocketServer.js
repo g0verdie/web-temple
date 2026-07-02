@@ -250,7 +250,9 @@ const initChatSocketServer = (server) => {
         let tokenVersion = 0;
 
         const cookies = parseCookies(request.headers ? request.headers.cookie : null);
-        const token = cookies.auth_token || query.auth_token;
+        // Cookie-only: a JWT in the URL query string is ignored so credentials
+        // can't leak into access logs, proxy caches, or Referer headers.
+        const token = cookies.auth_token;
 
         if (token && JWT_SECRET) {
             try {
