@@ -64,8 +64,9 @@ describe('Admin Routes Integration', () => {
 
         expect(res.statusCode).toBe(200);
         expect(res.text).toContain('Admin Dashboard');
-        expect(res.text).toContain('Success');
-        expect(res.text).toContain('Last Successful Backup');
+        // Operator-plain backup status (plan 009) replaces the raw "Last Successful
+        // Backup / Success" block.
+        expect(res.text).toContain('Backups: OK');
         expect(res.text).toContain('Email Queue');
     });
 
@@ -81,11 +82,13 @@ describe('Admin Routes Integration', () => {
         const res = await request(app).get('/admin');
 
         expect(res.statusCode).toBe(200);
-        expect(res.text).toContain('Backup Failure Detected');
-        expect(res.text).toContain('Backup Failed'); // Error message
-        // Should still show last success details
-        expect(res.text).toContain('Last Successful Backup');
-        expect(res.text).toContain('1/1/2023');
+        // Plain operator status, not the raw "Backup Failure Detected" block, and the
+        // pipeline error message must not reach the operator (plan 009 R1/R2).
+        expect(res.text).toContain('Backups: last attempt failed');
+        expect(res.text).not.toContain('Backup Failure Detected');
+        expect(res.text).not.toContain('Backup Failed'); // raw message no longer rendered
+        // Still surfaces the last successful backup, via the temple-tz formatter (R8).
+        expect(res.text).toContain('January 1, 2023');
     });
 
     it('GET /admin should handle no backups', async () => {
@@ -95,7 +98,7 @@ describe('Admin Routes Integration', () => {
         const res = await request(app).get('/admin');
 
         expect(res.statusCode).toBe(200);
-        expect(res.text).toContain('No successful backups found');
+        expect(res.text).toContain('Backups: not configured');
     });
 
     it('GET /admin should display email queue stats', async () => {

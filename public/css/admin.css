@@ -126,6 +126,20 @@ a.card.text-decoration-none:focus-visible { outline: var(--focus-outline); outli
 .alert-warning { background: #fbf3df; color: #7a5a12; border-color: var(--color-gold-dark); }
 .alert-light { background: var(--color-bg-alt); color: var(--color-text-light); border-color: var(--color-border); }
 
+/* ── Operator status panel (System Status card, plan 009) ────────────────────
+   Plain-language service rows. The left border is the only colour signal, so an
+   OK row never carries alarm styling and a degraded/failing row never reads OK. */
+.ops-status-list { margin: 0; }
+.ops-status { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.6rem; border-left: 4px solid var(--color-border); padding-left: 0.75rem; }
+.ops-status__label { font-weight: 700; }
+.ops-status__detail { color: var(--color-text-light); font-size: 0.9rem; }
+.ops-status__next { font-size: 0.9rem; }
+.ops-status--ok { border-left-color: #2f7d56; }
+.ops-status--warning { border-left-color: var(--color-gold-dark); }
+.ops-status--danger { border-left-color: #b91c1c; }
+.ops-status--danger .ops-status__label { color: #8a1c1c; }
+.ops-banner { margin-bottom: 0.75rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.6rem; }
+
 /* ── Tables ──────────────────────────────────────────────────────────────── */
 .table-responsive { width: 100%; overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; text-align: left; }

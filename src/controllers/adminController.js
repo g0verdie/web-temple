@@ -2,6 +2,90 @@ const backupLogService = require('../services/backupLogService');
 const auditService = require('../services/auditService');
 const emailQueueService = require('../services/emailQueueService');
 const logger = require('../utils/logger');
+const { formatEventDateTime } = require('../utils/templeTime');
+
+// Next-step destinations for any non-OK operator status. No operator runbook /
+// help route exists yet (open blocker in plan 009), so these point at the closest
+// existing admin destination; this map is the single place to swap in a real help
+// page once one lands.
+const NEXT_STEP = {
+    backupsSetup: { href: '/admin/audit-logs', text: 'How to set up backups' },
+    backupsFailing: { href: '/admin/audit-logs', text: 'Review backup activity' },
+    email: { href: '/admin/audit-logs', text: 'How to check email delivery' },
+    chat: { href: '/admin/chat-moderation', text: 'Open chat moderation' }
+};
+
+// Derive plain-language operator status for the System Status card from the raw
+// service signals (plan 009). Never leaks pipeline internals; every non-OK state
+// carries a next step. level ∈ {ok, warning, danger} drives non-alarm vs alarm
+// styling, and any degraded infrastructure read is flagged as a banner (R5/R7).
+const buildOperatorStatus = ({ lastBackup, latestAttempt, emailOk, emailFailedCount, chatReachable, streamLive }) => {
+    let backups;
+    if (!latestAttempt && !lastBackup) {
+        backups = {
+            key: 'backups', level: 'warning', label: 'Backups: not configured',
+            detail: 'No backup has run yet. Set up automatic backups to protect the site’s data.',
+            next: NEXT_STEP.backupsSetup
+        };
+    } else if (latestAttempt && latestAttempt.status !== 'SUCCESS') {
+        backups = {
+            key: 'backups', level: 'danger', label: 'Backups: last attempt failed',
+            detail: lastBackup
+                ? `Last successful backup ${formatEventDateTime(lastBackup.timestamp)}.`
+                : 'No successful backup is on record.',
+            next: NEXT_STEP.backupsFailing
+        };
+    } else {
+        backups = {
+            key: 'backups', level: 'ok', label: 'Backups: OK',
+            detail: lastBackup ? `Last backup ${formatEventDateTime(lastBackup.timestamp)}.` : '',
+            next: null
+        };
+    }
+
+    let email;
+    if (!emailOk) {
+        email = {
+            key: 'email', level: 'warning', label: 'Email sending: degraded',
+            detail: 'The email service could not be reached, so delivery status is unknown right now.',
+            next: NEXT_STEP.email, banner: true
+        };
+    } else if (emailFailedCount > 0) {
+        email = {
+            key: 'email', level: 'warning',
+            label: `Email sending: ${emailFailedCount} message${emailFailedCount === 1 ? '' : 's'} failed`,
+            detail: 'Some emails could not be delivered. Review and retry them in the Email Queue below.',
+            next: NEXT_STEP.email
+        };
+    } else {
+        email = {
+            key: 'email', level: 'ok', label: 'Email sending: OK',
+            detail: 'Emails are being delivered normally.', next: null
+        };
+    }
+
+    let chat;
+    if (!chatReachable) {
+        chat = {
+            key: 'chat', level: 'warning', label: 'Live chat: degraded',
+            detail: 'The live-chat service could not be reached.',
+            next: NEXT_STEP.chat, banner: true
+        };
+    } else if (streamLive) {
+        chat = {
+            key: 'chat', level: 'ok', label: 'Live chat: OK',
+            detail: 'A stream is live and chat is connected.', next: null
+        };
+    } else {
+        chat = {
+            key: 'chat', level: 'ok', label: 'Live chat: OK',
+            detail: 'Ready. No stream is broadcasting right now.', next: null
+        };
+    }
+
+    const items = [backups, chat, email];
+    return { items, banners: items.filter((i) => i.banner) };
+};
 
 exports.getAuditLogs = async (req, res) => {
     try {
@@ -83,12 +167,14 @@ const gatherLiveMetrics = async () => {
         try {
             const embedMeta = await StreamingService.getPublicEmbedMetadata();
             if (embedMeta && embedMeta.status === 'live' && embedMeta.id) {
-                return { activeStream: embedMeta, activeChatUsers: chatSocketServer.getActiveConnectionCount(embedMeta.id) };
+                return { activeStream: embedMeta, activeChatUsers: chatSocketServer.getActiveConnectionCount(embedMeta.id), reachable: true };
             }
         } catch (e) {
-            // stream/chat count is best-effort
+            // A read error (vs a genuine "no live stream") is surfaced as a degraded
+            // live-chat status in the operator panel rather than swallowed silently.
+            return { activeStream: null, activeChatUsers: 0, reachable: false };
         }
-        return { activeStream: null, activeChatUsers: 0 };
+        return { activeStream: null, activeChatUsers: 0, reachable: true };
     };
 
     // Each metric is independently guarded, so these run concurrently (NFR-P6 <2s).
@@ -111,7 +197,8 @@ const gatherLiveMetrics = async () => {
         pendingApprovals,
         pendingChat,
         serverUptimeSeconds: Math.floor(process.uptime()),
-        activeStream: stream.activeStream
+        activeStream: stream.activeStream,
+        chatReachable: stream.reachable
     };
 };
 
@@ -131,20 +218,43 @@ exports.getDashboard = async (req, res) => {
             }
         })();
 
-        // Backup + email-queue reads can throw → surfaced as a 500 (they back the
-        // status cards and preserve the existing error-handling contract). All the
-        // independent reads run concurrently to meet NFR-P6 (<2s dashboard load).
-        const [lastBackup, latestAttempt, emailQueue, m, upcomingEvents] = await Promise.all([
+        // The email-queue read self-degrades to a status marker (plan 009 R5/R12):
+        // a Redis / queue outage must surface as an honest on-page banner with a 200,
+        // not a swallowed log line or a whole-dashboard 500. Backup reads stay strict
+        // (their failure keeps the existing 500 contract).
+        const emailQueuePromise = (async () => {
+            try {
+                return { ok: true, stats: await emailQueueService.getQueueStats() };
+            } catch (err) {
+                logger.error(`Dashboard email-queue read failed: ${err.message}`);
+                return { ok: false, stats: null };
+            }
+        })();
+
+        // The independent reads run concurrently to meet NFR-P6 (<2s dashboard load).
+        const [lastBackup, latestAttempt, emailRead, m, upcomingEvents] = await Promise.all([
             backupLogService.getLastSuccessfulBackup(),
             backupLogService.getLastBackupAttempt(),
-            emailQueueService.getQueueStats(),
+            emailQueuePromise,
             gatherLiveMetrics(),
             upcomingEventsPromise
         ]);
 
+        const emailQueue = emailRead.ok ? emailRead.stats : null;
+        const failedEmailJobs = (emailQueue && emailQueue.counts && emailQueue.counts.failed) || 0;
+
+        const operatorStatus = buildOperatorStatus({
+            lastBackup,
+            latestAttempt,
+            emailOk: emailRead.ok,
+            emailFailedCount: failedEmailJobs,
+            chatReachable: m.chatReachable,
+            streamLive: !!m.activeStream
+        });
+
         const alerts = {
             backupFailed: !!(latestAttempt && latestAttempt.status !== 'SUCCESS'),
-            failedEmailJobs: (emailQueue && emailQueue.counts && emailQueue.counts.failed) || 0
+            failedEmailJobs
         };
 
         res.render('layout', {
@@ -155,6 +265,7 @@ exports.getDashboard = async (req, res) => {
                 lastBackup,
                 latestAttempt,
                 emailQueue,
+                operatorStatus,
                 activeStream: m.activeStream,
                 activeChatUsers: m.activeChatUsers,
                 metrics: {
@@ -163,9 +274,7 @@ exports.getDashboard = async (req, res) => {
                     activeChatUsers: m.activeChatUsers,
                     pendingMessages: m.pendingMessages,
                     pendingApprovals: m.pendingApprovals,
-                    pendingChat: m.pendingChat,
-                    serverUptime: formatUptime(m.serverUptimeSeconds),
-                    lastBackupAt: lastBackup ? lastBackup.timestamp : null
+                    pendingChat: m.pendingChat
                 },
                 priorities: {
                     pendingChat: m.pendingChat,

@@ -9,7 +9,7 @@
         <div class="metric"><span class="metric-label">Identified donors</span><span class="metric-value"><%= metrics.identifiedDonorCount %></span></div>
         <div class="metric"><span class="metric-label">Anonymous gifts</span><span class="metric-value"><%= metrics.anonymousGiftCount %></span></div>
         <div class="metric"><span class="metric-label">Recurring donors</span><span class="metric-value"><%= metrics.recurringDonorCount %></span></div>
-        <div class="metric"><span class="metric-label">Monthly recurring</span><span class="metric-value">$<%= (metrics.monthlyRecurringRevenueCents / 100).toFixed(2) %></span></div>
+        <div class="metric"><span class="metric-label">Pledged recurring / mo</span><span class="metric-value">$<%= (metrics.monthlyRecurringRevenueCents / 100).toFixed(2) %></span><span class="metric-caption">Sum of stated recurring pledges (initial gift amounts), not charges banked this month.</span></div>
     </div>
 
     <form method="GET" action="/admin/donations" class="donation-filters" role="search">

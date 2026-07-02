@@ -55,6 +55,20 @@ describe('Admin donation dashboard', () => {
         expect(DonationService.getDashboardMetrics).toHaveBeenCalled();
     });
 
+    // AE5 (R9, R10, R11): the recurring figure must read as pledged intent, not
+    // banked revenue — relabelled, captioned, and with the value unchanged.
+    test('recurring figure is labelled as pledged intent with a clarifying caption', async () => {
+        const res = await request(app).get('/admin/donations').set('Cookie', [`auth_token=${treasurerToken}`]);
+        expect(res.status).toBe(200);
+        expect(res.text).toContain('Pledged recurring / mo');
+        // The misleading "banked revenue" label is gone.
+        expect(res.text).not.toContain('Monthly recurring');
+        // A caption clarifies it sums stated pledges, not realized charges.
+        expect(res.text).toMatch(/pledge/i);
+        // R11: presentation-only relabel — the underlying value is unchanged ($36.00).
+        expect(res.text).toContain('36.00');
+    });
+
     test('admin can export CSV', async () => {
         const res = await request(app).get('/admin/donations/export.csv').set('Cookie', [`auth_token=${adminToken}`]);
         expect(res.status).toBe(200);

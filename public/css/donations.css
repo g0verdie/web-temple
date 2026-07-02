@@ -199,6 +199,7 @@
 
 .metric-label { color: #666; font-size: 0.85rem; }
 .metric-value { font-size: 1.25rem; font-weight: bold; }
+.metric-caption { color: #666; font-size: 0.72rem; line-height: 1.3; }
 
 .donation-filters {
     display: flex;
