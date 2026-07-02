@@ -7,6 +7,7 @@ const ChatService = require('../services/ChatService');
 const chatSocketServer = require('../services/chatSocketServer');
 const db = require('../config/db');
 const logger = require('../utils/logger');
+const { mapError } = require('../errors');
 
 /**
  * Helper to resolve user's display name for database insertions
@@ -77,7 +78,8 @@ exports.postMessage = async (req, res) => {
         });
     } catch (error) {
         logger.error(`REST postMessage error: ${error.message}`);
-        return res.status(400).json({ error: error.message });
+        const { statusCode, clientMessage } = mapError(error);
+        return res.status(statusCode).json({ error: clientMessage });
     }
 };
 
@@ -137,8 +139,8 @@ exports.approveMessage = async (req, res) => {
         });
     } catch (error) {
         logger.error(`REST approveMessage error: ${error.message}`);
-        const status = error.message === 'Message not found' ? 404 : 400;
-        return res.status(status).json({ error: error.message });
+        const { statusCode, clientMessage } = mapError(error);
+        return res.status(statusCode).json({ error: clientMessage });
     }
 };
 
@@ -166,8 +168,8 @@ exports.deleteMessage = async (req, res) => {
         });
     } catch (error) {
         logger.error(`REST deleteMessage error: ${error.message}`);
-        const status = error.message === 'Message not found' ? 404 : 400;
-        return res.status(status).json({ error: error.message });
+        const { statusCode, clientMessage } = mapError(error);
+        return res.status(statusCode).json({ error: clientMessage });
     }
 };
 

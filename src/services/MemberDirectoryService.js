@@ -15,6 +15,7 @@ const validator = require('validator');
 const logger = require('../utils/logger');
 const { encrypt, decrypt } = require('../utils/encryptionHelper');
 const { logAudit, AUDIT_ACTIONS } = require('./auditService');
+const { ValidationError, NotFoundError } = require('../errors');
 
 const FLAG_DEFAULTS = {
     listed: false,
@@ -47,7 +48,7 @@ const cleanText = (value, max, name) => {
     const s = String(value).trim();
     if (s.length === 0) return null;
     if (s.length > max) {
-        throw new Error(`${name} must be ${max} characters or fewer`);
+        throw new ValidationError(`${name} must be ${max} characters or fewer`);
     }
     return s;
 };
@@ -125,23 +126,23 @@ const cleanBirthday = (value) => {
     if (s.length === 0) return null;
     if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
         if (!validator.isDate(s, { format: 'YYYY-MM-DD', strictMode: true })) {
-            throw new Error('Birthday must be a valid date');
+            throw new ValidationError('Birthday must be a valid date');
         }
         // Lexical ISO compare is timezone-agnostic and good enough for a birthday guard.
         const todayIso = new Date().toISOString().slice(0, 10);
         if (s > todayIso) {
-            throw new Error('Birthday cannot be in the future');
+            throw new ValidationError('Birthday cannot be in the future');
         }
         return s;
     }
     if (/^\d{2}-\d{2}$/.test(s)) {
         // 2000 is a leap year, so a Feb 29 birthday (year unknown) is accepted.
         if (!validator.isDate(`2000-${s}`, { format: 'YYYY-MM-DD', strictMode: true })) {
-            throw new Error('Birthday must be a valid date');
+            throw new ValidationError('Birthday must be a valid date');
         }
         return s;
     }
-    throw new Error('Birthday must be a valid date');
+    throw new ValidationError('Birthday must be a valid date');
 };
 
 // Member-facing display: month + day only, never the year. Accepts both the full
@@ -218,7 +219,7 @@ const getMyProfile = async (userId) => {
         [userId]
     );
     if (result.rows.length === 0) {
-        throw new Error('User not found');
+        throw new NotFoundError('User not found');
     }
     const row = result.rows[0];
     return {
@@ -250,7 +251,7 @@ const getMyProfile = async (userId) => {
 const _upsertProfile = async (userId, input = {}) => {
     const flags = normalizeFlags(input);
     if (flags.show_household && input.household_consent !== true) {
-        throw new Error('Household consent acknowledgement is required to show household');
+        throw new ValidationError('Household consent acknowledgement is required to show household');
     }
 
     const phone = cleanText(input.phone, FIELD_MAX.phone, 'Phone');

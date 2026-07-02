@@ -9,6 +9,7 @@ const {
 } = require('../../src/controllers/userController');
 const userService = require('../../src/services/userService');
 const authService = require('../../src/services/authService');
+const { ValidationError, NotFoundError } = require('../../src/errors');
 
 jest.mock('../../src/services/userService');
 jest.mock('../../src/services/authService');
@@ -141,6 +142,51 @@ describe('userController.updatePreferences', () => {
 
         expect(userService.updatePreferences).toHaveBeenCalledWith('user-1', { messages: false });
         expect(res.json).toHaveBeenCalledWith({ success: true, preferences: { messages: false } });
+    });
+});
+
+describe('userController error taxonomy (AE4)', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('maps a typed ValidationError from the service to 400 with its safe message', async () => {
+        const req = mockRequest({ id: 'user-1' });
+        req.body = { notification_preferences: { bogus: true } };
+        const res = mockResponse();
+
+        userService.updatePreferences.mockRejectedValue(new ValidationError('Invalid preference key'));
+
+        await updatePreferences(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({ success: false, message: 'Invalid preference key' });
+    });
+
+    it('maps a typed NotFoundError from the service to 404', async () => {
+        const req = mockRequest({ id: 'user-1' });
+        req.body = { notification_preferences: {} };
+        const res = mockResponse();
+
+        userService.updatePreferences.mockRejectedValue(new NotFoundError('User not found'));
+
+        await updatePreferences(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(404);
+        expect(res.json).toHaveBeenCalledWith({ success: false, message: 'User not found' });
+    });
+
+    it('maps an untyped error to 500 with a generic message (never echoes the raw message)', async () => {
+        const req = mockRequest({ id: 'user-1' });
+        req.body = { notification_preferences: {} };
+        const res = mockResponse();
+
+        userService.updatePreferences.mockRejectedValue(new Error('pg: column "secret" does not exist'));
+
+        await updatePreferences(req, res);
+
+        expect(res.status).toHaveBeenCalledWith(500);
+        expect(res.json).toHaveBeenCalledWith({ success: false, message: 'Something went wrong' });
     });
 });
 

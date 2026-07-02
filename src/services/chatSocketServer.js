@@ -9,6 +9,7 @@ const jwt = require('jsonwebtoken');
 const db = require('../config/db');
 const redis = require('../config/redis');
 const logger = require('../utils/logger');
+const { mapError } = require('../errors');
 const { containsReservedName } = require('./ChatService');
 
 const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'test' ? 'test-jwt-secret' : null);
@@ -187,9 +188,12 @@ const initChatSocketServer = (server) => {
                 }
             } catch (err) {
                 logger.error(`WS message processing failed: ${err.message}`);
+                // Derive a client-safe message from the same mapping the HTTP
+                // terminal handler uses; never echo the raw exception (I14 R10).
+                const { clientMessage } = mapError(err);
                 wsClient.send(JSON.stringify({
                     type: 'error',
-                    message: err.message
+                    message: clientMessage
                 }));
             }
         });

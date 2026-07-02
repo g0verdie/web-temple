@@ -3,6 +3,7 @@ const db = require('../config/db');
 const auditService = require('./auditService');
 const logger = require('../utils/logger');
 const { formatEventDateTime } = require('../utils/templeTime');
+const { ValidationError, NotFoundError } = require('../errors');
 
 const CACHE_KEY = 'stream:public-embed';
 const CACHE_TTL_SECONDS = 30;
@@ -229,27 +230,27 @@ class StreamingService {
         const { title, scheduled_start, facebook_live_url, event_id } = data;
         
         if (!title || typeof title !== 'string' || !title.trim()) {
-            throw new Error('Title is required');
+            throw new ValidationError('Title is required');
         }
         if (title.length > 255) {
-            throw new Error('Title cannot exceed 255 characters');
+            throw new ValidationError('Title cannot exceed 255 characters');
         }
 
         const start = parseScheduledDate(scheduled_start);
         if (isNaN(start.getTime())) {
-            throw new Error('Invalid scheduled start date');
+            throw new ValidationError('Invalid scheduled start date');
         }
         if (start.getTime() <= Date.now()) {
-            throw new Error('Scheduled start date must be in the future');
+            throw new ValidationError('Scheduled start date must be in the future');
         }
 
         if (facebook_live_url && !isAllowedProviderUrl(facebook_live_url)) {
-            throw new Error('Invalid Facebook Live URL. Must be a secure (HTTPS) URL from facebook.com or fb.watch.');
+            throw new ValidationError('Invalid Facebook Live URL. Must be a secure (HTTPS) URL from facebook.com or fb.watch.');
         }
 
         const finalEventId = event_id ? parseInt(event_id, 10) : null;
         if (event_id && isNaN(finalEventId)) {
-            throw new Error('Invalid event ID');
+            throw new ValidationError('Invalid event ID');
         }
 
         const query = `
@@ -278,43 +279,43 @@ class StreamingService {
     async updateScheduledStream(id, data, userId, ipAddress) {
         const existing = await this.getScheduledStreamById(id);
         if (!existing) {
-            throw new Error('Stream not found');
+            throw new NotFoundError('Stream not found');
         }
 
         if (existing.status === 'completed' || existing.status === 'canceled') {
-            throw new Error(`Cannot update a ${existing.status} stream`);
+            throw new ValidationError(`Cannot update a ${existing.status} stream`);
         }
 
         const { title, scheduled_start, facebook_live_url, event_id } = data;
         
         if (!title || typeof title !== 'string' || !title.trim()) {
-            throw new Error('Title is required');
+            throw new ValidationError('Title is required');
         }
         if (title.length > 255) {
-            throw new Error('Title cannot exceed 255 characters');
+            throw new ValidationError('Title cannot exceed 255 characters');
         }
 
         const start = parseScheduledDate(scheduled_start);
         if (isNaN(start.getTime())) {
-            throw new Error('Invalid scheduled start date');
+            throw new ValidationError('Invalid scheduled start date');
         }
         // Only require future dates for streams that are still scheduled
         if (existing.status === 'scheduled' && start.getTime() <= Date.now()) {
-            throw new Error('Scheduled start date must be in the future');
+            throw new ValidationError('Scheduled start date must be in the future');
         }
 
         if (facebook_live_url && !isAllowedProviderUrl(facebook_live_url)) {
-            throw new Error('Invalid Facebook Live URL. Must be a secure (HTTPS) URL from facebook.com or fb.watch.');
+            throw new ValidationError('Invalid Facebook Live URL. Must be a secure (HTTPS) URL from facebook.com or fb.watch.');
         }
 
         // Active streams must retain a valid Facebook Live URL
         if (existing.status === 'active' && !facebook_live_url) {
-            throw new Error('Cannot remove Facebook Live URL from an active stream');
+            throw new ValidationError('Cannot remove Facebook Live URL from an active stream');
         }
 
         const finalEventId = event_id ? parseInt(event_id, 10) : null;
         if (event_id && isNaN(finalEventId)) {
-            throw new Error('Invalid event ID');
+            throw new ValidationError('Invalid event ID');
         }
 
         const query = `
@@ -345,11 +346,11 @@ class StreamingService {
     async cancelScheduledStream(id, userId, ipAddress) {
         const existing = await this.getScheduledStreamById(id);
         if (!existing) {
-            throw new Error('Stream not found');
+            throw new NotFoundError('Stream not found');
         }
 
         if (existing.status !== 'scheduled') {
-            throw new Error(`Cannot cancel a stream that is ${existing.status}`);
+            throw new ValidationError(`Cannot cancel a stream that is ${existing.status}`);
         }
 
         const query = `
@@ -380,15 +381,15 @@ class StreamingService {
     async activateScheduledStream(id, userId, ipAddress) {
         const existing = await this.getScheduledStreamById(id);
         if (!existing) {
-            throw new Error('Stream not found');
+            throw new NotFoundError('Stream not found');
         }
 
         if (existing.status !== 'scheduled') {
-            throw new Error(`Cannot start a stream that is ${existing.status}`);
+            throw new ValidationError(`Cannot start a stream that is ${existing.status}`);
         }
 
         if (!existing.facebook_live_url) {
-            throw new Error('Cannot start a stream without a Facebook Live URL');
+            throw new ValidationError('Cannot start a stream without a Facebook Live URL');
         }
 
         // Complete any other active streams first, with audit logging
@@ -439,11 +440,11 @@ class StreamingService {
     async completeScheduledStream(id, userId, ipAddress) {
         const existing = await this.getScheduledStreamById(id);
         if (!existing) {
-            throw new Error('Stream not found');
+            throw new NotFoundError('Stream not found');
         }
 
         if (existing.status !== 'active') {
-            throw new Error(`Cannot stop a stream that is ${existing.status}`);
+            throw new ValidationError(`Cannot stop a stream that is ${existing.status}`);
         }
 
         const query = `

@@ -9,6 +9,7 @@ const metricsService = require('./services/metricsService');
 const StreamingService = require('./services/StreamingService');
 const EventService = require('./services/EventService');
 const requestIdMiddleware = require('./middleware/requestIdMiddleware');
+const errorHandler = require('./middleware/errorHandler');
 const { startEmailQueueWorker } = require('./workers/emailQueueWorker');
 const { startReminderWorker } = require('./workers/reminderWorker');
 
@@ -389,23 +390,10 @@ app.use((req, res) => {
 // Sentry error handler — must run before the app error handler (no-op when disabled)
 sentry.attachErrorHandler(app);
 
-// Error handler
-app.use((err, req, res, next) => {
-  // Handle CSRF token errors
-  if (err.code === 'EBADCSRFTOKEN') {
-    return res.status(403).json({
-      success: false,
-      message: 'Invalid CSRF token. Please refresh the page and try again.'
-    });
-  }
-
-  logger.error(`${err.status || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`, { stack: err.stack });
-  res.status(500).render('error', {
-    title: '500 - Server Error',
-    message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message,
-    noindex: true
-  });
-});
+// Error handler — the single terminal Express error sink (see
+// src/middleware/errorHandler.js): CSRF passthrough, central status/message
+// mapping, full winston logging, and JSON/HTML content negotiation.
+app.use(errorHandler);
 
 // HTTP server + chat WebSocket server handles, captured at module scope so the
 // exported shutdown() can drain and close them. Populated only when this module

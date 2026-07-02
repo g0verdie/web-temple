@@ -1,6 +1,7 @@
 const StreamingService = require('../services/StreamingService');
 const EventService = require('../services/EventService');
 const logger = require('../utils/logger');
+const { mapError } = require('../errors');
 
 // Sanitize flash messages from query params to prevent social engineering
 const ALLOWED_FLASH_MAX_LENGTH = 200;
@@ -158,10 +159,8 @@ exports.cancelStream = async (req, res) => {
         res.redirect('/admin/streaming?success=Stream+cancelled+successfully');
     } catch (error) {
         logger.error('Error cancelling stream:', error);
-        const userMessage = error.message.startsWith('Cannot') || error.message.startsWith('Stream not found')
-            ? error.message
-            : 'An unexpected error occurred. Please try again.';
-        res.redirect(`/admin/streaming?error=${encodeURIComponent(userMessage)}`);
+        const { clientMessage } = mapError(error);
+        res.redirect(`/admin/streaming?error=${encodeURIComponent(clientMessage)}`);
     }
 };
 
@@ -175,10 +174,8 @@ exports.startStream = async (req, res) => {
         res.redirect('/admin/streaming?success=Stream+activated+successfully');
     } catch (error) {
         logger.error('Error starting stream:', error);
-        const userMessage = error.message.startsWith('Cannot') || error.message.startsWith('Stream not found')
-            ? error.message
-            : 'An unexpected error occurred. Please try again.';
-        res.redirect(`/admin/streaming?error=${encodeURIComponent(userMessage)}`);
+        const { clientMessage } = mapError(error);
+        res.redirect(`/admin/streaming?error=${encodeURIComponent(clientMessage)}`);
     }
 };
 
@@ -192,9 +189,7 @@ exports.stopStream = async (req, res) => {
         res.redirect('/admin/streaming?success=Stream+completed+successfully');
     } catch (error) {
         logger.error('Error stopping stream:', error);
-        const userMessage = error.message.startsWith('Cannot') || error.message.startsWith('Stream not found')
-            ? error.message
-            : 'An unexpected error occurred. Please try again.';
-        res.redirect(`/admin/streaming?error=${encodeURIComponent(userMessage)}`);
+        const { clientMessage } = mapError(error);
+        res.redirect(`/admin/streaming?error=${encodeURIComponent(clientMessage)}`);
     }
 };

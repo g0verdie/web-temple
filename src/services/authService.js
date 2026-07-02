@@ -2,6 +2,7 @@ const db = require('../config/db');
 const { hashPassword, comparePassword } = require('../utils/authHelper');
 const { logAudit, AUDIT_ACTIONS } = require('./auditService');
 const logger = require('../utils/logger');
+const { ValidationError, NotFoundError, AuthError } = require('../errors');
 
 const LOCKOUT_DURATION_MINUTES = 15;
 
@@ -150,7 +151,7 @@ const authenticateUser = async (credentials) => {
     const { email, password, ip_address } = credentials;
 
     if (!email || !password) {
-        throw new Error('Email and password are required');
+        throw new ValidationError('Email and password are required');
     }
 
     // Find user by email
@@ -166,7 +167,7 @@ const authenticateUser = async (credentials) => {
             description: `Failed login attempt: user not found (${email})`,
             ip_address,
         }).catch(err => logger.error('Audit log error', { error: err }));
-        throw new Error('Invalid email or password');
+        throw new AuthError('Invalid email or password');
     }
 
     const user = result.rows[0];
@@ -185,7 +186,7 @@ const authenticateUser = async (credentials) => {
             ip_address,
         }).catch(err => logger.error('Audit log error', { error: err }));
 
-        throw new Error(`Account is temporarily locked. Please try again in ${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''} (until ${resetTime}).`);
+        throw new AuthError(`Account is temporarily locked. Please try again in ${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''} (until ${resetTime}).`, { statusCode: 403 });
     }
 
     // Compare password with stored hash using Bcrypt
@@ -221,7 +222,7 @@ const authenticateUser = async (credentials) => {
             description: `Failed login attempt: incorrect password`,
             ip_address,
         }).catch(err => logger.error('Audit log error', { error: err }));
-        throw new Error('Invalid email or password');
+        throw new AuthError('Invalid email or password');
     }
 
     // Two-gate registration: only an 'active' account may obtain a session. Legacy rows
@@ -237,12 +238,12 @@ const authenticateUser = async (credentials) => {
         }).catch(err => logger.error('Audit log error', { error: err }));
 
         if (status === 'pending_verification') {
-            throw new Error('Please verify your email address before logging in. Check your inbox for the verification link.');
+            throw new AuthError('Please verify your email address before logging in. Check your inbox for the verification link.', { statusCode: 403 });
         }
         if (status === 'pending_approval') {
-            throw new Error('Your account is awaiting approval by a temple administrator. You will receive an email once approved.');
+            throw new AuthError('Your account is awaiting approval by a temple administrator. You will receive an email once approved.', { statusCode: 403 });
         }
-        throw new Error('Your registration was not approved. Please contact the temple office.');
+        throw new AuthError('Your registration was not approved. Please contact the temple office.', { statusCode: 403 });
     }
 
     // Reset failed attempts and update last login time
@@ -285,7 +286,7 @@ const changePassword = async (options) => {
     const { user_id, current_password, new_password, ip_address } = options;
 
     if (!user_id || !current_password || !new_password) {
-        throw new Error('User ID, current password, and new password are required');
+        throw new ValidationError('User ID, current password, and new password are required');
     }
 
     const validator = require('validator');
@@ -296,11 +297,11 @@ const changePassword = async (options) => {
         minNumbers: 1,
         minSymbols: 1
     })) {
-        throw new Error('New password must be at least 12 characters and include uppercase, lowercase, number, and symbol');
+        throw new ValidationError('New password must be at least 12 characters and include uppercase, lowercase, number, and symbol');
     }
 
     if (current_password === new_password) {
-        throw new Error('New password cannot be the same as current password');
+        throw new ValidationError('New password cannot be the same as current password');
     }
 
     // Fetch user
@@ -310,7 +311,7 @@ const changePassword = async (options) => {
     );
 
     if (userResult.rows.length === 0) {
-        throw new Error('User not found');
+        throw new NotFoundError('User not found');
     }
 
     const user = userResult.rows[0];
@@ -325,7 +326,7 @@ const changePassword = async (options) => {
             description: 'Failed password change: current password incorrect',
             ip_address,
         }).catch(err => logger.error('Audit log error', { error: err }));
-        throw new Error('Current password is incorrect');
+        throw new ValidationError('Current password is incorrect');
     }
 
     // Check password history (last 5 passwords) to prevent reuse
@@ -337,7 +338,7 @@ const changePassword = async (options) => {
         // eslint-disable-next-line no-await-in-loop
         const reused = await comparePassword(new_password, row.password_hash);
         if (reused) {
-            throw new Error('Password was recently used. Please choose a different password');
+            throw new ValidationError('Password was recently used. Please choose a different password');
         }
     }
 

@@ -7,6 +7,7 @@
 
 const AnnouncementService = require('../services/AnnouncementService');
 const logger = require('../utils/logger');
+const { mapError } = require('../errors');
 
 const TITLE_MAX = 200;
 const BODY_MAX = 50000;
@@ -117,8 +118,8 @@ exports.create = async (req, res) => {
         res.status(201).json({ success: true, announcement });
     } catch (error) {
         logger.error('Error creating announcement', { error: error.message });
-        const statusCode = error.message.includes('required') ? 400 : 500;
-        res.status(statusCode).json({ success: false, error: error.message });
+        const { statusCode, clientMessage } = mapError(error);
+        res.status(statusCode).json({ success: false, error: clientMessage });
     }
 };
 
@@ -137,9 +138,8 @@ exports.update = async (req, res) => {
         res.json({ success: true, announcement });
     } catch (error) {
         logger.error('Error updating announcement', { error: error.message });
-        const statusCode = error.message.includes('not found') ? 404
-            : error.message.includes('required') ? 400 : 500;
-        res.status(statusCode).json({ success: false, error: error.message });
+        const { statusCode, clientMessage } = mapError(error);
+        res.status(statusCode).json({ success: false, error: clientMessage });
     }
 };
 
@@ -152,8 +152,8 @@ exports.remove = async (req, res) => {
         res.json({ success: true });
     } catch (error) {
         logger.error('Error deleting announcement', { error: error.message });
-        const statusCode = error.message.includes('not found') ? 404 : 500;
-        res.status(statusCode).json({ success: false, error: error.message });
+        const { statusCode, clientMessage } = mapError(error);
+        res.status(statusCode).json({ success: false, error: clientMessage });
     }
 };
 
@@ -166,8 +166,8 @@ exports.restore = async (req, res) => {
         res.json({ success: true, announcement });
     } catch (error) {
         logger.error('Error restoring announcement', { error: error.message });
-        const statusCode = error.message.includes('not found') ? 404 : 500;
-        res.status(statusCode).json({ success: false, error: error.message });
+        const { statusCode, clientMessage } = mapError(error);
+        res.status(statusCode).json({ success: false, error: clientMessage });
     }
 };
 
@@ -188,7 +188,7 @@ exports.feature = async (req, res) => {
         res.json({ success: true, announcement });
     } catch (error) {
         logger.error('Error featuring announcement', { error: error.message });
-        const statusCode = error.message.includes('not found') ? 404 : 500;
-        res.status(statusCode).json({ success: false, error: error.message });
+        const { statusCode, clientMessage } = mapError(error);
+        res.status(statusCode).json({ success: false, error: clientMessage });
     }
 };

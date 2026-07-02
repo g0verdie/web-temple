@@ -3,6 +3,7 @@ const app = require('../../src/server');
 const db = require('../../src/config/db');
 const MemberDirectoryService = require('../../src/services/MemberDirectoryService');
 const userService = require('../../src/services/userService');
+const { ValidationError } = require('../../src/errors');
 const jwt = require('jsonwebtoken');
 
 jest.mock('../../src/config/db', () => ({ query: jest.fn() }));
@@ -65,7 +66,7 @@ describe('Account directory routes', () => {
         });
 
         test('maps validation errors to 400', async () => {
-            MemberDirectoryService.saveMyProfile.mockRejectedValue(new Error('Bio must be 500 characters or fewer'));
+            MemberDirectoryService.saveMyProfile.mockRejectedValue(new ValidationError('Bio must be 500 characters or fewer'));
             const res = await request(app)
                 .put('/api/account/directory')
                 .set('Cookie', [`auth_token=${memberToken}`])
@@ -76,7 +77,7 @@ describe('Account directory routes', () => {
 
         test('maps the household-consent error to 400', async () => {
             MemberDirectoryService.saveMyProfile.mockRejectedValue(
-                new Error('Household consent acknowledgement is required to show household')
+                new ValidationError('Household consent acknowledgement is required to show household')
             );
             const res = await request(app)
                 .put('/api/account/directory')

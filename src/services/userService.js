@@ -5,6 +5,7 @@ const { enqueueEmail } = require('./emailQueueService');
 const { renderTemplate } = require('./emailTemplateService');
 const { logAudit, AUDIT_ACTIONS } = require('./auditService');
 const logger = require('../utils/logger');
+const { ValidationError, NotFoundError } = require('../errors');
 
 const DEFAULT_NOTIFICATION_PREFERENCES = {
     announcements: true,
@@ -37,7 +38,7 @@ const completeOnboarding = async (userId) => {
         [userId]
     );
     if (result.rows.length === 0) {
-        throw new Error('User not found');
+        throw new NotFoundError('User not found');
     }
     return true;
 };
@@ -49,7 +50,7 @@ const getAccountSettings = async (userId) => {
     );
 
     if (result.rows.length === 0) {
-        throw new Error('User not found');
+        throw new NotFoundError('User not found');
     }
 
     const user = result.rows[0];
@@ -68,7 +69,7 @@ const updateProfile = async (userId, { first_name, last_name }) => {
     );
 
     if (result.rows.length === 0) {
-        throw new Error('User not found');
+        throw new NotFoundError('User not found');
     }
 
     logAudit({
@@ -84,15 +85,15 @@ const updateProfile = async (userId, { first_name, last_name }) => {
 
 const updatePreferences = async (userId, preferences) => {
     if (!preferences || typeof preferences !== 'object') {
-        throw new Error('Invalid preference value');
+        throw new ValidationError('Invalid preference value');
     }
 
     for (const [key, value] of Object.entries(preferences)) {
         if (!Object.prototype.hasOwnProperty.call(DEFAULT_NOTIFICATION_PREFERENCES, key)) {
-            throw new Error('Invalid preference key');
+            throw new ValidationError('Invalid preference key');
         }
         if (typeof value !== 'boolean') {
-            throw new Error('Invalid preference value');
+            throw new ValidationError('Invalid preference value');
         }
     }
 
@@ -102,7 +103,7 @@ const updatePreferences = async (userId, preferences) => {
     );
 
     if (currentResult.rows.length === 0) {
-        throw new Error('User not found');
+        throw new NotFoundError('User not found');
     }
 
     const current = normalizePreferences(currentResult.rows[0].notification_preferences);
@@ -161,7 +162,7 @@ const unsubscribeAll = async (userId) => {
 
 const requestEmailChange = async (userId, newEmail) => {
     if (!newEmail || !validator.isEmail(newEmail)) {
-        throw new Error('Valid email is required');
+        throw new ValidationError('Valid email is required');
     }
 
     const userResult = await db.query(
@@ -170,12 +171,12 @@ const requestEmailChange = async (userId, newEmail) => {
     );
 
     if (userResult.rows.length === 0) {
-        throw new Error('User not found');
+        throw new NotFoundError('User not found');
     }
 
     const currentEmail = userResult.rows[0].email;
     if (currentEmail.toLowerCase() === newEmail.toLowerCase()) {
-        throw new Error('Email is unchanged');
+        throw new ValidationError('Email is unchanged');
     }
 
     const existingEmail = await db.query(
@@ -184,7 +185,7 @@ const requestEmailChange = async (userId, newEmail) => {
     );
 
     if (existingEmail.rows.length > 0) {
-        throw new Error('Email already in use');
+        throw new ValidationError('Email already in use');
     }
 
     const client = await db.pool.connect();
@@ -242,7 +243,7 @@ const requestEmailChange = async (userId, newEmail) => {
 
 const confirmEmailChange = async (token) => {
     if (!token) {
-        throw new Error('Token is required');
+        throw new ValidationError('Token is required');
     }
 
     const client = await db.pool.connect();
@@ -258,17 +259,17 @@ const confirmEmailChange = async (token) => {
         );
 
         if (requestResult.rows.length === 0) {
-            throw new Error('Invalid or expired email change token');
+            throw new ValidationError('Invalid or expired email change token');
         }
 
         const request = requestResult.rows[0];
 
         if (request.used) {
-            throw new Error('Invalid or expired email change token');
+            throw new ValidationError('Invalid or expired email change token');
         }
 
         if (new Date(request.expires_at) < new Date()) {
-            throw new Error('Invalid or expired email change token');
+            throw new ValidationError('Invalid or expired email change token');
         }
 
         const existingEmail = await client.query(
@@ -277,7 +278,7 @@ const confirmEmailChange = async (token) => {
         );
 
         if (existingEmail.rows.length > 0) {
-            throw new Error('Email already in use');
+            throw new ValidationError('Email already in use');
         }
 
         // Defensive check: look for other active email change requests for this new email
@@ -287,7 +288,7 @@ const confirmEmailChange = async (token) => {
         );
 
         if (duplicateRequests.rows.length > 0) {
-            throw new Error('Email already in use by another pending request');
+            throw new ValidationError('Email already in use by another pending request');
         }
 
         await client.query(

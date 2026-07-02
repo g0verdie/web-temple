@@ -2,6 +2,7 @@ const userService = require('../services/userService');
 const authService = require('../services/authService');
 const MemberDirectoryService = require('../services/MemberDirectoryService');
 const logger = require('../utils/logger');
+const { mapError } = require('../errors');
 
 const completeOnboarding = async (req, res) => {
     try {
@@ -70,10 +71,8 @@ const updatePreferences = async (req, res) => {
         res.json({ success: true, preferences });
     } catch (error) {
         logger.error('Error updating preferences', { error });
-        if (error.message === 'User not found') {
-            return res.status(404).json({ success: false, message: 'User not found' });
-        }
-        res.status(400).json({ success: false, message: error.message });
+        const { statusCode, clientMessage } = mapError(error);
+        res.status(statusCode).json({ success: false, message: clientMessage });
     }
 };
 
@@ -98,7 +97,8 @@ const changePassword = async (req, res) => {
         res.json({ success: true, message: 'Password updated' });
     } catch (error) {
         logger.error('Error changing password', { error });
-        res.status(400).json({ success: false, message: error.message });
+        const { statusCode, clientMessage } = mapError(error);
+        res.status(statusCode).json({ success: false, message: clientMessage });
     }
 };
 
@@ -117,7 +117,8 @@ const requestEmailChange = async (req, res) => {
         res.json({ success: true, message: 'Confirmation email sent' });
     } catch (error) {
         logger.error('Error requesting email change', { error });
-        res.status(400).json({ success: false, message: error.message });
+        const { statusCode, clientMessage } = mapError(error);
+        res.status(statusCode).json({ success: false, message: clientMessage });
     }
 };
 
@@ -132,7 +133,8 @@ const confirmEmailChange = async (req, res) => {
         res.json({ success: true, message: 'Email updated' });
     } catch (error) {
         logger.error('Error confirming email change', { error });
-        res.status(400).json({ success: false, message: error.message });
+        const { statusCode, clientMessage } = mapError(error);
+        res.status(statusCode).json({ success: false, message: clientMessage });
     }
 };
 
@@ -161,15 +163,8 @@ const updateDirectoryListing = async (req, res) => {
         res.json({ success: true, message: 'Directory listing saved', listing });
     } catch (error) {
         logger.error('Error updating directory listing', { error });
-        if (error.message === 'User not found') {
-            return res.status(404).json({ success: false, message: 'User not found' });
-        }
-        // Validation/consent errors are client-correctable (400); anything else is a server error (500).
-        const clientError = /must be|consent|required|invalid/i.test(error.message || '');
-        return res.status(clientError ? 400 : 500).json({
-            success: false,
-            message: clientError ? error.message : 'Internal Server Error'
-        });
+        const { statusCode, clientMessage } = mapError(error);
+        return res.status(statusCode).json({ success: false, message: clientMessage });
     }
 };
 

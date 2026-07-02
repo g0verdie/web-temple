@@ -6,6 +6,7 @@
 const db = require('../config/db');
 const { log: logAudit, AUDIT_ACTIONS } = require('./auditService');
 const logger = require('../utils/logger');
+const { ValidationError, NotFoundError } = require('../errors');
 
 // Role words a guest may not use in a display name. Blocks clergy/staff
 // impersonation in live chat (a guest choosing "Rabbi David"). Shared with the
@@ -25,22 +26,22 @@ const containsReservedName = (displayName) => {
  */
 const validateMessage = (streamId, displayName, messageText) => {
     if (!streamId || isNaN(parseInt(streamId, 10))) {
-        throw new Error('Invalid stream ID');
+        throw new ValidationError('Invalid stream ID');
     }
     if (!displayName || typeof displayName !== 'string' || displayName.trim() === '') {
-        throw new Error('Display name is required');
+        throw new ValidationError('Display name is required');
     }
     if (displayName.length > 50) {
-        throw new Error('Display name must not exceed 50 characters');
+        throw new ValidationError('Display name must not exceed 50 characters');
     }
     if (containsReservedName(displayName)) {
-        throw new Error('That display name is not allowed');
+        throw new ValidationError('That display name is not allowed');
     }
     if (!messageText || typeof messageText !== 'string' || messageText.trim() === '') {
-        throw new Error('Message text is required');
+        throw new ValidationError('Message text is required');
     }
     if (messageText.length > 500) {
-        throw new Error('Message text must not exceed 500 characters');
+        throw new ValidationError('Message text must not exceed 500 characters');
     }
 };
 
@@ -149,7 +150,7 @@ const createMessage = async ({ streamId, userId, displayName, messageText }) => 
  */
 const approveMessage = async (id, moderatorUserId, ip) => {
     if (!id || isNaN(parseInt(id, 10))) {
-        throw new Error('Invalid message ID');
+        throw new ValidationError('Invalid message ID');
     }
 
     const query = `
@@ -161,7 +162,7 @@ const approveMessage = async (id, moderatorUserId, ip) => {
     const result = await db.query(query, [parseInt(id, 10)]);
 
     if (result.rows.length === 0) {
-        throw new Error('Message not found');
+        throw new NotFoundError('Message not found');
     }
 
     const message = result.rows[0];
@@ -184,7 +185,7 @@ const approveMessage = async (id, moderatorUserId, ip) => {
  */
 const deleteMessage = async (id, moderatorUserId, ip) => {
     if (!id || isNaN(parseInt(id, 10))) {
-        throw new Error('Invalid message ID');
+        throw new ValidationError('Invalid message ID');
     }
 
     const query = `
@@ -196,7 +197,7 @@ const deleteMessage = async (id, moderatorUserId, ip) => {
     const result = await db.query(query, [parseInt(id, 10)]);
 
     if (result.rows.length === 0) {
-        throw new Error('Message not found');
+        throw new NotFoundError('Message not found');
     }
 
     const message = result.rows[0];
@@ -219,7 +220,7 @@ const deleteMessage = async (id, moderatorUserId, ip) => {
  */
 const getApprovedMessagesForStream = async (streamId) => {
     if (!streamId || isNaN(parseInt(streamId, 10))) {
-        throw new Error('Invalid stream ID');
+        throw new ValidationError('Invalid stream ID');
     }
 
     const query = `

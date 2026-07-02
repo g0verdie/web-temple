@@ -18,6 +18,7 @@ const { renderTemplate } = require('./emailTemplateService');
 const { logAudit, AUDIT_ACTIONS } = require('./auditService');
 const { signUnsubscribeToken } = require('../utils/unsubscribeToken');
 const logger = require('../utils/logger');
+const { ValidationError, NotFoundError } = require('../errors');
 
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -213,7 +214,7 @@ const create = async ({ title, body, featured = false, featuredDurationDays = DE
     const { userId, ipAddress } = context;
 
     if (!title || !String(title).trim()) {
-        throw new Error('Title is required');
+        throw new ValidationError('Title is required');
     }
 
     const { bodyHtml, bodyText } = sanitizeBody(body);
@@ -298,10 +299,10 @@ const update = async (id, { title, body } = {}, context = {}) => {
     const { userId, ipAddress } = context;
 
     if (!uuidRegex.test(id)) {
-        throw new Error('Announcement not found');
+        throw new NotFoundError('Announcement not found');
     }
     if (!title || !String(title).trim()) {
-        throw new Error('Title is required');
+        throw new ValidationError('Title is required');
     }
 
     const beforeResult = await db.query(
@@ -310,7 +311,7 @@ const update = async (id, { title, body } = {}, context = {}) => {
     );
     const before = beforeResult.rows[0];
     if (!before) {
-        throw new Error('Announcement not found');
+        throw new NotFoundError('Announcement not found');
     }
 
     const { bodyHtml, bodyText } = sanitizeBody(body);
@@ -350,7 +351,7 @@ const update = async (id, { title, body } = {}, context = {}) => {
 const softDelete = async (id, context = {}) => {
     const { userId, ipAddress } = context;
     if (!uuidRegex.test(id)) {
-        throw new Error('Announcement not found');
+        throw new NotFoundError('Announcement not found');
     }
 
     const beforeResult = await db.query(
@@ -359,7 +360,7 @@ const softDelete = async (id, context = {}) => {
     );
     const before = beforeResult.rows[0];
     if (!before) {
-        throw new Error('Announcement not found');
+        throw new NotFoundError('Announcement not found');
     }
 
     await db.query(
@@ -390,7 +391,7 @@ const softDelete = async (id, context = {}) => {
 const restore = async (id, context = {}) => {
     const { userId, ipAddress } = context;
     if (!uuidRegex.test(id)) {
-        throw new Error('Announcement not found');
+        throw new NotFoundError('Announcement not found');
     }
 
     const result = await db.query(
@@ -404,7 +405,7 @@ const restore = async (id, context = {}) => {
     );
     const restored = result.rows[0];
     if (!restored) {
-        throw new Error('Announcement not found');
+        throw new NotFoundError('Announcement not found');
     }
 
     await logAudit({
@@ -432,7 +433,7 @@ const restore = async (id, context = {}) => {
 const setFeatured = async (id, { featured, durationDays = DEFAULT_FEATURE_DAYS } = {}, context = {}) => {
     const { userId, ipAddress } = context;
     if (!uuidRegex.test(id)) {
-        throw new Error('Announcement not found');
+        throw new NotFoundError('Announcement not found');
     }
     const makeFeatured = !!featured;
     const featuredUntil = makeFeatured
@@ -463,7 +464,7 @@ const setFeatured = async (id, { featured, durationDays = DEFAULT_FEATURE_DAYS }
         );
         updated = result.rows[0];
         if (!updated) {
-            throw new Error('Announcement not found');
+            throw new NotFoundError('Announcement not found');
         }
 
         await logAudit({

@@ -438,6 +438,35 @@ describe('Chat WebSocket Server Integration Tests', () => {
 
             expect(wsClient.send).toHaveBeenCalledWith(expect.stringContaining('chat_paused'));
         });
+
+        it('AE3: sends a safe generic error frame (never the raw exception) when a handler throws an untyped error', async () => {
+            ChatService.createMessage.mockRejectedValueOnce(new Error('ECONNREFUSED postgres://secret@db:5432'));
+
+            wsClient.emit('message', JSON.stringify({ type: 'post_message', text: 'hi' }));
+            await new Promise(resolve => setImmediate(resolve));
+
+            const errorFrames = wsClient.send.mock.calls
+                .map((c) => JSON.parse(c[0]))
+                .filter((f) => f.type === 'error');
+            expect(errorFrames.length).toBeGreaterThan(0);
+            const frame = errorFrames[errorFrames.length - 1];
+            expect(frame.message).toBe('Something went wrong');
+            expect(JSON.stringify(frame)).not.toContain('ECONNREFUSED');
+            expect(JSON.stringify(frame)).not.toContain('secret');
+        });
+
+        it('AE3: surfaces a typed ValidationError clientMessage safely over the socket', async () => {
+            const { ValidationError } = require('../../src/errors');
+            ChatService.createMessage.mockRejectedValueOnce(new ValidationError('Message text is required'));
+
+            wsClient.emit('message', JSON.stringify({ type: 'post_message', text: '' }));
+            await new Promise(resolve => setImmediate(resolve));
+
+            const errorFrames = wsClient.send.mock.calls
+                .map((c) => JSON.parse(c[0]))
+                .filter((f) => f.type === 'error');
+            expect(errorFrames[errorFrames.length - 1].message).toBe('Message text is required');
+        });
     });
 
     describe('WebSocket Broadcast Routing', () => {
