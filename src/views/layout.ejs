@@ -85,9 +85,37 @@
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
-  <div class="app-shell">
-  <header role="banner">
-    <nav role="navigation" aria-label="Main navigation">
+  <%
+    // Active-nav helper + resilient chrome context. `chrome` is populated by the
+    // global middleware in server.js on GET page renders; guard so a non-GET
+    // re-render (or a direct layout render) degrades to no live/times cue rather
+    // than throwing a ReferenceError.
+    const activePath = (typeof currentPath !== 'undefined' ? currentPath : '');
+    const isActive = (p) => (activePath === p ? ' aria-current="page"' : '');
+    const chromeCtx = (typeof chrome !== 'undefined' && chrome)
+      ? chrome
+      : { liveNow: false, watchUrl: '/watch', serviceTimes: null };
+  %>
+
+  <header role="banner" class="site-chrome">
+    <!-- Tier 1: utility strip — this week's service time, live-aware Watch. Auth
+         (log in / account) lives once in the main nav below, so it is not repeated
+         here (avoids two links to the same route with differing accessible names). -->
+    <div class="chrome-util">
+      <div class="chrome-util__inner">
+        <% if (chromeCtx.serviceTimes) { %>
+          <span class="chrome-util__times"><%= chromeCtx.serviceTimes %></span>
+        <% } %>
+        <% if (chromeCtx.liveNow) { %>
+          <a href="<%= chromeCtx.watchUrl %>" class="chrome-util__live"><span class="chrome-live-dot" aria-hidden="true"></span>Watch Live</a>
+        <% } else { %>
+          <a href="<%= chromeCtx.watchUrl %>" class="chrome-util__watch">Watch</a>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Tier 2: main bar — wordmark, text nav, single gold Give button -->
+    <nav role="navigation" aria-label="Main navigation" class="chrome-main">
       <div class="nav-container">
         <button class="hamburger-btn" aria-label="Menu" aria-expanded="false" aria-controls="nav-menu">
           <span></span>
@@ -100,38 +128,80 @@
             <svg class="site-home-icon" viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true" focusable="false"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
           </a>
         </h1>
-        <% const activePath=(typeof currentPath !=='undefined' ? currentPath : '' ); %>
-          <ul class="nav-menu" id="nav-menu">
-            <li><a href="/" <%=activePath==='/' ? 'aria-current="page"' : '' %>>Home</a></li>
-            <li><a href="/calendar" <%=activePath==='/calendar' ? 'aria-current="page"' : '' %>>Calendar</a></li>
-            <li><a href="/watch" <%=activePath==='/watch' ? 'aria-current="page"' : '' %>>Watch</a></li>
-            <li><a href="/about" <%=activePath==='/about' ? 'aria-current="page"' : '' %>>About</a></li>
-            <li><a href="/contact" <%=activePath==='/contact' ? 'aria-current="page"' : '' %>>Contact</a></li>
-            <li><a href="/donations" class="nav-donate" <%=activePath==='/donations' ? 'aria-current="page"' : '' %>>Donate</a></li>
-            <% if (user) { %>
-            <li><a href="/directory" <%=activePath==='/directory' ? 'aria-current="page"' : '' %>>Directory</a></li>
-            <li><a href="/account/settings" <%=activePath==='/account/settings' ? 'aria-current="page"' : '' %>>Account</a></li>
-            <% if (user.role === 'admin' || user.role === 'rabbi') { %>
-            <li><a href="/admin" <%=activePath==='/admin' ? 'aria-current="page"' : '' %>>Admin</a></li>
-            <% } %>
-            <li><a href="/login" class="nav-logout" id="logout-link">Logout</a></li>
-            <% } else { %>
-            <li><a href="/login" class="nav-login" <%=activePath==='/login' ? 'aria-current="page"' : '' %>>Login</a></li>
-            <% } %>
-          </ul>
+        <ul class="nav-menu" id="nav-menu">
+          <%# Utility cues folded into the hamburger on mobile (R7): the tier-1 strip
+              that carries these is hidden < 768px, so surface the live-now cue and
+              service time here. Hidden again from 768px up (.nav-util) where the
+              strip takes over, so /watch is never linked twice at one width. %>
+          <% if (chromeCtx.liveNow) { %>
+          <li class="nav-util"><a href="<%= chromeCtx.watchUrl %>" class="chrome-util__live"><span class="chrome-live-dot" aria-hidden="true"></span>Watch Live</a></li>
+          <% } else { %>
+          <li class="nav-util"><a href="<%= chromeCtx.watchUrl %>" class="chrome-util__watch">Watch</a></li>
+          <% } %>
+          <% if (chromeCtx.serviceTimes) { %>
+          <li class="nav-util"><span class="chrome-util__times"><%= chromeCtx.serviceTimes %></span></li>
+          <% } %>
+          <li><a href="/"<%- isActive('/') %>>Home</a></li>
+          <li><a href="/calendar"<%- isActive('/calendar') %>>Calendar</a></li>
+          <li><a href="/about"<%- isActive('/about') %>>About</a></li>
+          <li><a href="/contact"<%- isActive('/contact') %>>Contact</a></li>
+          <% if (user) { %>
+          <li><a href="/directory"<%- isActive('/directory') %>>Directory</a></li>
+          <li><a href="/account/settings"<%- isActive('/account/settings') %>>Account</a></li>
+          <% if (user.role === 'admin' || user.role === 'rabbi') { %>
+          <li><a href="/admin"<%- isActive('/admin') %>>Admin</a></li>
+          <% } %>
+          <li><a href="/login" class="nav-logout" id="logout-link">Logout</a></li>
+          <% } else { %>
+          <li><a href="/login" class="nav-login"<%- isActive('/login') %>>Login</a></li>
+          <% } %>
+        </ul>
+        <a href="/donations" class="chrome-give"<%- isActive('/donations') %>>Give</a>
       </div>
     </nav>
   </header>
 
-  <div class="app-main">
   <main id="main-content" role="main">
     <%- include(bodyView, viewData) %>
   </main>
 
-  <footer role="contentinfo">
-    <div class="footer-container">
+  <footer role="contentinfo" class="site-footer">
+    <div class="footer-grid">
+      <div class="footer-col footer-col--brand">
+        <p class="footer-brand">Temple B'nai Israel</p>
+        <p>201 E Hawthorne St<br>Florence, AL 35630</p>
+        <%# Placeholder contact details — owner to supply real phone/email before launch.
+            Rendered as plain text (no tel:/mailto scheme links): the values are placeholders,
+            and a live tel:/mailto here would both mislead visitors and defeat the directory
+            privacy guard that asserts pages never emit a member's tel: link. %>
+        <p>(256) 555-0100<br>office@example.org</p>
+      </div>
+      <div class="footer-col">
+        <h2 class="footer-heading">Visit</h2>
+        <% if (chromeCtx.serviceTimes) { %>
+          <p>Next: <%= chromeCtx.serviceTimes %></p>
+        <% } %>
+        <p>Kabbalat Shabbat · Friday evening</p>
+        <p>Shabbat Morning · Saturday morning</p>
+      </div>
+      <div class="footer-col">
+        <h2 class="footer-heading">Explore</h2>
+        <nav class="footer-nav" aria-label="Footer">
+          <a href="/calendar">Calendar</a>
+          <a href="/watch">Watch</a>
+          <a href="/donations">Give</a>
+          <a href="/contact">Contact</a>
+        </nav>
+      </div>
+      <div class="footer-col">
+        <h2 class="footer-heading">Congregation</h2>
+        <%# Placeholder trust cues — owner to confirm affiliation + real EIN before launch %>
+        <p>Affiliated with the Union for Reform Judaism</p>
+        <p>A registered 501(c)(3) &middot; EIN 00-0000000</p>
+      </div>
+    </div>
+    <div class="footer-legal">
       <p>&copy; <%= new Date().getFullYear() %> Temple B'nai Israel. All rights reserved.</p>
-      <p>201 E Hawthorne St, Florence, AL 35630</p>
       <nav class="footer-links" aria-label="Legal">
         <a href="/privacy">Privacy Policy</a>
         <a href="/terms">Terms of Use</a>
@@ -139,8 +209,6 @@
       </nav>
     </div>
   </footer>
-  </div><!-- .app-main -->
-  </div><!-- .app-shell -->
 
   <script src="/js/hamburger.js"></script>
   <% if (typeof user !== 'undefined' && user) { %>

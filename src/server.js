@@ -6,6 +6,8 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const logger = require('./utils/logger');
 const metricsService = require('./services/metricsService');
+const StreamingService = require('./services/StreamingService');
+const EventService = require('./services/EventService');
 const requestIdMiddleware = require('./middleware/requestIdMiddleware');
 const { startEmailQueueWorker } = require('./workers/emailQueueWorker');
 const { startReminderWorker } = require('./workers/reminderWorker');
@@ -191,6 +193,63 @@ app.use(sessionTimeout());
 // Expose current path for active nav highlighting
 app.use((req, res, next) => {
   res.locals.currentPath = req.path;
+  next();
+});
+
+// Global chrome context for the two-tier top bar (I9). Two cues live in the
+// utility strip on every page: a live indicator (from the admin-asserted,
+// time-bounded stream status) and this week's service time (the next `service`
+// event). Both read existing data — no new liveness/scheduling mechanism — and
+// degrade gracefully: a failure in either leaves the strip without that cue
+// rather than breaking the render. GET-only, since page renders are GET and this
+// keeps the two cached reads off POST/API traffic.
+const formatServiceLabel = (service) => {
+  if (!service || !service.date) return null;
+  const date = service.date instanceof Date ? service.date : new Date(service.date);
+  if (Number.isNaN(date.getTime())) return null;
+  const opts = { weekday: 'short', hour: 'numeric', minute: '2-digit' };
+  // Render in the congregation's timezone via APP_TIMEZONE_OFFSET (e.g. '-05:00') —
+  // the same convention EventService/StreamingService parse with — so the label is
+  // stable regardless of the server's TZ. Shift the instant by the offset and read
+  // it as UTC to get that offset's wall-clock time; fall back to server-local when
+  // no offset is configured.
+  const offset = process.env.APP_TIMEZONE_OFFSET;
+  let when;
+  if (offset && /^[+-]\d{2}:\d{2}$/.test(offset)) {
+    const sign = offset[0] === '-' ? -1 : 1;
+    const [hours, minutes] = offset.slice(1).split(':').map(Number);
+    const shifted = new Date(date.getTime() + sign * (hours * 60 + minutes) * 60000);
+    when = shifted.toLocaleString('en-US', { ...opts, timeZone: 'UTC' });
+  } else {
+    when = date.toLocaleString('en-US', opts);
+  }
+  return service.title ? `${service.title} · ${when}` : when;
+};
+
+// Routes that never render the public two-tier chrome — skip the two chrome reads
+// there. Admin/API pages don't show the live-now/service cues, JSON + liveness probes
+// stay DB-free and fast (e.g. /health is liveness-only), and skipping keeps this
+// middleware from consuming db responses that admin route handlers depend on.
+const CHROME_SKIP_PREFIXES = ['/admin', '/api', '/health', '/ready', '/robots.txt', '/sitemap.xml'];
+app.use(async (req, res, next) => {
+  const chrome = { liveNow: false, watchUrl: '/watch', serviceTimes: null };
+  const skip = req.method !== 'GET' ||
+    CHROME_SKIP_PREFIXES.some((p) => req.path === p || req.path.startsWith(`${p}/`));
+  if (!skip) {
+    try {
+      const [streamMeta, nextService] = await Promise.all([
+        StreamingService.getPublicEmbedMetadata().catch(() => null),
+        EventService.getNextService().catch(() => null)
+      ]);
+      chrome.liveNow = !!(streamMeta && streamMeta.status === 'live');
+      chrome.serviceTimes = formatServiceLabel(nextService);
+    } catch (err) {
+      logger.warn('Global chrome context failed to resolve; rendering without live/times cues', {
+        error: err && err.message
+      });
+    }
+  }
+  res.locals.chrome = chrome;
   next();
 });
 

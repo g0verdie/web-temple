@@ -20,6 +20,7 @@
   --color-gold: #d69e2e; /* warm gold — fills, large accents, CTA bg (navy-on-gold ~4.6:1) */
   --color-gold-dark: #856823; /* gold-as-text/links on light surfaces (white 5.25:1, #f7fafc 5.01:1, #f0f0f0 4.60:1 — all AA) */
   --color-gold-focus: #b8860b; /* focus outline — clears 3:1 on white AND navy */
+  --color-live: #c0492f; /* live-now indicator dot (on navy) */
   --color-accent: var(--color-gold); /* alias kept for existing var(--color-accent) usages */
   --color-text: #2d3748; /* Dark gray text */
   --color-text-light: #4a5568; /* Medium gray */
@@ -93,6 +94,13 @@ body {
   background-color: var(--color-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Sticky-footer shell: header/main/footer stack fills at least the viewport so
+     the navy footer sits at the bottom on short pages (AE4, e.g. the donation
+     checkout at 1440px) instead of leaving the light page background beneath it.
+     main (flex: 1) absorbs the slack. */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Skip link for keyboard navigation */
@@ -123,15 +131,81 @@ textarea:focus {
   outline-offset: var(--focus-offset);
 }
 
+/* ============================================================
+ * Global chrome — two-tier top bar (I9).
+ * Tier 1 = a thin navy utility strip (log in, service time, live-aware Watch).
+ * Tier 2 = the main bar (wordmark left, text nav, one gold Give button right).
+ * Mobile-first: the nav collapses behind the hamburger; the logo + Give stay
+ * visible outside it. At >=768px the nav expands inline (no left sidebar).
+ * ============================================================ */
+
 /* Header & Navigation - Mobile first (375px) */
-header {
+header.site-chrome {
   background-color: var(--color-primary);
   color: white;
-  padding: var(--spacing-sm) 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: relative;
+  position: relative; /* anchors the mobile nav-menu dropdown */
 }
 
+/* Tier 1 — utility strip. Hidden on mobile (its Log in / Watch links live in the
+   hamburger via the main nav); shown from tablet up. */
+.chrome-util {
+  display: none;
+  background-color: #0f1d2e; /* navy-deep, one step darker than the main bar */
+  color: #c7d0dc;
+  font-size: 0.8125rem;
+}
+
+.chrome-util__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.35rem var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  min-height: 34px;
+}
+
+.chrome-util a {
+  color: #c7d0dc;
+  text-decoration: none;
+}
+
+.chrome-util a:hover,
+.chrome-util a:focus {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.chrome-util__times {
+  color: #c7d0dc;
+}
+
+/* Pin the Watch / live cue to the right end of the strip. */
+.chrome-util__watch,
+.chrome-util__live {
+  margin-left: auto;
+}
+
+.chrome-util__live {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #fff;
+  font-weight: 600;
+}
+
+.chrome-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-live);
+  box-shadow: 0 0 0 3px rgba(192, 73, 47, 0.25);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Tier 2 — main bar container (shared with the mobile layout). */
 .nav-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -139,8 +213,37 @@ header {
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
   min-height: 60px;
+}
+
+/* The single gold Give CTA — the only filled button in the chrome. Stays visible
+   outside the hamburger at every width (logo + Give are always one tap away). */
+.chrome-give {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-gold);
+  color: var(--color-primary);
+  font-weight: 700;
+  text-decoration: none;
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  min-height: 40px;
+  white-space: nowrap;
+  border: 2px solid transparent;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.chrome-give:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.chrome-give:focus {
+  outline: var(--focus-outline);
+  outline-offset: var(--focus-offset);
 }
 
 .site-title {
@@ -289,46 +392,25 @@ header {
   border-bottom: none;
 }
 
-/* Login link styled as a gold button, consistent with the navy header */
-.nav-menu a.nav-login {
-  color: var(--color-gold);
-  border: 2px solid var(--color-gold);
-  border-radius: 4px;
-  font-weight: 600;
-}
-
-.nav-menu a.nav-login:hover,
-.nav-menu a.nav-login:focus,
-.nav-menu a.nav-login[aria-current="page"] {
-  background-color: var(--color-gold);
-  color: var(--color-primary);
-}
-
-/* Donate link styled as a gold CTA, mirroring the login button */
-.nav-menu a.nav-donate {
-  color: var(--color-gold);
-  border: 2px solid var(--color-gold);
-  border-radius: 4px;
-  font-weight: 600;
-}
-
-.nav-menu a.nav-donate:hover,
-.nav-menu a.nav-donate:focus,
-.nav-menu a.nav-donate[aria-current="page"] {
-  background-color: var(--color-gold);
-  color: var(--color-primary);
-}
-
-/* Logout: a subtle secondary action, distinct from the gold CTAs */
+/* Login / Logout are plain text links — Give is the only filled CTA in the chrome
+   (R5). Keeps the class hooks but drops the former outlined "boxed" treatment. */
+.nav-menu a.nav-login,
 .nav-menu a.nav-logout {
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 4px;
+  font-weight: 500;
 }
 
-.nav-menu a.nav-logout:hover,
-.nav-menu a.nav-logout:focus {
-  background-color: var(--color-secondary);
-  border-color: var(--color-gold);
+/* Utility cues (live-aware Watch + service time) folded into the hamburger on
+   mobile (R7). The tier-1 utility strip that carries them is hidden < 768px, so
+   they render as menu rows here (the Watch/live link is styled by .nav-menu a).
+   Hidden again from 768px up (see media query) where the strip takes over. */
+.nav-util .chrome-util__times {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 12px var(--spacing-md);
+  color: #c7d0dc;
+  font-size: 0.875rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Main content */
@@ -336,67 +418,88 @@ main {
   max-width: 1200px;
   margin: 0 auto;
   padding: var(--spacing-lg) var(--spacing-md);
+  flex: 1 0 auto; /* sticky footer: grow to fill the flex column (see body below) */
+  width: 100%;
 }
 
-/* App shell. Mobile-first: a single column — the header stacks above the content and
-   the nav stays behind the hamburger (base styles above). On desktop the header
-   becomes a persistent left sidebar (see the 768px block below). */
-.app-shell {
-  display: block;
-}
-
-.app-main {
-  min-width: 0;
-}
-
-/* Desktop (768px+): header becomes a persistent left sidebar, content fills the rest.
-   The hamburger is hidden and the menu shows as a static vertical column. */
+/* Desktop / tablet (768px+): the utility strip appears and the main nav expands
+   inline into the bar — logo left, text links, gold Give right. No side column. */
 @media (min-width: 768px) {
-  .app-shell {
-    display: flex;
-    align-items: flex-start;
+  .chrome-util {
+    display: block;
   }
 
-  header {
-    flex: 0 0 240px;
-    width: 240px;
-    min-height: 100vh;
-    max-height: 100vh;
-    overflow-y: auto;
-    position: sticky;
-    top: 0;
-    padding: var(--spacing-md) 0;
+  /* The utility strip now carries the live cue + service time, so drop the
+     mobile-only folded copies from the inline nav row (no duplicate links). */
+  .nav-util {
+    display: none;
   }
 
-  .app-main {
-    flex: 1 1 auto;
-  }
-
-  /* Stack the brand above a full vertical menu. */
   .nav-container {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--spacing-md);
-    max-width: none;
-    min-height: 0;
-    padding: 0;
-  }
-
-  .site-title {
-    padding: 0 var(--spacing-md);
+    gap: var(--spacing-lg);
   }
 
   .hamburger-btn {
     display: none;
   }
 
-  /* The menu lives in the sidebar flow (no absolute dropdown). */
+  /* The menu becomes a horizontal row inside the bar (no absolute dropdown). */
   .nav-menu {
     display: flex;
+    flex-direction: row;
+    align-items: center;
     position: static;
-    width: 100%;
+    width: auto;
+    gap: var(--spacing-md);
     padding: 0;
+    margin: 0;
+    background-color: transparent;
     box-shadow: none;
+  }
+
+  .nav-menu li {
+    width: auto;
+  }
+
+  .nav-menu a {
+    display: inline-flex;
+    min-height: 0;
+    padding: 0.4rem 0;
+    border-bottom: none;
+    color: #e7ebf1;
+    position: relative;
+  }
+
+  /* Drop the mobile fill/outline-box on hover; keep the global focus outline
+     (a:focus) intact for keyboard users. */
+  .nav-menu a:hover {
+    background-color: transparent;
+    color: #fff;
+    outline: none;
+  }
+
+  .nav-menu a:focus {
+    background-color: transparent;
+    color: #fff;
+  }
+
+  /* Active page: a gold underline (R4) rather than the mobile fill highlight. */
+  .nav-menu a[aria-current="page"] {
+    background-color: transparent;
+    color: #fff;
+    font-weight: 600;
+    outline: none;
+  }
+
+  .nav-menu a[aria-current="page"]::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -2px;
+    height: 3px;
+    background: var(--color-gold);
+    border-radius: 2px;
   }
 }
 
@@ -691,22 +794,106 @@ main {
   padding: var(--spacing-xl);
 }
 
-/* Footer */
-footer {
+/* Footer — full-width multi-column band (R6). Spans the page edge-to-edge; the
+   content is centred to the same 1200px measure as the header/main. Stacks to a
+   single column on mobile and fans out to four columns on desktop. */
+.site-footer {
   background-color: var(--color-primary);
-  color: white;
-  padding: var(--spacing-lg) var(--spacing-md);
+  color: #cdd6e2;
+  border-top: 3px solid var(--color-gold);
   margin-top: var(--spacing-xl);
-  text-align: center;
 }
 
-.footer-container {
+.footer-grid {
   max-width: 1200px;
   margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg) var(--spacing-md);
 }
 
-.footer-container p {
-  margin: var(--spacing-xs) 0;
+.footer-brand {
+  font-family: var(--font-serif);
+  color: #fff;
+  font-size: 1.2rem;
+  margin-bottom: var(--spacing-xs);
+}
+
+.footer-heading {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-gold);
+  margin-bottom: var(--spacing-xs);
+}
+
+.footer-col p {
+  margin: 0.2rem 0;
+  color: #c1cad7;
+}
+
+.footer-col a {
+  color: #c1cad7;
+  text-decoration: none;
+}
+
+.footer-col a:hover,
+.footer-col a:focus {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.footer-nav a {
+  display: block;
+  margin: 0.25rem 0;
+}
+
+.footer-legal {
+  max-width: 1200px;
+  margin: 0 auto;
+  border-top: 1px solid #26405c;
+  padding: var(--spacing-sm) var(--spacing-md);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  font-size: 0.8125rem;
+  color: #93a1b4;
+}
+
+.footer-legal p {
+  margin: 0;
+}
+
+.footer-links a {
+  color: #93a1b4;
+  text-decoration: none;
+  margin-left: var(--spacing-md);
+}
+
+.footer-links a:first-child {
+  margin-left: 0;
+}
+
+.footer-links a:hover,
+.footer-links a:focus {
+  color: #fff;
+  text-decoration: underline;
+}
+
+@media (min-width: 600px) {
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (min-width: 900px) {
+  .footer-grid {
+    grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  }
 }
 
 /* Responsive design - Mobile first */
