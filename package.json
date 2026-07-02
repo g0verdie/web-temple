@@ -10,6 +10,7 @@
     "test:watch": "jest --watch",
     "test:leaks": "jest --detectOpenHandles --coverage",
     "test:a11y": "jest --testPathPattern=accessibility.test.js",
+    "test:csrf": "jest --config jest.config.csrf.js",
     "lint": "eslint src/**/*.js",
     "lint:fix": "eslint src/**/*.js --fix",
     "migrate": "node scripts/migrate.js",
