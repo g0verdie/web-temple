@@ -21,6 +21,7 @@ const db = require('./config/db');
 const { pool } = db;
 const redis = require('./config/redis');
 const { closeAllConnections } = require('./services/chatSocketServer');
+const { runPreflight } = require('./config/preflight');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -471,6 +472,11 @@ function handleUnhandledRejection(reason) {
 
 // Start server
 if (process.env.NODE_ENV !== 'test' && require.main === module) {
+  // Fail-closed boot preflight: in production, refuse to start on any
+  // security-tier misconfiguration (exits non-zero) and warn on content-tier
+  // ones. Inert in dev (guarded by NODE_ENV === 'production' inside).
+  runPreflight();
+
   server = app.listen(PORT, HOST, () => {
     logger.info(`✅ Server running at http://${HOST}:${PORT}`);
     logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);

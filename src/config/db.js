@@ -6,14 +6,18 @@
 const { Pool } = require('pg');
 const logger = require('../utils/logger');
 const sentry = require('./sentry');
+const { resolvePgSsl } = require('./pgSsl');
 
 // Use DATABASE_URL from environment or fallback to local default
 const connectionString = process.env.DATABASE_URL || 'postgresql://localhost:5432/web_temple';
 
 const pool = new Pool({
     connectionString,
-    // SSL is required for most production deployments (e.g., Heroku, RDS)
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    // SSL is required for most production deployments (e.g., Heroku, RDS).
+    // In production the server certificate is now VERIFIED by default
+    // (rejectUnauthorized: true), resolved via config/pgSsl.js — the same source
+    // the boot preflight (R11) checks, so the pool and the gate cannot drift.
+    ssl: resolvePgSsl(),
 });
 
 // An idle client can emit 'error' if the backend drops it (e.g. a DB failover
