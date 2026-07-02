@@ -2,6 +2,7 @@ const CacheService = require('./CacheService');
 const db = require('../config/db');
 const auditService = require('./auditService');
 const logger = require('../utils/logger');
+const { formatEventDateTime } = require('../utils/templeTime');
 
 const CACHE_KEY = 'stream:public-embed';
 const CACHE_TTL_SECONDS = 30;
@@ -107,6 +108,10 @@ const buildUpcomingState = (scheduledStart) => ({
     statusLabel: 'Upcoming',
     scheduledStart: scheduledStart,
     countdownTarget: scheduledStart,
+    // Ship a temple-timezone preformatted label so the homepage poll (stream-status.js)
+    // renders the same wall-clock time as the SSR card, instead of reformatting the
+    // instant in the viewer's browser-local zone (cross-surface drift).
+    formattedScheduledStart: formatEventDateTime(scheduledStart),
     message: 'The livestream will begin shortly.'
 });
 

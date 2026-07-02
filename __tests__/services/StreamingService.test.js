@@ -111,6 +111,22 @@ describe('StreamingService', () => {
         expect(stream.message).toBe('The livestream will begin shortly.');
     });
 
+    it('exposes a temple-timezone preformatted scheduledStart label on the upcoming state', async () => {
+        // A fixed far-future summer instant so the env-fallback upcoming path is always taken.
+        // 19:00 UTC on 2099-07-04 == 2:00 PM CDT in the temple zone.
+        process.env.FACEBOOK_LIVE_SCHEDULED_START = '2099-07-04T19:00:00Z';
+        process.env.TEMPLE_TIMEZONE = 'America/Chicago';
+
+        const StreamingService = require('../../src/services/StreamingService');
+
+        const stream = await StreamingService.getPublicEmbedMetadata();
+
+        expect(stream.status).toBe('upcoming');
+        // The API must ship a pre-formatted temple-zone string so the client never
+        // reformats the instant in the viewer's local timezone (cross-surface drift).
+        expect(stream.formattedScheduledStart).toBe('Saturday, July 4, 2099 at 2:00 PM');
+    });
+
     it('returns error state when provider is flagged unavailable', async () => {
         process.env.STREAM_PROVIDER_UNAVAILABLE = 'true';
         process.env.FACEBOOK_LIVE_WATCH_URL = 'https://www.facebook.com/temple/videos/123';

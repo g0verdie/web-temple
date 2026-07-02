@@ -111,18 +111,11 @@ app.use(express.static(path.join(__dirname, '../public'), { maxAge: '1h' }));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Helper functions for views
-app.locals.formatEventDate = (date) => {
-  const options = {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit'
-  };
-  return date.toLocaleDateString('en-US', options);
-};
+// Helper functions for views — event/stream times route through the one
+// temple-timezone formatter (utils/templeTime) so every surface agrees.
+const { formatEventDateTime, formatEventTime } = require('./utils/templeTime');
+app.locals.formatEventDate = formatEventDateTime;
+app.locals.formatEventTime = formatEventTime;
 
 // Body parsing middleware
 app.use(express.json());

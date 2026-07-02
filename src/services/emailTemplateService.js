@@ -1,21 +1,7 @@
-// Format an event date/time for calendar emails. Tolerates Date or string input
-// and degrades gracefully when the value is missing or unparseable.
-const formatEventDateTime = (value) => {
-    if (!value) return '';
-    const d = new Date(value);
-    if (isNaN(d.getTime())) return '';
-    return d.toLocaleString('en-US', {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-        hour: 'numeric', minute: '2-digit'
-    });
-};
-
-const formatEventTime = (value) => {
-    if (!value) return '';
-    const d = new Date(value);
-    if (isNaN(d.getTime())) return '';
-    return d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit' });
-};
+// Reminder/calendar emails render event date+time through the one temple-timezone
+// formatter (utils/templeTime), which tolerates Date/string input and returns ''
+// for missing/unparseable values, so emails still degrade gracefully.
+const { formatEventDateTime, formatEventTime } = require('../utils/templeTime');
 
 // Escape user-authored text before embedding it in email HTML. Calendar event
 // fields (title/description/location/zoomUrl) are staff-authored and fan out to

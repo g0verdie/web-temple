@@ -10,7 +10,7 @@
 
     <% if (stream.scheduled_start) { %>
       <p class="stream-time">
-        <time datetime="<%= new Date(stream.scheduled_start).toISOString() %>"><%= new Date(stream.scheduled_start).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short', timeZone: 'UTC' }) %> (UTC)</time>
+        <time datetime="<%= new Date(stream.scheduled_start).toISOString() %>"><%= formatEventDate(stream.scheduled_start) %></time>
       </p>
     <% } %>
 

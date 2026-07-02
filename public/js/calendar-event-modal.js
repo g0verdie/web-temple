@@ -20,26 +20,13 @@
     var closeBtn = document.getElementById('calendarEventModalClose');
     var lastTrigger = null;
 
-    // Match the calendar grid's UTC rendering so the popup time agrees with the cell.
-    function formatWhen(iso, timeText) {
-        if (!iso) {
-            return timeText || '';
-        }
-        var d = new Date(iso);
-        if (isNaN(d.getTime())) {
-            return timeText || '';
-        }
-        var dateStr = d.toLocaleDateString('en-US', {
-            weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC'
-        });
-        return timeText ? dateStr + ' · ' + timeText : dateStr;
-    }
-
     function openModal(trigger) {
         lastTrigger = trigger;
 
         titleEl.textContent = trigger.getAttribute('data-title') || 'Event';
-        timeEl.textContent = formatWhen(trigger.getAttribute('data-datetime'), trigger.getAttribute('data-time'));
+        // Show the server-formatted temple-timezone datetime directly (no second
+        // client-side format), so the popup matches the event's grid cell exactly.
+        timeEl.textContent = trigger.getAttribute('data-when') || trigger.getAttribute('data-time') || '';
 
         var location = trigger.getAttribute('data-location') || '';
         locationEl.textContent = location ? '📍 ' + location : '';

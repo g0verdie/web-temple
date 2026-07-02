@@ -2,6 +2,7 @@ const EventService = require('../services/EventService');
 const StreamingService = require('../services/StreamingService');
 const AnnouncementService = require('../services/AnnouncementService');
 const logger = require('../utils/logger');
+const { formatEventDateTime } = require('../utils/templeTime');
 
 function getTimeUntilService(serviceDate) {
   const now = new Date();
@@ -19,16 +20,10 @@ function getTimeUntilService(serviceDate) {
   return { days, hours, minutes, seconds };
 }
 
+// Delegates to the one temple-timezone formatter so the homepage next-service
+// time and upcoming events match every other surface.
 function formatEventDate(date) {
-  const options = {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit'
-  };
-  return date.toLocaleDateString('en-US', options);
+  return formatEventDateTime(date);
 }
 
 function buildStreamViewModel(streamMetadata) {

@@ -46,6 +46,42 @@ describe('stream-status client behavior', () => {
     expect(global.fetch).toHaveBeenCalledWith('/api/stream/status');
   });
 
+  it('renders the server temple-timezone label for an upcoming stream without local reformatting', async () => {
+    // The card must display the server's preformatted temple-zone string verbatim,
+    // NOT reformat the raw instant in the viewer's browser-local zone (cross-surface
+    // drift). To prove this independently of whatever timezone the test runner sits
+    // in, the server label deliberately names a different date than any local
+    // rendering of scheduledStart (July 4/5) could ever produce: the old, drifting
+    // client reformatted the instant and would print "July", never "December".
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        status: 'upcoming',
+        statusLabel: 'Upcoming',
+        message: 'The livestream will begin shortly.',
+        scheduledStart: '2099-07-04T19:00:00Z',
+        countdownTarget: '2099-07-04T19:00:00Z',
+        formattedScheduledStart: 'Monday, December 25, 2099 at 8:30 AM'
+      })
+    });
+
+    document.body.innerHTML = '<section id="live-stream-container"></section>';
+
+    require('../../public/js/stream-status.js');
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const schedule = document.querySelector('.stream-schedule');
+    expect(schedule).not.toBeNull();
+    expect(schedule.textContent).toBe('Next scheduled stream: Monday, December 25, 2099 at 8:30 AM');
+    // A locally-reformatted instant would print "July"; its absence proves the client
+    // never re-derives the time in the viewer's timezone.
+    expect(document.getElementById('live-stream-container').innerHTML).not.toContain('July');
+  });
+
   it('renders the offline fallback CTA pointing at /watch (not the retired /archive)', async () => {
     // beforeEach mocks an offline response with archiveCta:true.
     document.body.innerHTML = '<section id="live-stream-container"></section>';

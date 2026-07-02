@@ -31,9 +31,7 @@
               <tr>
                 <td><strong><%= event.title %></strong></td>
                 <td>
-                  <%= event.date ? new Date(event.date).toLocaleString('en-US', {
-                    month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
-                  }) : '' %>
+                  <%= formatEventDate(event.date) %>
                 </td>
                 <td>
                   <%= event.deletedAt ? new Date(event.deletedAt).toLocaleDateString('en-US') : '' %>

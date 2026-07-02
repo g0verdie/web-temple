@@ -1,7 +1,7 @@
 <%
-  // Event times render in UTC, consistent with the controller's UTC month
-  // windowing and the month label (backlog item 5).
-  const timeFmt = (d) => d ? new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }) : '';
+  // Event times render through the one temple-timezone formatter (formatEventTime /
+  // formatEventDate app.locals), so the grid cell, popup, and admin table all agree.
+  // Grid day-cell placement and the month label remain UTC (see calendarController).
 %>
 <section class="calendar-page" role="region" aria-labelledby="calendar-heading">
   <div class="calendar-page-header">
@@ -48,14 +48,14 @@
                         <li class="calendar-event calendar-event--<%= event.type || 'event' %>">
                           <button type="button" class="calendar-event-trigger"
                             data-title="<%= event.title %>"
-                            data-datetime="<%= event.date ? new Date(event.date).toISOString() : '' %>"
-                            data-time="<%= timeFmt(event.date) %>"
+                            data-when="<%= formatEventDate(event.date) %>"
+                            data-time="<%= formatEventTime(event.date) %>"
                             data-description="<%= event.description || '' %>"
                             data-location="<%= event.location || '' %>"
                             data-visibility="<%= event.visibility || '' %>"
                             <% if (event.streamId) { %>data-stream-id="<%= event.streamId %>" data-stream-status="<%= event.streamStatus || '' %>"<% } %>
                             aria-haspopup="dialog">
-                            <% if (event.date) { %><time class="calendar-event-time" datetime="<%= new Date(event.date).toISOString() %>"><%= timeFmt(event.date) %></time><% } %>
+                            <% if (event.date) { %><time class="calendar-event-time" datetime="<%= new Date(event.date).toISOString() %>"><%= formatEventTime(event.date) %></time><% } %>
                             <span class="calendar-event-title"><%= event.title %></span>
                             <% if (event.streamId) { %><span class="calendar-event-stream" aria-hidden="true">●</span><% } %>
                             <% if (event.visibility === 'members') { %><span class="badge badge-members">Members</span><% } %>

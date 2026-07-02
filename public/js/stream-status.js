@@ -53,6 +53,7 @@
             title: escapeHtml(stream?.title || ''),
             message: escapeHtml(stream?.message || ''),
             scheduledStart: stream?.scheduledStart || null,
+            formattedScheduledStart: escapeHtml(stream?.formattedScheduledStart || ''),
             countdownTarget: stream?.countdownTarget || stream?.scheduledStart || null,
             embedUrl: sanitizeExternalUrl(stream?.embedUrl),
             watchUrl: sanitizeExternalUrl(stream?.watchUrl),
@@ -94,14 +95,11 @@
     const buildFallbackCardHtml = (safeStream) => {
         let upcomingHtml = '';
         if (safeStream.status === 'upcoming' && safeStream.scheduledStart) {
-            const scheduledDate = new Date(safeStream.scheduledStart);
-            const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' };
-            const formatted = Number.isNaN(scheduledDate.getTime())
-                ? ''
-                : scheduledDate.toLocaleDateString('en-US', opts);
-
+            // Render the server's temple-timezone preformatted label verbatim (already
+            // escaped in sanitizeStream). Never reformat the instant here — doing so
+            // would print the viewer's browser-local time and drift from the SSR card.
             upcomingHtml = `
-                ${formatted ? `<p class="stream-schedule">Next scheduled stream: ${escapeHtml(formatted)}</p>` : ''}
+                ${safeStream.formattedScheduledStart ? `<p class="stream-schedule">Next scheduled stream: ${safeStream.formattedScheduledStart}</p>` : ''}
                 <div class="stream-countdown" data-countdown-target="${escapeHtml(safeStream.countdownTarget || '')}" role="status" aria-live="polite" aria-atomic="true"></div>
             `;
         }

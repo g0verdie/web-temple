@@ -6,6 +6,7 @@
 
 const EventService = require('../services/EventService');
 const logger = require('../utils/logger');
+const { toTempleIso } = require('../utils/templeTime');
 
 const ALLOWED_FLASH_MAX_LENGTH = 200;
 const sanitizeFlashMessage = (msg) => {
@@ -250,7 +251,8 @@ exports.getCalendarPage = async (req, res) => {
                 item: {
                     '@type': 'Event',
                     name: e.title,
-                    startDate: e.date instanceof Date ? e.date.toISOString() : undefined,
+                    // ISO-8601 carrying the temple-zone offset for the stored instant (R13).
+                    startDate: e.date instanceof Date ? (toTempleIso(e.date) || undefined) : undefined,
                     description: e.description || undefined,
                     location: e.location ? { '@type': 'Place', name: e.location } : undefined
                 }

@@ -43,14 +43,7 @@
                     <% } %>
                   </td>
                   <td>
-                    <%= new Date(stream.scheduled_start).toLocaleString('en-US', {
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                      hour: 'numeric',
-                      minute: '2-digit'
-                    }) %>
+                    <%= formatEventDate(stream.scheduled_start) %>
                   </td>
                   <td>
                     <span class="badge badge-<%= stream.status %>"><%= stream.status %></span>
