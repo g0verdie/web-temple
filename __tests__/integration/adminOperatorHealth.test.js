@@ -86,6 +86,9 @@ describe('Admin operator health panel (plan 009)', () => {
         expect(res.status).toBe(200);
         expect(res.text).toContain('Backups: not configured');
         expect(res.text).toContain('How to set up backups');
+        // No in-app backups-setup destination exists, so the guidance is plain text —
+        // NOT a link that would mislead the operator (e.g. to the audit log).
+        expect(res.text).not.toMatch(/<a[^>]*>\s*How to set up backups\s*<\/a>/);
         expect(res.text).not.toContain('Backup Failure Detected');
     });
 
@@ -108,6 +111,10 @@ describe('Admin operator health panel (plan 009)', () => {
         const res = await getDashboard();
         expect(res.status).toBe(200);
         expect(res.text).toContain('Email sending: degraded');
+        // The next step points at the on-page Email Queue card (a genuinely relevant
+        // destination), not the audit log which explains nothing about email delivery.
+        expect(res.text).toContain('href="/admin#email-queue"');
+        expect(res.text).not.toMatch(/<a[^>]*href="\/admin\/audit-logs"[^>]*>How to check email delivery<\/a>/);
         // Must NOT fall back to the 500 error view.
         expect(res.text).not.toContain('Unable to load the dashboard.');
     });

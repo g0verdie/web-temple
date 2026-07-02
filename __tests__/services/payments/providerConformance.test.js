@@ -43,9 +43,9 @@ function conformance(label, makeProvider, { wired }) {
 
     test('provider-authoritative status — capture ignores any client-supplied outcome/amount', async () => {
       const p = makeProvider();
-      // Client tries to force a success on an amount whose server-side rule declines,
-      // and to inject a different amount; both are ignored.
-      const declined = await p.capture('don-1', { amountCents: 5001, outcome: 'success', amount: 999999 });
+      // Client tries to force a success on an amount whose server-side rule declines
+      // (the exact 1-cent sentinel), and to inject a different amount; both are ignored.
+      const declined = await p.capture('don-1', { amountCents: 1, outcome: 'success', amount: 999999 });
       expect(declined.status).toBe('failed');
       // And a normal amount completes even if the client asked to fail.
       const accepted = await p.capture('don-1', { amountCents: 3600, outcome: 'failure' });

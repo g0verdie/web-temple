@@ -95,9 +95,16 @@
     margin-left: 2px;
 }
 
+/* Frequency radios + the anonymous checkbox share the 44px minimum touch target
+   the amount pills and text fields use (R13), so the tap area is not just the small
+   native control. */
 .radio-row,
 .checkbox-row {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0.5rem 0.25rem;
     margin: 0.35rem 0;
 }
 
@@ -116,6 +123,12 @@
     align-items: center;
     flex-wrap: wrap;
     margin-top: 1rem;
+}
+
+.checkout-demo-note {
+    color: #555;
+    font-size: 0.9rem;
+    margin-top: 0.75rem;
 }
 
 .failed-actions {

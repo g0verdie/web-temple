@@ -17,20 +17,25 @@ describe('MockPaymentProvider (provider-authoritative, server-side rule)', () =>
     });
 
     test('capture IGNORES any client-supplied outcome (provider-authoritative, R1/R21)', async () => {
-        // Client says success, but the sentinel amount declines → declined wins.
-        expect((await mock.capture('don-1', { amountCents: 5001, outcome: 'success' })).status).toBe('failed');
+        // Client says success, but the exact sentinel amount declines → declined wins.
+        expect((await mock.capture('don-1', { amountCents: 1, outcome: 'success' })).status).toBe('failed');
         // Client says failure, but a normal amount → still completes.
         expect((await mock.capture('don-1', { amountCents: 4000, outcome: 'failure' })).status).toBe('completed');
     });
 
-    test('sentinel amount ending in 01 → declined (failed) with an error code, no transaction id', async () => {
-        const res = await mock.capture('don-1', { amountCents: 2501 });
+    test('the exact 1-cent sentinel ($0.01) → declined (failed) with an error code, no transaction id', async () => {
+        const res = await mock.capture('don-1', { amountCents: 1 });
         expect(res).toMatchObject({ status: 'failed', transactionId: null, errorCode: 'MOCK_DECLINED' });
     });
 
-    test('sentinel amount ending in 02 → cancelled', async () => {
-        const res = await mock.capture('don-1', { amountCents: 2502 });
+    test('the exact 2-cent sentinel ($0.02) → cancelled', async () => {
+        const res = await mock.capture('don-1', { amountCents: 2 });
         expect(res.status).toBe('cancelled');
+    });
+
+    test('realistic amounts ending in 01/02 complete — no false sentinel match (exact-amount rule)', async () => {
+        expect((await mock.capture('don-1', { amountCents: 5001 })).status).toBe('completed');  // $50.01
+        expect((await mock.capture('don-1', { amountCents: 10002 })).status).toBe('completed'); // $100.02
     });
 
     test('an invalid/absent amount never yields an accidental success', async () => {

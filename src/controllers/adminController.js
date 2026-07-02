@@ -4,14 +4,16 @@ const emailQueueService = require('../services/emailQueueService');
 const logger = require('../utils/logger');
 const { formatEventDateTime } = require('../utils/templeTime');
 
-// Next-step destinations for any non-OK operator status. No operator runbook /
-// help route exists yet (open blocker in plan 009), so these point at the closest
-// existing admin destination; this map is the single place to swap in a real help
-// page once one lands.
+// Next-step guidance for any non-OK operator status. An entry links only when a
+// genuinely relevant destination exists; a next step with no `href` renders as plain
+// guidance text (a link that explains nothing is worse than no link). Email delivery
+// is checked and retried in the Email Queue card lower on this same page (#email-queue).
+// "How to set up backups" has no in-app destination — backups are configured
+// server-side — so it stays plain text until an operator runbook lands.
 const NEXT_STEP = {
-    backupsSetup: { href: '/admin/audit-logs', text: 'How to set up backups' },
+    backupsSetup: { text: 'How to set up backups' },
     backupsFailing: { href: '/admin/audit-logs', text: 'Review backup activity' },
-    email: { href: '/admin/audit-logs', text: 'How to check email delivery' },
+    email: { href: '/admin#email-queue', text: 'How to check email delivery' },
     chat: { href: '/admin/chat-moderation', text: 'Open chat moderation' }
 };
 

@@ -12,14 +12,16 @@ const PaymentProvider = require('./PaymentProvider');
  * signature-verification + amount-recompute + idempotent-finalize code.
  *
  * Sentinel-amount rule (R3) — lets the Board demo exercise all three terminal
- * paths deterministically by choosing the amount, with no trusted client input:
- *   - cents ending in 01  → declined (failed)
- *   - cents ending in 02  → cancelled
- *   - any other valid amount → completed (success)
+ * paths deterministically by choosing the amount, with no trusted client input.
+ * The sentinels are EXACT tiny amounts (not a `% 100` pattern) so realistic
+ * gifts like $50.01 / $100.02 always complete instead of falsely declining:
+ *   - exactly 1 cent ($0.01)  → declined (failed)
+ *   - exactly 2 cents ($0.02) → cancelled
+ *   - any other valid amount   → completed (success)
  * An invalid/absent amount fails closed (never an accidental success).
  */
-const DECLINE_SENTINEL = 1; // amountCents % 100 === 1
-const CANCEL_SENTINEL = 2;  // amountCents % 100 === 2
+const DECLINE_SENTINEL = 1; // exactly 1 cent ($0.01)
+const CANCEL_SENTINEL = 2;  // exactly 2 cents ($0.02)
 
 class MockPaymentProvider extends PaymentProvider {
     isMock() {
@@ -38,11 +40,10 @@ class MockPaymentProvider extends PaymentProvider {
         if (!Number.isInteger(cents) || cents <= 0) {
             return { status: 'failed', transactionId: null, amountCents: cents || 0, errorCode: 'MOCK_INVALID_AMOUNT' };
         }
-        const sentinel = cents % 100;
-        if (sentinel === DECLINE_SENTINEL) {
+        if (cents === DECLINE_SENTINEL) {
             return { status: 'failed', transactionId: null, amountCents: cents, errorCode: 'MOCK_DECLINED' };
         }
-        if (sentinel === CANCEL_SENTINEL) {
+        if (cents === CANCEL_SENTINEL) {
             return { status: 'cancelled', transactionId: null, amountCents: cents };
         }
         return { status: 'completed', transactionId: `MOCK-TXN-${checkoutId}`, amountCents: cents };

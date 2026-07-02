@@ -139,7 +139,7 @@
                         <div class="alert alert-warning ops-banner" role="alert">
                             <span class="ops-status__label"><%= b.label %></span>
                             <% if (b.detail) { %><span class="ops-status__detail"><%= b.detail %></span><% } %>
-                            <% if (b.next) { %><a href="<%= b.next.href %>" class="ops-status__next"><%= b.next.text %></a><% } %>
+                            <% if (b.next && b.next.href) { %><a href="<%= b.next.href %>" class="ops-status__next"><%= b.next.text %></a><% } else if (b.next) { %><span class="ops-status__next"><%= b.next.text %></span><% } %>
                         </div>
                     <% }) %>
                     <ul class="list-group list-group-flush ops-status-list">
@@ -147,7 +147,7 @@
                             <li class="list-group-item ops-status ops-status--<%= item.level %>">
                                 <span class="ops-status__label"><%= item.label %></span>
                                 <% if (item.detail) { %><span class="ops-status__detail"><%= item.detail %></span><% } %>
-                                <% if (item.next) { %><a href="<%= item.next.href %>" class="ops-status__next"><%= item.next.text %></a><% } %>
+                                <% if (item.next && item.next.href) { %><a href="<%= item.next.href %>" class="ops-status__next"><%= item.next.text %></a><% } else if (item.next) { %><span class="ops-status__next"><%= item.next.text %></span><% } %>
                             </li>
                         <% }) %>
                     </ul>
@@ -156,7 +156,7 @@
         </div>
 
         <!-- Email Queue Status Card -->
-        <div class="col-md-6 mb-4">
+        <div class="col-md-6 mb-4" id="email-queue">
             <div class="card h-100">
                 <div class="card-header bg-secondary text-white">
                     <h5 class="mb-0">Email Queue</h5>

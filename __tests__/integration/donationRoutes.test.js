@@ -76,7 +76,11 @@ describe('Donation routes (public, mock provider)', () => {
         const res = await request(app).get(`/donations/checkout/${ID}`);
         expect(res.status).toBe(200);
         expect(res.text).toMatch(/DEMO/);
-        expect(res.text).toContain('Simulate Success');
+        // Single completion action that finalizes through the real (server-authoritative)
+        // path — the old outcome-selecting simulate buttons are gone.
+        expect(res.text).toContain('Complete demo donation');
+        expect(res.text).not.toContain('Simulate Success');
+        expect(res.text).not.toContain('name="outcome"');
     });
 
     test('complete without the ownership cookie → 403', async () => {

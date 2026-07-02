@@ -145,9 +145,9 @@ describe('Provider-authoritative capture (client outcome is ignored)', () => {
 
     // AE4 / R1 / R2 / R21
     test('POST /complete with outcome=success is DECLINED when the server-side amount rule declines', async () => {
-        // Authoritative amount ends in 01 → the mock's sentinel rule declines,
-        // regardless of the client-supplied outcome=success.
-        DonationService.getById.mockResolvedValue({ id: 'd9', status: 'pending', amountCents: 5001, isAnonymous: false, donationType: 'one-time', checkoutToken: OWN });
+        // Authoritative amount is the exact 1-cent sentinel ($0.01) → the mock's
+        // server-side rule declines, regardless of the client-supplied outcome=success.
+        DonationService.getById.mockResolvedValue({ id: 'd9', status: 'pending', amountCents: 1, isAnonymous: false, donationType: 'one-time', checkoutToken: OWN });
         DonationService.recordFailure.mockResolvedValue({ id: 'f1' });
 
         const res = await request(app)
