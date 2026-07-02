@@ -22,5 +22,10 @@ router.post('/checkout', donationPostLimiter, donationController.startCheckout);
 router.get('/thank-you', donationController.thankYou);
 router.get('/checkout/:id', donationController.getCheckout);
 router.post('/checkout/:id/complete', donationPostLimiter, donationController.completeCheckout);
+// Server-to-server provider webhook (R4/R8): no browser session, authenticated by
+// the raw-body HMAC only. CSRF-exempt in conditionalCsrf (src/server.js), raw body
+// captured by the express.json verify hook there. Not rate-limited like the public
+// POSTs — the signature is the gate.
+router.post('/webhook', donationController.handleWebhook);
 
 module.exports = router;

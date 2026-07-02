@@ -3,6 +3,7 @@ const validator = require('validator');
 const logger = require('../utils/logger');
 const DonationService = require('../services/DonationService');
 const { getProvider } = require('../services/payments');
+const paymentWebhook = require('../services/payments/paymentWebhook');
 const receiptPdfService = require('../services/receiptPdfService');
 const { enqueueEmail } = require('../services/emailQueueService');
 const { logAudit, AUDIT_ACTIONS } = require('../services/auditService');
@@ -10,7 +11,6 @@ const CacheService = require('../services/CacheService');
 
 const MAX_FAILURES_BEFORE_ALERT = 3;
 
-const DEMO_OUTCOMES = new Set(['success', 'failure', 'cancel']);
 const str = (v) => (typeof v === 'string' ? v : '');
 
 // GET /donations — public donations page.
@@ -84,8 +84,11 @@ exports.getCheckout = async (req, res) => {
     }
 };
 
-// POST /donations/checkout/:id/complete — resolve the (mock) checkout.
-exports.completeCheckout = async (req, res) => {
+// POST /donations/checkout/:id/complete — resolve the checkout. The browser
+// request signals only INTENT to finalize (R2): the terminal outcome, amount, and
+// transaction id are decided provider/server-side and finalized only through a
+// signature-verified callback — any client-supplied `outcome` is ignored.
+exports.completeCheckout = async (req, res, next) => {
     try {
         const id = req.params.id;
         const donation = await DonationService.getById(id);
@@ -100,19 +103,35 @@ exports.completeCheckout = async (req, res) => {
             return res.redirect('/donations/thank-you'); // already resolved — idempotent
         }
 
-        const outcome = (req.body && DEMO_OUTCOMES.has(req.body.outcome)) ? req.body.outcome : 'failure';
-        const result = await getProvider().capture(id, { outcome });
+        // Provider-authoritative capture (R1/R21): the outcome is derived from the
+        // authoritative SERVER-SIDE amount only, never from req.body.
+        let result;
+        try {
+            result = await getProvider().capture(id, { amountCents: donation.amountCents });
+        } catch (err) {
+            // A genuine provider failure (ProviderError → 502) is surfaced through
+            // the central error handler, not swallowed as a generic 500 (R17).
+            return next(err);
+        }
 
         if (result.status === 'cancelled') {
             return res.redirect('/donations');
         }
 
         if (result.status === 'completed') {
-            const finalized = await DonationService.finalize(id, { transactionId: result.transactionId });
-            res.clearCookie(`dc_${id}`);
-            if (finalized) {
-                // Side-effects run once (finalize is idempotent).
-                await sendReceiptAndAlerts(finalized).catch((err) => logger.error('Donation side-effects error:', err));
+            // Finalize ONLY through the signed webhook the receiver verifies: the
+            // mock runs the same signature-verify + amount-recompute + idempotent
+            // finalize code a real provider webhook triggers (R10/R11).
+            const callback = await paymentWebhook.deliverInternalCallback({
+                donationId: id,
+                amountCents: result.amountCents,
+                status: 'completed',
+                transactionId: result.transactionId
+            });
+            if (callback.finalized) {
+                res.clearCookie(`dc_${id}`);
+                // Side-effects run once — the callback finalizes at most once.
+                await sendReceiptAndAlerts(callback.donation).catch((err) => logger.error('Donation side-effects error:', err));
             }
             return res.redirect('/donations/thank-you');
         }
@@ -152,6 +171,39 @@ exports.completeCheckout = async (req, res) => {
     } catch (error) {
         logger.error('Error completing donation checkout:', error);
         return res.status(500).render('error', { title: '500 - Server Error', message: 'Unable to complete your donation.' });
+    }
+};
+
+// POST /donations/webhook — the signature-verified provider webhook receiver
+// (R4). Carries no browser session or CSRF token, so it is CSRF-exempt the same
+// way one-click unsubscribe is (see conditionalCsrf in src/server.js) and is
+// authenticated solely by the raw-body HMAC. Delegates verify + amount recompute
+// + idempotent finalize to the shared receiver core; runs the receipt/alert
+// side-effects only on the single finalize that wins the pending→completed
+// transition. Rejections are non-finalizing (donation stays PENDING) and never
+// surface as success (R17).
+exports.handleWebhook = async (req, res) => {
+    try {
+        const signature = req.get(paymentWebhook.SIGNATURE_HEADER);
+        // Raw body captured by the express.json verify hook (R9); fail closed to an
+        // empty buffer (signature will not match) if it was not captured.
+        const rawBody = req.rawBody || Buffer.alloc(0);
+        const result = await paymentWebhook.processSignedCallback({ rawBody, signature });
+
+        if (result.finalized) {
+            await sendReceiptAndAlerts(result.donation).catch((err) => logger.error('Donation side-effects error:', err));
+        }
+
+        if (result.reason && result.statusCode >= 400) {
+            // Non-finalizing rejection (bad/absent signature, amount mismatch,
+            // unknown/malformed callback). Logged without PII or secrets.
+            logger.warn('Donation webhook rejected (non-finalizing)', { reason: result.reason });
+            return res.status(result.statusCode).json({ received: false, reason: result.reason });
+        }
+        return res.status(200).json({ received: true, finalized: result.finalized });
+    } catch (error) {
+        logger.error('Error handling donation webhook:', error);
+        return res.status(500).json({ received: false });
     }
 };
 

@@ -91,7 +91,9 @@ describe('Donation routes (public, mock provider)', () => {
 
     test('complete with cookie + success → finalize + receipt enqueued + redirect to thank-you', async () => {
         DonationService.getById.mockResolvedValue({ id: ID, status: 'pending', amountCents: 3600, isAnonymous: false, donationType: 'one-time', checkoutToken: TOKEN });
-        capture.mockResolvedValue({ status: 'completed', transactionId: 'MOCK-TXN-1' });
+        // capture is provider-authoritative: it reports the server-side amount, which
+        // the signed callback receiver recomputes against the authoritative row.
+        capture.mockResolvedValue({ status: 'completed', transactionId: 'MOCK-TXN-1', amountCents: 3600 });
         DonationService.finalize.mockResolvedValue({ id: ID, isAnonymous: false, donationType: 'one-time', amountCents: 3600, donorEmail: 'a@b.com' });
 
         const res = await request(app)
@@ -151,7 +153,7 @@ describe('Donation routes (public, mock provider)', () => {
 
     test('anonymous success does not enqueue a donor receipt email', async () => {
         DonationService.getById.mockResolvedValue({ id: ID, status: 'pending', amountCents: 3600, isAnonymous: true, donationType: 'one-time', checkoutToken: TOKEN });
-        capture.mockResolvedValue({ status: 'completed', transactionId: 'MOCK-TXN-2' });
+        capture.mockResolvedValue({ status: 'completed', transactionId: 'MOCK-TXN-2', amountCents: 3600 });
         DonationService.finalize.mockResolvedValue({ id: ID, isAnonymous: true, donationType: 'one-time', amountCents: 3600, donorEmail: null });
 
         const res = await request(app)

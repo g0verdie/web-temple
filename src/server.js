@@ -129,8 +129,18 @@ const { formatEventDateTime, formatEventTime } = require('./utils/templeTime');
 app.locals.formatEventDate = formatEventDateTime;
 app.locals.formatEventTime = formatEventTime;
 
-// Body parsing middleware
-app.use(express.json());
+// Body parsing middleware. The signature-verified donation webhook must HMAC the
+// RAW, unparsed body (R9), so a verify hook stashes it on req.rawBody for that
+// route only — the global json parser otherwise discards the raw bytes.
+const DONATION_WEBHOOK_PATH = '/donations/webhook';
+app.use(express.json({
+  verify: (req, res, buf) => {
+    if (req.method === 'POST' && typeof req.originalUrl === 'string' &&
+        req.originalUrl.split('?')[0] === DONATION_WEBHOOK_PATH) {
+      req.rawBody = buf;
+    }
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
@@ -155,6 +165,12 @@ const conditionalCsrf = (req, res, next) => {
   // token in the query and only performs an idempotent opt-out, so CSRF adds no
   // protection here and would otherwise reject every one-click request.
   if (req.method === 'POST' && req.path === '/unsubscribe') return next();
+  // Provider webhook (POST /donations/webhook): a server-to-server callback with
+  // no browser, cookies, or CSRF token. It is authenticated by the raw-body HMAC
+  // signature (verified in the receiver), which is strictly stronger than a CSRF
+  // token here; CSRF would otherwise reject every provider callback. The exemption
+  // never finalizes on its own — a missing/invalid signature stays PENDING.
+  if (req.method === 'POST' && req.path === DONATION_WEBHOOK_PATH) return next();
   csrfProtection(req, res, next);
 };
 

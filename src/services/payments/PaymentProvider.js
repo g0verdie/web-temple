@@ -13,6 +13,14 @@
  */
 class PaymentProvider {
     /**
+     * Whether this is the no-charge demo mock. A real provider (e.g. PayPal)
+     * returns false; only MockPaymentProvider overrides this to true.
+     */
+    isMock() {
+        return false;
+    }
+
+    /**
      * Begin a checkout for an already-created PENDING donation row.
      * @returns {Promise<{ checkoutId: string, providerRef: string }>}
      */
