@@ -184,6 +184,12 @@ See [`docs/SETUP.md`](docs/SETUP.md), [`docs/SSL_TLS_SETUP.md`](docs/SSL_TLS_SET
 and [`docs/RUNBOOK.md`](docs/RUNBOOK.md) for provisioning, TLS, and operational
 procedures.
 
+**Single-process invariant:** web-temple runs as exactly one web+worker process,
+enforced at production boot by a Postgres advisory lock (`src/config/singleProcessLock.js`).
+A second concurrent process refuses to start (it fails closed and exits non-zero),
+because per-IP rate limits, the WS connection cap, and the reminder scan are all
+per-process by design — do not run more than one instance.
+
 ## Accessibility
 
 Built to WCAG AA: semantic HTML with proper landmarks, 4.5:1 minimum color contrast,

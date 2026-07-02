@@ -25,6 +25,7 @@ const { pool } = db;
 const redis = require('./config/redis');
 const { closeAllConnections } = require('./services/chatSocketServer');
 const { runPreflight } = require('./config/preflight');
+const { acquireSingleProcessLock, releaseSingleProcessLock } = require('./config/singleProcessLock');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -51,12 +52,19 @@ if (process.env.NODE_ENV !== 'test') {
 let emailWorker;
 let reminderWorker;
 
-if (process.env.NODE_ENV !== 'test' && process.env.EMAIL_WORKER_ENABLED !== 'false') {
-  emailWorker = startEmailQueueWorker();
-}
+// Start the background workers. Called from the production boot path ONLY after
+// the single-process advisory lock is held (R4/R5): a lock-less or lock-losing
+// process must never register the hourly reminder repeatable job or the email
+// consumer. The NODE_ENV!=='test' guards are retained (load-bearing) even though
+// the sole call site is already gated on NODE_ENV!=='test'.
+function startBackgroundWorkers() {
+  if (process.env.NODE_ENV !== 'test' && process.env.EMAIL_WORKER_ENABLED !== 'false') {
+    emailWorker = startEmailQueueWorker();
+  }
 
-if (process.env.NODE_ENV !== 'test' && process.env.REMINDER_WORKER_ENABLED !== 'false') {
-  reminderWorker = startReminderWorker();
+  if (process.env.NODE_ENV !== 'test' && process.env.REMINDER_WORKER_ENABLED !== 'false') {
+    reminderWorker = startReminderWorker();
+  }
 }
 
 // Request ID middleware - must be first
@@ -447,7 +455,10 @@ async function shutdown(signal) {
     // 3. Close live client sockets (existing chat-socket export).
     closeAllConnections();
 
-    // 4. Tear down downstream resources, only after requests have drained.
+    // 4. Release the single-process advisory lock so the next deploy can
+    //    acquire it (R8), then tear down downstream resources only after
+    //    requests have drained. pool.end() closes the lock session as a backstop.
+    await releaseSingleProcessLock();
     if (pool && typeof pool.end === 'function') {
       await pool.end();
     }
@@ -524,25 +535,42 @@ if (process.env.NODE_ENV !== 'test' && require.main === module) {
   // ones. Inert in dev (guarded by NODE_ENV === 'production' inside).
   runPreflight();
 
-  server = app.listen(PORT, HOST, () => {
-    logger.info(`✅ Server running at http://${HOST}:${PORT}`);
-    logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  });
-  const { initChatSocketServer } = require('./services/chatSocketServer');
-  wss = initChatSocketServer(server);
+  // Enforce the single-process invariant (R1–R5): acquire the boot advisory lock
+  // BEFORE starting workers or binding the port. Inert unless production (see
+  // config/singleProcessLock.js). A second process that cannot acquire the lock
+  // logs a fatal line and exits non-zero inside acquireSingleProcessLock(), so it
+  // never reaches worker startup or the listener bind below.
+  acquireSingleProcessLock()
+    .then(() => {
+      // Workers start only after the lock is held (R4).
+      startBackgroundWorkers();
 
-  const onSignal = (signal) => {
-    shutdown(signal)
-      .then(() => process.exit(0))
-      .catch((err) => {
-        logger.error('Graceful shutdown failed', { error: err && err.message });
-        process.exit(1);
+      server = app.listen(PORT, HOST, () => {
+        logger.info(`✅ Server running at http://${HOST}:${PORT}`);
+        logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
       });
-  };
-  process.on('SIGTERM', () => onSignal('SIGTERM'));
-  process.on('SIGINT', () => onSignal('SIGINT'));
-  process.on('uncaughtException', handleUncaughtException);
-  process.on('unhandledRejection', handleUnhandledRejection);
+      const { initChatSocketServer } = require('./services/chatSocketServer');
+      wss = initChatSocketServer(server);
+
+      const onSignal = (signal) => {
+        shutdown(signal)
+          .then(() => process.exit(0))
+          .catch((err) => {
+            logger.error('Graceful shutdown failed', { error: err && err.message });
+            process.exit(1);
+          });
+      };
+      process.on('SIGTERM', () => onSignal('SIGTERM'));
+      process.on('SIGINT', () => onSignal('SIGINT'));
+      process.on('uncaughtException', handleUncaughtException);
+      process.on('unhandledRejection', handleUnhandledRejection);
+    })
+    .catch((err) => {
+      logger.error('Single-process lock acquisition failed unexpectedly; refusing to start.', {
+        error: err && err.message,
+      });
+      process.exit(1);
+    });
 }
 
 module.exports = app;
