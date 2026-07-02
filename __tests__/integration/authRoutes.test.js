@@ -5,6 +5,7 @@ process.env.JWT_SECRET = 'test-jwt-secret';
 
 jest.mock('../../src/config/redis', () => ({
     get: jest.fn().mockResolvedValue(null),
+    set: jest.fn().mockResolvedValue('OK'),
     setex: jest.fn().mockResolvedValue('OK'),
     del: jest.fn().mockResolvedValue(1),
     keys: jest.fn().mockResolvedValue([])

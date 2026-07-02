@@ -12,7 +12,7 @@ const mockRedisQuit = jest.fn(() => Promise.resolve());
 const mockCloseAllConnections = jest.fn();
 
 jest.mock('../../src/config/db', () => ({ query: jest.fn(), pool: { end: mockPoolEnd } }));
-jest.mock('../../src/config/redis', () => ({ quit: mockRedisQuit }));
+jest.mock('../../src/config/redis', () => ({ get: jest.fn(() => Promise.resolve(null)), set: jest.fn(() => Promise.resolve('OK')), setex: jest.fn(() => Promise.resolve('OK')), del: jest.fn(() => Promise.resolve(1)), keys: jest.fn(() => Promise.resolve([])), quit: mockRedisQuit }));
 jest.mock('../../src/services/chatSocketServer', () => ({
   initChatSocketServer: jest.fn(),
   closeAllConnections: () => mockCloseAllConnections()

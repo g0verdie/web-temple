@@ -16,6 +16,7 @@ jest.mock('pg', () => {
 
 jest.mock('../../src/config/redis', () => ({
     get: jest.fn().mockResolvedValue(String(Date.now())),
+    set: jest.fn().mockResolvedValue('OK'),
     setex: jest.fn().mockResolvedValue('OK'),
     del: jest.fn().mockResolvedValue(1),
     keys: jest.fn().mockResolvedValue([])

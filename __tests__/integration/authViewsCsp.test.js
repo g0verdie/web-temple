@@ -1,7 +1,7 @@
 const request = require('supertest');
 
 jest.mock('../../src/config/db', () => ({ query: jest.fn(), pool: { connect: jest.fn() } }));
-jest.mock('../../src/config/redis', () => ({ get: jest.fn(), setex: jest.fn(), del: jest.fn(), keys: jest.fn() }));
+jest.mock('../../src/config/redis', () => ({ get: jest.fn(), set: jest.fn(), setex: jest.fn(), del: jest.fn(), keys: jest.fn() }));
 
 const app = require('../../src/server');
 

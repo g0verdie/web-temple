@@ -8,7 +8,7 @@
  */
 
 jest.mock('../../src/config/db', () => ({ query: jest.fn(), pool: { end: jest.fn(() => Promise.resolve()) } }));
-jest.mock('../../src/config/redis', () => ({ quit: jest.fn(() => Promise.resolve()) }));
+jest.mock('../../src/config/redis', () => ({ get: jest.fn(() => Promise.resolve(null)), set: jest.fn(() => Promise.resolve('OK')), setex: jest.fn(() => Promise.resolve('OK')), del: jest.fn(() => Promise.resolve(1)), keys: jest.fn(() => Promise.resolve([])), quit: jest.fn(() => Promise.resolve()) }));
 jest.mock('../../src/services/chatSocketServer', () => ({
   initChatSocketServer: jest.fn(),
   closeAllConnections: jest.fn()

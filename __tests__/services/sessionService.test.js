@@ -4,8 +4,10 @@ const { Roles } = require('../../src/config/roles-permissions');
 
 jest.mock('../../src/config/redis', () => ({
     get: jest.fn(),
+    set: jest.fn(),
     setex: jest.fn(),
-    del: jest.fn()
+    del: jest.fn(),
+    keys: jest.fn()
 }));
 
 describe('TC-2-5-5: Session Status Service', () => {
