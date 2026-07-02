@@ -30,6 +30,12 @@ describe('donations client-side validation', () => {
         submitEvent = new Event('submit', { bubbles: true, cancelable: true });
     };
 
+    const toggleAnonymous = (on) => {
+        const anon = document.getElementById('is_anonymous');
+        anon.checked = on;
+        anon.dispatchEvent(new Event('change'));
+    };
+
     const selectCustom = () => {
         document.querySelector('input[value="1800"]').checked = false;
         const custom = document.querySelector('input[value="custom"]');
@@ -104,6 +110,36 @@ describe('donations client-side validation', () => {
 
         form.dispatchEvent(submitEvent);
         expect(submitEvent.defaultPrevented).toBe(false);
+    });
+
+    // AE1 (R7, R8) — the required signal toggles in lockstep with the anonymous
+    // control: the email is programmatically required when a receipt is expected,
+    // and the requirement is cleared (and the row hidden) when giving anonymously.
+    test('email reports aria-required="true" by default (non-anonymous)', () => {
+        loadScript();
+        const email = document.getElementById('donor_email');
+        expect(email.getAttribute('aria-required')).toBe('true');
+        expect(email.required).toBe(true);
+    });
+
+    test('checking "Give anonymously" clears the requirement and hides the email row', () => {
+        loadScript();
+        toggleAnonymous(true);
+        const email = document.getElementById('donor_email');
+        expect(email.getAttribute('aria-required')).toBe('false');
+        expect(email.required).toBe(false);
+        // Row hidden, so the required marker inside it is neither shown nor announced.
+        expect(document.getElementById('donor_email_row').style.display).toBe('none');
+    });
+
+    test('unchecking "Give anonymously" restores the required signal', () => {
+        loadScript();
+        toggleAnonymous(true);
+        toggleAnonymous(false);
+        const email = document.getElementById('donor_email');
+        expect(email.getAttribute('aria-required')).toBe('true');
+        expect(email.required).toBe(true);
+        expect(document.getElementById('donor_email_row').style.display).not.toBe('none');
     });
 
     test('prior error state is cleared on the next submit', () => {

@@ -1,6 +1,8 @@
 <div class="donations-container">
-    <h1>Support Temple B'nai Israel</h1>
-    <p class="subtitle">Your generosity sustains our community. Donations are tax-deductible.</p>
+    <%- include('../partials/page-header', {
+        title: "Support Temple B'nai Israel",
+        subtitle: 'Your generosity sustains our community. Donations are tax-deductible.'
+    }) %>
 
     <form id="donationForm" method="POST" action="/donations/checkout" class="donation-form" novalidate>
         <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' && csrfToken ? csrfToken : '' %>">
@@ -15,9 +17,9 @@
                 <label class="amount-level"><input type="radio" name="amount_preset" value="10000"> $100 <span>Major Donor</span></label>
                 <label class="amount-level"><input type="radio" name="amount_preset" value="custom"> Custom</label>
             </div>
-            <div class="form-row">
+            <div class="form-group">
                 <label for="custom_amount">Custom amount (USD)</label>
-                <input type="number" id="custom_amount" name="custom_amount" min="1" step="1" inputmode="decimal" disabled>
+                <input type="number" id="custom_amount" name="custom_amount" class="form-control" min="1" step="1" inputmode="decimal" disabled>
             </div>
             <input type="hidden" name="amount_cents" id="amount_cents" value="1800">
         </fieldset>
@@ -30,9 +32,9 @@
 
         <fieldset>
             <legend>Reason for your gift (optional)</legend>
-            <div class="form-row">
+            <div class="form-group">
                 <label for="designation">Designate your donation</label>
-                <input type="text" id="designation" name="designation" list="designation-options"
+                <input type="text" id="designation" name="designation" class="form-control" list="designation-options"
                     maxlength="200" autocomplete="off" placeholder="Choose a fund or type your own">
                 <datalist id="designation-options">
                     <option value="General Fund"></option>
@@ -48,13 +50,13 @@
         <fieldset>
             <legend>Your details</legend>
             <label class="checkbox-row"><input type="checkbox" name="is_anonymous" id="is_anonymous"> Give anonymously</label>
-            <div class="form-row" id="donor_email_row">
-                <label for="donor_email">Email (for your receipt)</label>
-                <input type="email" id="donor_email" name="donor_email" autocomplete="email">
+            <div class="form-group" id="donor_email_row">
+                <label for="donor_email">Email (for your receipt) <span class="required">*</span></label>
+                <input type="email" id="donor_email" name="donor_email" class="form-control" autocomplete="email" aria-required="true">
             </div>
         </fieldset>
 
-        <button type="submit" class="btn-primary">Donate Now</button>
+        <%- include('../partials/button', { variant: 'primary', label: 'Donate Now', type: 'submit' }) %>
     </form>
 </div>
 

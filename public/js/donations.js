@@ -27,7 +27,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const syncAnonymous = () => {
         const isAnon = anonymous.checked;
         emailRow.style.display = isAnon ? 'none' : '';
-        if (emailInput) emailInput.required = !isAnon;
+        // Toggle the requirement in lockstep so the visible marker (inside the now-
+        // hidden row) is never announced as required while the row is anonymous.
+        if (emailInput) {
+            emailInput.required = !isAnon;
+            emailInput.setAttribute('aria-required', isAnon ? 'false' : 'true');
+        }
     };
 
     const msgDiv = document.getElementById('donationFormMessages');

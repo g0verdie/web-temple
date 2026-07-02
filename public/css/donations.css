@@ -25,12 +25,27 @@
 
 .amount-level {
     display: inline-flex;
-    align-items: baseline;
+    align-items: center;
     gap: 0.35rem;
     border: 1px solid #ccc;
     border-radius: 6px;
     padding: 0.5rem 0.75rem;
+    min-height: 44px;
     cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+}
+
+/* Selected pill — a visible state beyond the native radio dot (R12). */
+.amount-level:has(input:checked) {
+    border-color: var(--color-primary);
+    background: var(--color-bg-alt);
+    box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
+/* Keyboard focus ring on the pill, using the site focus tokens (R11). */
+.amount-level:has(input:focus-visible) {
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-offset);
 }
 
 .amount-level span {
@@ -38,8 +53,46 @@
     font-size: 0.85rem;
 }
 
-.form-row {
-    margin: 0.5rem 0;
+/* One unified field treatment — the shared .form-group / .form-control convention
+   (as on contact/register), styled here because the kit ships no input primitive
+   and no global .form-control exists (R2, R3). */
+.donation-form .form-group {
+    margin: 0.75rem 0;
+}
+
+.donation-form .form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+    color: var(--color-text);
+}
+
+.donation-form .form-control {
+    width: 100%;
+    padding: 0.65rem 0.75rem;
+    min-height: 44px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.donation-form .form-control:focus-visible {
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-offset);
+}
+
+.donation-form .form-control[aria-invalid="true"] {
+    border-color: var(--color-danger);
+}
+
+/* Required marker — the only required field's red asterisk, from the token set
+   (no new colour beyond main.css; R14). */
+.donation-form .required {
+    color: var(--color-danger);
+    margin-left: 2px;
 }
 
 .radio-row,
