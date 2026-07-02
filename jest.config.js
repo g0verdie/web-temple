@@ -1,5 +1,10 @@
 module.exports = {
   testEnvironment: 'node',
+  // Per-file guard: pin NODE_ENV='test' (so config/redis never opens a real ioredis
+  // socket from a bled-over env) and silence winston's default logger, so neither a
+  // leaked connection nor an async "no transports" console.error can leak past a
+  // test file's teardown and crash an innocent suite. See the setup file for detail.
+  setupFiles: ['<rootDir>/__tests__/setup/silenceDefaultWinstonLogger.js'],
   coverageDirectory: 'coverage',
   collectCoverageFrom: [
     'src/**/*.js',
