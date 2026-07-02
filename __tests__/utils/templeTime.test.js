@@ -1,6 +1,8 @@
 const {
     formatEventDateTime,
     formatEventTime,
+    formatEventDay,
+    templeDayKey,
     toTempleIso
 } = require('../../src/utils/templeTime');
 
@@ -49,6 +51,38 @@ describe('templeTime formatter', () => {
             expect(formatEventDateTime(null)).toBe('');
             expect(formatEventDateTime('')).toBe('');
             expect(formatEventDateTime('garbage')).toBe('');
+        });
+    });
+
+    describe('formatEventDay (date-only variant, agenda headings)', () => {
+        it('renders a weekday/date with no time in Central time', () => {
+            expect(formatEventDay(new Date('2026-07-04T19:00:00Z'))).toBe('Saturday, July 4, 2026');
+        });
+
+        it('projects an instant to the temple-local calendar day (not the UTC day)', () => {
+            // 02:00Z on 2026-07-05 == 9:00 PM CDT on July 4 — the temple-local day is the 4th.
+            expect(formatEventDay(new Date('2026-07-05T02:00:00Z'))).toBe('Saturday, July 4, 2026');
+        });
+
+        it('returns empty string for missing or invalid input', () => {
+            expect(formatEventDay(null)).toBe('');
+            expect(formatEventDay('nope')).toBe('');
+        });
+    });
+
+    describe('templeDayKey (temple-local YYYY-MM-DD grouping key)', () => {
+        it('keys an instant by its temple-local calendar day', () => {
+            expect(templeDayKey(new Date('2026-07-04T19:00:00Z'))).toBe('2026-07-04');
+        });
+
+        it('uses the temple-local day, not the UTC day, at the day boundary', () => {
+            // 02:00Z July 5 is still July 4 in Central; key must match the heading's day.
+            expect(templeDayKey(new Date('2026-07-05T02:00:00Z'))).toBe('2026-07-04');
+        });
+
+        it('returns empty string for missing or invalid input', () => {
+            expect(templeDayKey(null)).toBe('');
+            expect(templeDayKey('nope')).toBe('');
         });
     });
 

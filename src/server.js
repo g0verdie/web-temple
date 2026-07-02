@@ -125,9 +125,10 @@ app.set('views', path.join(__dirname, 'views'));
 
 // Helper functions for views — event/stream times route through the one
 // temple-timezone formatter (utils/templeTime) so every surface agrees.
-const { formatEventDateTime, formatEventTime } = require('./utils/templeTime');
+const { formatEventDateTime, formatEventTime, formatEventDay } = require('./utils/templeTime');
 app.locals.formatEventDate = formatEventDateTime;
 app.locals.formatEventTime = formatEventTime;
+app.locals.formatEventDay = formatEventDay;
 
 // Body parsing middleware. The signature-verified donation webhook must HMAC the
 // RAW, unparsed body (R9), so a verify hook stashes it on req.rawBody for that

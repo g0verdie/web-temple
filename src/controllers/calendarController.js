@@ -6,7 +6,7 @@
 
 const EventService = require('../services/EventService');
 const logger = require('../utils/logger');
-const { toTempleIso } = require('../utils/templeTime');
+const { toTempleIso, templeDayKey } = require('../utils/templeTime');
 
 const ALLOWED_FLASH_MAX_LENGTH = 200;
 const sanitizeFlashMessage = (msg) => {
@@ -233,6 +233,21 @@ exports.getCalendarPage = async (req, res) => {
             { short: 'Sat', full: 'Saturday' }
         ];
 
+        // Mobile agenda (I4): the same `events` set, sorted ascending and grouped by
+        // temple-local calendar day. Built from `events` (not a separate fetch) so the
+        // agenda and the grid can never show a different set. The view renders each
+        // group's heading + times through the temple-timezone formatter.
+        const agendaGroups = [];
+        for (const ev of [...events].filter(e => e.date).sort((a, b) => a.date - b.date)) {
+            const dayKey = templeDayKey(ev.date);
+            let group = agendaGroups[agendaGroups.length - 1];
+            if (!group || group.dayKey !== dayKey) {
+                group = { dayKey, date: ev.date, events: [] };
+                agendaGroups.push(group);
+            }
+            group.events.push(ev);
+        }
+
         // Prev/next month nav targets.
         const prevAnchor = new Date(anchor.getTime());
         prevAnchor.setUTCMonth(prevAnchor.getUTCMonth() - 1);
@@ -268,6 +283,7 @@ exports.getCalendarPage = async (req, res) => {
             viewData: {
                 weeks,
                 weekdays,
+                agendaGroups,
                 monthHasEvents: events.length > 0,
                 isMember: includeMembersOnly,
                 currentMonthLabel: anchor.toLocaleString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }),

@@ -287,6 +287,45 @@
   color: #666;
 }
 
+/* Mobile agenda (I4): a chronological, date-grouped list of the month's events,
+   built from the same data as the grid. Hidden by default (desktop shows the
+   grid); the media query below swaps the two at the grid's 700px overflow point. */
+.calendar-agenda {
+  display: none;
+}
+
+.calendar-agenda-group {
+  margin-bottom: 1.25rem;
+}
+
+.calendar-agenda-date {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: var(--color-primary, #1b2a4a);
+  border-bottom: 1px solid #e2e2e2;
+  padding-bottom: 0.25rem;
+}
+
+.calendar-agenda-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* At/below the grid's 700px min-width, the table can't fit a phone, so swap to
+   the agenda. Exactly one rendering is exposed: the hidden one leaves the a11y
+   tree via display:none (R3). */
+@media (max-width: 700px) {
+  .calendar-grid-wrap {
+    display: none;
+  }
+  .calendar-agenda {
+    display: block;
+  }
+}
+
 /* Responsive: stack the form/preview and shrink the header on narrow screens */
 @media (max-width: 768px) {
   .calendar-form-layout {

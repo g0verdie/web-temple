@@ -1,0 +1,24 @@
+<%
+  /*
+   * Shared calendar event trigger button (R10). Authored once, included by both
+   * the desktop month grid cell and the mobile agenda list so the popup trigger
+   * markup + data-* attributes can't drift between the two renderings. Times route
+   * through the formatEventDate/formatEventTime app.locals (temple timezone).
+   * Local: event.
+   */
+-%>
+<button type="button" class="calendar-event-trigger"
+  data-title="<%= event.title %>"
+  data-when="<%= formatEventDate(event.date) %>"
+  data-time="<%= formatEventTime(event.date) %>"
+  data-description="<%= event.description || '' %>"
+  data-location="<%= event.location || '' %>"
+  data-visibility="<%= event.visibility || '' %>"
+  <% if (event.streamId) { %>data-stream-id="<%= event.streamId %>" data-stream-status="<%= event.streamStatus || '' %>"<% } %>
+  aria-haspopup="dialog">
+  <% if (event.date) { %><time class="calendar-event-time" datetime="<%= new Date(event.date).toISOString() %>"><%= formatEventTime(event.date) %></time><% } %>
+  <span class="calendar-event-title"><%= event.title %></span>
+  <% if (event.streamId) { %><span class="calendar-event-stream" aria-hidden="true">●</span><% } %>
+  <% if (event.visibility === 'members') { %><span class="badge badge-members">Members</span><% } %>
+  <% if (event.location) { %><span class="calendar-event-location"><span aria-hidden="true">📍</span> <%= event.location %></span><% } %>
+</button>

@@ -46,21 +46,7 @@
                     <ul class="calendar-cell-events">
                       <% cell.events.forEach(function(event) { %>
                         <li class="calendar-event calendar-event--<%= event.type || 'event' %>">
-                          <button type="button" class="calendar-event-trigger"
-                            data-title="<%= event.title %>"
-                            data-when="<%= formatEventDate(event.date) %>"
-                            data-time="<%= formatEventTime(event.date) %>"
-                            data-description="<%= event.description || '' %>"
-                            data-location="<%= event.location || '' %>"
-                            data-visibility="<%= event.visibility || '' %>"
-                            <% if (event.streamId) { %>data-stream-id="<%= event.streamId %>" data-stream-status="<%= event.streamStatus || '' %>"<% } %>
-                            aria-haspopup="dialog">
-                            <% if (event.date) { %><time class="calendar-event-time" datetime="<%= new Date(event.date).toISOString() %>"><%= formatEventTime(event.date) %></time><% } %>
-                            <span class="calendar-event-title"><%= event.title %></span>
-                            <% if (event.streamId) { %><span class="calendar-event-stream" aria-hidden="true">●</span><% } %>
-                            <% if (event.visibility === 'members') { %><span class="badge badge-members">Members</span><% } %>
-                            <% if (event.location) { %><span class="calendar-event-location"><span aria-hidden="true">📍</span> <%= event.location %></span><% } %>
-                          </button>
+                          <%- include('_event-trigger', { event: event }) %>
                         </li>
                       <% }); %>
                     </ul>
@@ -72,6 +58,27 @@
         <% }); %>
       </tbody>
     </table>
+  </div>
+
+  <%# Mobile agenda (I4): shown below the grid's overflow breakpoint via calendar.css.
+      Same events as the grid (agendaGroups derives from the fetched set) so they can't drift. %>
+  <div class="calendar-agenda" aria-label="Events agenda">
+    <% if (!agendaGroups.length) { %>
+      <p class="no-events no-events--agenda">No events scheduled this month.</p>
+    <% } else { %>
+      <% agendaGroups.forEach(function(group) { %>
+        <div class="calendar-agenda-group">
+          <h3 class="calendar-agenda-date"><time datetime="<%= group.dayKey %>"><%= formatEventDay(group.date) %></time></h3>
+          <ul class="calendar-agenda-list">
+            <% group.events.forEach(function(event) { %>
+              <li class="calendar-event calendar-event--<%= event.type || 'event' %>">
+                <%- include('_event-trigger', { event: event }) %>
+              </li>
+            <% }); %>
+          </ul>
+        </div>
+      <% }); %>
+    <% } %>
   </div>
 
   <div class="calendar-event-modal" id="calendarEventModal" role="dialog" aria-modal="true" aria-labelledby="calendarEventModalTitle" hidden>

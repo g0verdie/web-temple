@@ -51,6 +51,32 @@ const formatEventDateTime = (value) => format(value, {
 const formatEventTime = (value) => format(value, { hour: 'numeric', minute: '2-digit' });
 
 /**
+ * Date-only variant in the temple zone (no time), for agenda day-group headings.
+ * e.g. "Saturday, July 4, 2026". Returns '' for missing/invalid input.
+ */
+const formatEventDay = (value) => format(value, {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+});
+
+/**
+ * Temple-local calendar day key ("YYYY-MM-DD") for grouping events into agenda
+ * days. Uses the same temple zone as the display formatters so an event's group
+ * heading and its listed time never disagree about which day it falls on.
+ * Returns '' for missing/invalid input.
+ */
+const templeDayKey = (value) => {
+    const d = coerceDate(value);
+    if (!d) return '';
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: templeTimezone(), year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(d).reduce((acc, p) => {
+        acc[p.type] = p.value;
+        return acc;
+    }, {});
+    return `${parts.year}-${parts.month}-${parts.day}`;
+};
+
+/**
  * ISO-8601 string carrying the temple-zone offset for the stored instant, e.g.
  * "2026-07-04T14:00:00-05:00". Same instant as the input, expressed in temple
  * wall-clock time with the correct DST offset. Returns '' for missing/invalid input.
@@ -86,4 +112,4 @@ const toTempleIso = (value) => {
     return `${parts.year}-${parts.month}-${parts.day}T${hour}:${parts.minute}:${parts.second}${offset}`;
 };
 
-module.exports = { formatEventDateTime, formatEventTime, toTempleIso };
+module.exports = { formatEventDateTime, formatEventTime, formatEventDay, templeDayKey, toTempleIso };
