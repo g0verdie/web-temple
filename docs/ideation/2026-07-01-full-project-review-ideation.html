@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ideation: web-temple full-project review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  :root{
+    --navy:#1a2f4b; --navy-deep:#14243a; --navy-line:#2a4a72; --gold:#b8912f; --gold-bright:#c8a24a;
+    --bg:#faf8f4; --surface:#ffffff; --ink:#20272f; --muted:#5b6470; --faint:#8a929c;
+    --line:#e7e1d6; --line-soft:#efeae0;
+    --danger:#b3402f; --danger-soft:#f7ece9; --danger-line:#e6c7bf;
+    --ok:#3f7d52; --ok-soft:#ecf3ee; --ok-line:#cbe0d1;
+    --warn:#9a6b1a; --warn-soft:#f7f0e2; --warn-line:#e8d7b0;
+    --info-soft:#eef2f7; --info-line:#d3ddea;
+    --accent-soft:#f6efdd; --accent-line:#e6d4a6;
+    --radius:10px; --radius-sm:6px;
+    --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+    --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans);
+    font-size:16px; line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:940px; margin-inline:auto; padding:40px 22px 80px}
+  a{color:#3a5a86; text-underline-offset:2px}
+  a:hover{color:#2a4a72}
+  code{font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace; font-size:.86em;
+    background:#f0ece3; padding:.1em .38em; border-radius:4px; color:#3a4550; word-break:break-word}
+  h1,h2,h3{font-family:var(--serif); line-height:1.2; color:var(--navy); font-weight:700}
+  p{margin:.55em 0}
+  strong{color:inherit}
+
+  /* Masthead */
+  header.masthead{border-bottom:3px solid var(--gold); padding-bottom:24px; margin-bottom:8px}
+  .eyebrow{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--gold);
+    font-weight:700; font-family:var(--sans)}
+  header.masthead h1{font-size:36px; margin:.18em 0 .1em}
+  .subtitle{color:var(--muted); font-size:17px; max-width:60ch; font-family:var(--serif); font-style:italic}
+  .meta-row{display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:16px; font-size:13.5px; color:var(--muted)}
+  .meta-row b{color:var(--navy); font-weight:600}
+
+  /* Stats strip */
+  .stats{display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin:26px 0 6px}
+  .stat{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:12px 12px; text-align:center}
+  .stat .n{font-family:var(--serif); font-size:26px; font-weight:700; color:var(--navy); line-height:1}
+  .stat .l{font-size:11px; letter-spacing:.03em; text-transform:uppercase; color:var(--faint); margin-top:6px}
+  @media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)} header.masthead h1{font-size:28px}}
+
+  section{margin-top:40px}
+  h2.section{font-size:24px; border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:16px}
+  h2.section .k{color:var(--gold); font-family:var(--sans); font-size:13px; font-weight:700; letter-spacing:.1em;
+    text-transform:uppercase; display:block; margin-bottom:2px}
+
+  /* Grounding */
+  .ground p{color:#39424e; font-size:15.5px}
+  .ground h3{font-size:16px; margin:18px 0 4px; color:var(--navy)}
+  .pill-list{display:flex; flex-wrap:wrap; gap:8px; margin:10px 0}
+  .axis-pill{font-size:13px; background:var(--accent-soft); border:1px solid var(--accent-line);
+    color:#6a5417; padding:4px 11px; border-radius:999px; font-weight:600}
+  .callout{border-radius:var(--radius); padding:13px 16px; margin:14px 0; font-size:14.5px}
+  .callout.fixed{background:var(--ok-soft); border:1px solid var(--ok-line)}
+  .callout.open{background:var(--danger-soft); border:1px solid var(--danger-line)}
+  .callout.info{background:var(--info-soft); border:1px solid var(--info-line)}
+  .callout .lbl{font-size:11px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; display:block; margin-bottom:4px}
+  .callout.fixed .lbl{color:var(--ok)} .callout.open .lbl{color:var(--danger)} .callout.info .lbl{color:#3a5a86}
+  .callout ul{margin:6px 0 0; padding-left:18px} .callout li{margin:3px 0}
+
+  /* Jump list */
+  .jump{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:14px 18px; margin-bottom:22px}
+  .jump h3{font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--faint); margin:0 0 8px; font-family:var(--sans)}
+  .jump ol{margin:0; padding-left:20px; columns:2; column-gap:28px; font-size:14px}
+  .jump li{margin:3px 0; break-inside:avoid}
+  .jump a{text-decoration:none} .jump a:hover{text-decoration:underline}
+  @media(max-width:640px){.jump ol{columns:1}}
+
+  /* Idea cards */
+  article.idea{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:20px 22px; margin:16px 0; scroll-margin-top:14px}
+  .idea-head{display:flex; align-items:flex-start; gap:12px}
+  .id-chip{flex:none; font-family:var(--sans); font-weight:700; font-size:13px; color:#fff; background:var(--navy);
+    border-radius:var(--radius-sm); padding:5px 9px; letter-spacing:.02em; min-width:34px; text-align:center}
+  .idea-head h3{font-size:20px; margin:0; flex:1}
+  .chips{display:flex; flex-wrap:wrap; gap:7px; margin:12px 0 4px}
+  .chip{font-size:12px; padding:3px 10px; border-radius:999px; font-weight:600; border:1px solid transparent}
+  .chip.axis{background:var(--info-soft); border-color:var(--info-line); color:#3a5a86}
+  .chip.conf{background:var(--ok-soft); border-color:var(--ok-line); color:var(--ok)}
+  .chip.conf.med{background:var(--warn-soft); border-color:var(--warn-line); color:var(--warn)}
+  .chip.cx{background:#eef0f2; border-color:#dde1e6; color:#4a5560}
+  .idea p{font-size:15px}
+  .idea .field{margin-top:11px}
+  .idea .field .fl{font-size:11px; letter-spacing:.09em; text-transform:uppercase; font-weight:700; color:var(--faint); font-family:var(--sans)}
+  .basis{background:#f6f3ec; border-left:3px solid var(--gold); border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+    padding:9px 13px; font-size:13.5px; color:#41474f; margin-top:5px}
+  .basis .bt{font-weight:700; color:var(--navy); text-transform:lowercase; font-family:monospace; font-size:12.5px}
+  .downside{color:#6a5417}
+  figure{margin:16px 0 6px; background:#fcfbf8; border:1px solid var(--line-soft); border-radius:var(--radius); padding:14px}
+  figure svg{display:block; width:100%; height:auto}
+  figcaption{font-size:12.5px; color:var(--faint); margin-top:8px; text-align:center; font-style:italic}
+
+  /* Rejection table */
+  table{width:100%; border-collapse:collapse; font-size:14px; margin-top:6px}
+  th,td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+  th{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); font-family:var(--sans); font-weight:700}
+  td.rid{font-family:monospace; font-size:12.5px; color:var(--muted); white-space:nowrap}
+  tr.tier td{background:#f3efe7; font-weight:600; color:var(--navy)}
+  .verdict{font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; white-space:nowrap}
+  .verdict.fixed{background:var(--ok-soft); color:var(--ok)}
+  .verdict.defer{background:var(--warn-soft); color:var(--warn)}
+  .verdict.cut{background:#eef0f2; color:#5a636e}
+
+  footer.composition-signal{margin-top:48px; padding-top:16px; border-top:1px solid var(--line);
+    font-size:12.5px; color:var(--faint); font-family:var(--sans)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <span class="eyebrow">Ideation · Compound Engineering</span>
+  <h1>web-temple: full-project review</h1>
+  <p class="subtitle">Where the temple site actually stands as it approaches the Board demo — its real shortcomings, its security surface, and the UI that still reads as unfinished.</p>
+  <div class="meta-row">
+    <span><b>Date</b> <time datetime="2026-07-01">2026-07-01</time></span>
+    <span><b>Topic</b> full-project-review</span>
+    <span><b>Focus</b> origin · current state · future · shortcomings · security · UI</span>
+    <span><b>Mode</b> repo-grounded</span>
+    <span><b>Branch</b> dev (local-only)</span>
+  </div>
+</header>
+
+<div class="stats">
+  <div class="stat"><div class="n">43</div><div class="l">Raw ideas</div></div>
+  <div class="stat"><div class="n">35</div><div class="l">After dedup</div></div>
+  <div class="stat"><div class="n">15</div><div class="l">Survivors</div></div>
+  <div class="stat"><div class="n">5</div><div class="l">Verified fixed / refuted</div></div>
+  <div class="stat"><div class="n">5</div><div class="l">Axes covered</div></div>
+</div>
+
+<section class="ground">
+  <h2 class="section"><span class="k">Grounding</span>Codebase Context</h2>
+  <p><strong>Origin.</strong> web-temple is a BMAD-planned rebuild of florencetemple.org for Temple B'nai Israel (a small congregation in Florence, AL). It replaces a scattered set of tools with one server-rendered site: a Rabbi-controlled CMS, restored donations, a unified streaming surface, a member directory, live chat, and an events calendar. The stack is deliberate and constrained — Express 4 + EJS SSR multi-page app on Node ≥18, Postgres via <code>pg</code>, Redis (<code>ioredis</code>/Bull) for caching and the email/reminder workers, <code>ws</code> for live chat. No TypeScript, no bundler, no frontend framework, no inline <code>&lt;script&gt;</code>/<code>&lt;style&gt;</code> (strict CSP). Auth is a JWT in an httpOnly cookie decoded globally; CSRF is global via <code>csurf</code>.</p>
+  <p><strong>Current state.</strong> Epics 1–4 shipped plus the Rabbi/Admin dashboard; ~12.6k lines of <code>src</code> behind ~1,183 passing tests. The July-2026 MVP tracks (member directory, donations, announcements, calendar, dashboard glue, launch readiness) are nearly complete. Everything is local-only on <code>dev</code>; nothing is pushed. Donations run on an intentional <em>MockPaymentProvider</em> because the Board authorizes real PayPal credentials only after evaluating the MVP — so the demo moves no money by design.</p>
+  <p><strong>How this review was grounded.</strong> Seven evidence passes: a live browser UI pass (21 fresh desktop + mobile screenshots on <code>localhost:3000</code>, capturing the just-merged left-sidebar nav and clickable calendar), axis-sharded code scouts (auth, donations, chat/stream/calendar, ops), the four prior June ideation docs, the 2026-06-21 QA/feedback handoff, and external research on the stack's 2025–26 security and nonprofit-UX landscape. Candidates were then adversarially verified against the live code before surviving.</p>
+
+  <div class="callout fixed"><span class="lbl">Already fixed — not re-litigated here</span>
+    Verification confirmed these earlier concerns are resolved on <code>dev</code>, so they are absent from the ideas below by design: CSP-blocked flows (password reset, Rabbi tour, Quill editor), tokenized RFC-8058 unsubscribe, <code>trust proxy</code>, the <code>create-admin.js</code> rewrite, admin-dashboard latency, the WS-upgrade auth gap, the contact-form CSRF 403, chat reconnect jitter, and the streams-into-calendar merge (both <code>getEventsInRange</code> and the popup already carry stream links).</div>
+
+  <div class="callout info"><span class="lbl">External signals worth holding in view</span>
+    <ul>
+      <li><a href="https://github.com/expressjs/discussions/issues/155"><code>csurf</code> was deprecated</a> (Express, May 2025) with <a href="https://dev-academy.com/csurf-vulnerability/">documented weaknesses</a>; <code>csrf-csrf</code> / <code>csrf-sync</code> are the migration paths. No frame surfaced this as a top idea (large lift, still functioning) — logged as a watch item, not scoped below.</li>
+      <li>Non-applicable after version check: the <a href="https://nvd.nist.gov/vuln/detail/cve-2024-37890"><code>ws</code> DoS CVE-2024-37890</a> (repo is on ws 8.20.1, past the 8.17.1 fix) and EJS SSTI CVE-2023-29827 (ejs 3.1.10, templates are static). Neither is a live vector here.</li>
+      <li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Third_Party_Payment_Gateway_Integration_Cheat_Sheet.html">OWASP third-party-gateway guidance</a> maps directly onto the coming PayPal work; <a href="https://www.ecomback.com/annual-2025-ada-website-accessibility-lawsuit-report">ADA web-accessibility suits rose ~20% in 2025</a>, 64% against sub-$25M orgs, with donation/registration forms a common trigger.</li>
+    </ul>
+  </div>
+
+  <h3>Topic Axes</h3>
+  <div class="pill-list">
+    <span class="axis-pill">accounts-auth</span>
+    <span class="axis-pill">donations</span>
+    <span class="axis-pill">live-engagement</span>
+    <span class="axis-pill">ops-launch</span>
+    <span class="axis-pill">ui-quality</span>
+  </div>
+  <p style="font-size:13.5px;color:var(--muted)">All five axes carry survivors. <strong>live-engagement</strong> is lighter (one survivor) not because it went unexamined but because several of its candidates were verified <em>already fixed</em> — stream/calendar merge and reconnect jitter both exist in current code. That is a maturity signal, not a coverage gap.</p>
+</section>
+
+<section>
+  <h2 class="section"><span class="k">15 survivors, ranked</span>Ranked Ideas</h2>
+  <div class="jump">
+    <h3>Jump to an idea</h3>
+    <ol>
+      <li><a href="#i1">Provider-authoritative capture path + conformance suite</a></li>
+      <li><a href="#i2">Fail-closed boot preflight (config MEL)</a></li>
+      <li><a href="#i3">One temple-timezone datetime formatter</a></li>
+      <li><a href="#i4">Mobile calendar: agenda view, not a clipped grid</a></li>
+      <li><a href="#i5">Operator health panel that speaks Rabbi, not pg_dump</a></li>
+      <li><a href="#i6">Versioned ciphertext envelope for key rotation</a></li>
+      <li><a href="#i7">Delete the WebSocket query-string token fallback</a></li>
+      <li><a href="#i8">Transactional outbox for receipts &amp; alerts</a></li>
+      <li><a href="#i9">Revisit the just-shipped left-sidebar nav</a></li>
+      <li><a href="#i10">Rebuild the donation form as one money page</a></li>
+      <li><a href="#i11">Production-parity CSRF-on test lane</a></li>
+      <li><a href="#i12">Make single-process an enforced invariant</a></li>
+      <li><a href="#i13">Honor &amp; validate the post-login redirect</a></li>
+      <li><a href="#i14">Error taxonomy: AppError + serialization middleware</a></li>
+      <li><a href="#i15">Shared EJS component kit + action-color contract</a></li>
+    </ol>
+  </div>
+
+  <!-- I1 -->
+  <article class="idea" id="i1">
+    <div class="idea-head"><span class="id-chip">I1</span><h3>Build the provider-authoritative capture path now — sandbox, hardened mock, conformance suite</h3></div>
+    <div class="chips"><span class="chip axis">donations</span><span class="chip conf">Confidence 85%</span><span class="chip cx">Complexity Medium</span></div>
+    <p class="idea"><strong>Description.</strong> "Deferred until the Board authorizes" quietly conflates two different gates: <em>real-money go-live</em> (genuinely Board-gated) and <em>writing and testing the provider-authoritative path</em> (server-side amount recompute, a signed webhook receiver over the raw body, transmission-id idempotency) — which needs only a free PayPal sandbox key. Today <code>MockPaymentProvider.capture()</code> reads its outcome from <code>req.body</code> and there is no webhook receiver anywhere. Harden the mock to decide success/failure server-side and deliver results via an internal signed callback into a real receiver; build <code>PayPalProvider</code> against sandbox; and freeze the port behind a shared conformance suite that both the mock (today) and PayPal (tomorrow) must pass — encoding the OWASP requirements as executable assertions. Go-live becomes <code>PAYMENT_PROVIDER=paypal</code> plus a credential swap, not a from-scratch security build under Board time pressure.</p>
+    <figure>
+      <svg viewBox="0 0 760 210" role="img" aria-label="Two donation gates: the build/test gate is unblocked now against sandbox; the go-live gate stays Board-gated. A conformance suite sits across the seam.">
+        <style>
+          .bx{fill:#fff;stroke:#1a2f4b;stroke-width:1.5} .lbl{font:600 13px Inter,sans-serif;fill:#20272f}
+          .sub{font:12px Inter,sans-serif;fill:#5b6470} .hd{font:700 12px Inter,sans-serif;fill:#b8912f;letter-spacing:.06em}
+          .gate{fill:#f6efdd;stroke:#e6d4a6;stroke-width:1.5} .live{fill:#f7ece9;stroke:#e6c7bf;stroke-width:1.5}
+          .arw{stroke:#5b6470;stroke-width:1.5;fill:none;marker-end:url(#ah)}
+        </style>
+        <defs><marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5b6470"/></marker></defs>
+        <text x="20" y="22" class="hd">GATE 1 — BUILD &amp; TEST (unblock now)</text>
+        <rect class="gate" x="20" y="34" width="330" height="150" rx="8"/>
+        <rect class="bx" x="38" y="52" width="140" height="40" rx="6"/><text x="48" y="70" class="lbl">Hardened mock</text><text x="48" y="85" class="sub">decides outcome server-side</text>
+        <rect class="bx" x="38" y="104" width="140" height="40" rx="6"/><text x="48" y="122" class="lbl">PayPalProvider</text><text x="48" y="137" class="sub">built vs sandbox key</text>
+        <rect class="bx" x="196" y="78" width="138" height="42" rx="6"/><text x="206" y="96" class="lbl">Signed webhook</text><text x="206" y="111" class="sub">receiver + idempotency</text>
+        <path class="arw" d="M178,72 L196,92"/><path class="arw" d="M178,124 L196,106"/>
+        <text x="410" y="22" class="hd">GATE 2 — GO LIVE (Board-gated)</text>
+        <rect class="live" x="410" y="34" width="330" height="150" rx="8"/>
+        <rect class="bx" x="430" y="70" width="290" height="46" rx="6"/><text x="444" y="92" class="lbl">PAYMENT_PROVIDER=paypal + real creds</text><text x="444" y="108" class="sub">a config flip, not a security rebuild</text>
+        <text x="444" y="150" class="sub">Board says "yes" → this is all that changes.</text>
+        <path class="arw" d="M350,109 L410,109"/>
+        <rect x="196" y="150" width="330" height="30" rx="6" fill="#eef2f7" stroke="#d3ddea"/>
+        <text x="214" y="169" class="sub">Provider conformance suite spans both — mock passes today, PayPal must pass tomorrow.</text>
+      </svg>
+      <figcaption>The security work belongs to Gate 1, which nothing is blocking; only the credential flip waits on the Board.</figcaption>
+    </figure>
+    <div class="field"><div class="fl">Basis · direct</div><div class="basis"><span class="bt">direct:</span> <code>src/services/payments/index.js</code> — "a real PayPalProvider would be added here … once the Board authorizes"; <code>evidence-donations.md</code> — "only MockPaymentProvider exists; no PayPalProvider stub; no webhook routes; no signature verification"; capture() reads outcome from <code>req.body</code>.</div></div>
+    <div class="field"><div class="fl">Rationale</div><p>The donation feature's entire value unlocks on one Board decision. If the capture path and webhook receiver are only designed <em>after</em> that yes, real money rides on unproven, uncovered code written under deadline. Building the OWASP-shaped path against sandbox now respects the intentional sequencing (the mock stays for the demo) while making go-live a swap.</p></div>
+    <div class="field"><div class="fl">Companion — honest MRR label</div><p>The dashboard's "Monthly recurring" sums one-time initial gifts flagged <code>donation_type='recurring'</code> — stated intent, not realized charges (the mock has no monthly-charge engine). Rename/caption it ("Pledged recurring / mo" vs realized) so the very screen the Board reads to make its call doesn't over-promise banked revenue.</p></div>
+    <div class="field"><div class="fl">Downsides</div><p class="downside">A sandbox integration is real work before any revenue exists; the conformance suite must be written to the OWASP spec, not to the mock's current shape, or it just ossifies today's behavior.</p></div>
+  </article>
+
+  <!-- I2 -->
+  <article class="idea" id="i2">
+    <div class="idea-head"><span class="id-chip">I2</span><h3>Fail-closed boot preflight — an aviation MEL that refuses to dispatch on red config</h3></div>
+    <div class="chips"><span class="chip axis">ops-launch</span><span class="chip conf">Confidence 88%</span><span class="chip cx">Complexity Low</span></div>
+    <p class="idea"><strong>Description.</strong> Several launch-fatal misconfigurations fail silently at runtime rather than at boot: a committed placeholder <code>JWT_SECRET</code>, an unset <code>APP_URL</code> that puts <code>localhost</code> links in production emails, <code>ssl:{rejectUnauthorized:false}</code> disabling DB hostname verification, and a non-numeric <code>FACEBOOK_PAGE_ID</code> rendering blank video cards with nothing in the logs. Borrow aviation's Minimum-Equipment-List: a startup preflight that asserts each no-go item (secrets not placeholders, <code>APP_URL</code> set and non-localhost, <code>TEMPLE_EIN</code> present, <code>FACEBOOK_PAGE_ID</code> numeric, Postgres CA cert present) and refuses to boot in production, naming the failed check.</p>
+    <div class="field"><div class="fl">Basis · direct</div><div class="basis"><span class="bt">direct:</span> <code>evidence-ops-launch.md</code> — "if APP_URL unset in production, all email links point to localhost"; <code>db.js:16</code> ssl <code>rejectUnauthorized:false</code> in production; committed <code>.env</code> <code>JWT_SECRET=your_jwt_secret_key</code> placeholder; QA feedback — non-numeric <code>FACEBOOK_PAGE_ID</code> silently blanks video cards.</div></div>
+    <div class="field"><div class="fl">Rationale</div><p>These are exactly the mistakes a single-operator cutover makes. Each silently ships broken links, blank pages, forgeable auth, or a MITM-able DB, and none surface in the 1,183-test suite. A ~30-line fail-closed guard converts a whole class of silent launch-day disasters into one loud boot-time stop that names what to fix.</p></div>
+    <div class="field"><div class="fl">Downsides</div><p class="downside">Must be production-only and carefully scoped, or it blocks legitimate dev/test boots; the check list needs an owner so it stays in sync with new required env vars.</p></div>
+  </article>
+
+  <!-- I3 -->
+  <article class="idea" id="i3">
+    <div class="idea-head"><span class="id-chip">I3</span><h3>One temple-timezone datetime formatter — kill the per-view UTC/local drift</h3></div>
+    <div class="chips"><span class="chip axis">ui-quality</span><span class="chip conf">Confidence 90%</span><span class="chip cx">Complexity Low–Medium</span></div>
+    <p class="idea"><strong>Description.</strong> The same Friday service renders <strong>10:34 PM</strong> on the public calendar but <strong>5:34 PM</strong> in the admin table — a clean five-hour gap — because the public view hardcodes <code>timeZone:'UTC'</code> while admin calls <code>toLocaleString()</code> with no timezone (server-local). Homepage, popup, emails, and JSON-LD each format independently. Introduce one server-side <code>formatInTempleTz()</code> bound to a stored <code>TEMPLE_TIMEZONE</code> (America/Chicago) and route every surface through it, deleting the ad-hoc UTC and bare-local calls so the whole class of cross-surface disagreement collapses to a single tested function.</p>
+    <figure>
+      <svg viewBox="0 0 760 200" role="img" aria-label="Before: four surfaces each format time their own way, producing conflicting displays. After: all four call one formatInTempleTz function, producing one consistent time.">
+        <style>
+          .s{fill:#fff;stroke:#1a2f4b;stroke-width:1.4} .t{font:12px Inter,sans-serif;fill:#20272f}
+          .bad{fill:#b3402f;font:700 12px Inter,sans-serif} .good{fill:#3f7d52;font:700 12px Inter,sans-serif}
+          .fn{fill:#f6efdd;stroke:#b8912f;stroke-width:1.6} .h{font:700 11px Inter,sans-serif;fill:#8a929c;letter-spacing:.08em}
+          .a{stroke:#9aa2ac;stroke-width:1.3;fill:none;marker-end:url(#a2)}
+        </style>
+        <defs><marker id="a2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#9aa2ac"/></marker></defs>
+        <text x="20" y="18" class="h">TODAY — EACH SURFACE FORMATS ITSELF</text>
+        <rect class="s" x="20" y="30" width="120" height="30" rx="5"/><text x="30" y="49" class="t">Public calendar</text>
+        <rect class="s" x="20" y="66" width="120" height="30" rx="5"/><text x="30" y="85" class="t">Admin table</text>
+        <rect class="s" x="20" y="102" width="120" height="30" rx="5"/><text x="30" y="121" class="t">Reminder email</text>
+        <rect class="s" x="20" y="138" width="120" height="30" rx="5"/><text x="30" y="157" class="t">JSON-LD</text>
+        <text x="168" y="49" class="bad">10:34 PM (UTC)</text>
+        <text x="168" y="85" class="bad">5:34 PM (server)</text>
+        <text x="168" y="121" class="t">? (localhost-ish)</text>
+        <text x="168" y="157" class="t">? (independent)</text>
+        <text x="440" y="18" class="h">ONE FORMATTER — ONE TIME</text>
+        <rect class="s" x="440" y="30" width="120" height="30" rx="5"/><text x="450" y="49" class="t">Public calendar</text>
+        <rect class="s" x="440" y="66" width="120" height="30" rx="5"/><text x="450" y="85" class="t">Admin table</text>
+        <rect class="s" x="440" y="102" width="120" height="30" rx="5"/><text x="450" y="121" class="t">Reminder email</text>
+        <rect class="s" x="440" y="138" width="120" height="30" rx="5"/><text x="450" y="157" class="t">JSON-LD</text>
+        <rect class="fn" x="600" y="78" width="140" height="44" rx="8"/><text x="616" y="99" class="t">formatInTempleTz()</text><text x="616" y="114" class="t" style="fill:#5b6470">America/Chicago</text>
+        <path class="a" d="M560,45 L600,88"/><path class="a" d="M560,81 L600,95"/><path class="a" d="M560,117 L600,103"/><path class="a" d="M560,153 L600,110"/>
+        <text x="600" y="150" class="good">→ 5:34 PM, everywhere</text>
+      </svg>
+      <figcaption>The bug isn't any one view — it's that four views each own their formatting. One function is the fix and the regression guard.</figcaption>
+    </figure>
+    <div class="field"><div class="fl">Basis · direct</div><div class="basis"><span class="bt">direct:</span> <code>src/views/calendar/index.ejs</code> uses <code>toLocaleTimeString(… timeZone:'UTC')</code> vs <code>src/views/admin/calendar/list.ejs</code> <code>toLocaleString('en-US',{…})</code> with no timezone; <code>evidence-live-ui.md</code> — "10:34 PM public vs 5:34 PM admin — a 5-hour rendering discrepancy."</div></div>
+    <div class="field"><div class="fl">Rationale</div><p>A congregation site that shows a service at two different times is a direct attendance-and-trust failure — a member could arrive five hours off. A single source of truth also pre-empts the identical bug in reminder emails and the deferred webcal feed before they ship it too.</p></div>
+    <div class="field"><div class="fl">Downsides</div><p class="downside">Requires auditing every existing format call site; DST handling must live in the formatter (America/Chicago is CST/CDT), so it needs real tests around the transition dates.</p></div>
+  </article>
+
+  <!-- I4 -->
+  <article class="idea" id="i4">
+    <div class="idea-head"><span class="id-chip">I4</span><h3>Mobile calendar: ship an agenda / list view, not a clipped grid</h3></div>
+    <div class="chips"><span class="chip axis">ui-quality</span><span class="chip conf">Confidence 85%</span><span class="chip cx">Complexity Medium</span></div>
+    <p class="idea"><strong>Description.</strong> On a 390px viewport the month grid is clipped — only Sun/Mon/Tue are fully visible, Thu/Fri/Sat run off-screen with no scroll affordance, and <em>both</em> seeded Saturday services are invisible. For a congregation whose services fall Friday night and Saturday, the primary "when do we meet" surface is broken on the device most members use. Replace the 7-column grid on small screens with a chronological, date-grouped agenda list rather than shrinking a table that cannot reflow.</p>
+    <figure>
+      <svg viewBox="0 0 620 220" role="img" aria-label="Before: a phone-width month grid clipped so half the weekdays are off the right edge. After: a vertical agenda list showing each upcoming service in full.">
+        <style>
+          .fr{fill:#fff;stroke:#1a2f4b;stroke-width:1.5} .cell{fill:#fbfaf7;stroke:#e7e1d6;stroke-width:1}
+          .clip{fill:#f7ece9;stroke:#e6c7bf;stroke-width:1} .t{font:11px Inter,sans-serif;fill:#20272f}
+          .h{font:700 11px Inter,sans-serif;fill:#8a929c;letter-spacing:.06em} .ev{fill:#1a2f4b}
+          .row{fill:#faf8f4;stroke:#e7e1d6;stroke-width:1}
+        </style>
+        <text x="20" y="16" class="h">390px — CLIPPED GRID</text>
+        <rect class="fr" x="20" y="26" width="150" height="180" rx="6"/>
+        <text x="30" y="44" class="t">Sun Mon Tue W…</text>
+        <rect class="cell" x="30" y="52" width="34" height="34"/><rect class="cell" x="66" y="52" width="34" height="34"/><rect class="cell" x="102" y="52" width="34" height="34"/><rect class="clip" x="138" y="52" width="24" height="34"/>
+        <rect class="cell" x="30" y="88" width="34" height="34"/><rect class="cell" x="66" y="88" width="34" height="34"/><rect class="cell" x="102" y="88" width="34" height="34"/><rect class="clip" x="138" y="88" width="24" height="34"/>
+        <rect class="cell" x="30" y="124" width="34" height="34"/><rect class="cell" x="66" y="124" width="34" height="34"/><rect class="cell" x="102" y="124" width="34" height="34"/><rect class="clip" x="138" y="124" width="24" height="34"/>
+        <text x="30" y="182" style="font:italic 10px Inter;fill:#b3402f">Sat services off-screen →</text>
+        <text x="360" y="16" class="h">AGENDA LIST — REFLOWS</text>
+        <rect class="row" x="360" y="26" width="240" height="40" rx="6"/><text x="372" y="43" class="t" style="font-weight:600">Fri Jul 4 · 6:00 PM</text><text x="372" y="58" class="t" style="fill:#5b6470">Kabbalat Shabbat · Sanctuary</text>
+        <rect class="row" x="360" y="72" width="240" height="40" rx="6"/><text x="372" y="89" class="t" style="font-weight:600">Sat Jul 5 · 9:30 AM</text><text x="372" y="104" class="t" style="fill:#5b6470">Shabbat Morning · Sanctuary</text>
+        <rect class="row" x="360" y="118" width="240" height="40" rx="6"/><text x="372" y="135" class="t" style="font-weight:600">Fri Jul 11 · 6:00 PM</text><text x="372" y="150" class="t" style="fill:#5b6470">Kabbalat Shabbat · Sanctuary</text>
+        <rect class="row" x="360" y="164" width="240" height="40" rx="6"/><text x="372" y="181" class="t" style="font-weight:600">Sat Jul 12 · 9:30 AM</text><text x="372" y="196" class="t" style="fill:#5b6470">Shabbat Morning · Sanctuary</text>
+      </svg>
+      <figcaption>Directional only — a phone can't usefully hold a 7-column grid; a date-grouped list shows every service in full.</figcaption>
+    </figure>
+    <div class="field"><div class="fl">Basis · direct</div><div class="basis"><span class="bt">direct:</span> <code>evidence-live-ui.md</code> — "the month grid is clipped at the right edge — only Sun/Mon/Tue fully visible … Thu/Fri/Sat entirely off-screen with no visible scroll affordance … Both seeded Saturday services are invisible." Verified: the grid has <code>min-width</code> / <code>table-layout:fixed</code> and no mobile media query.</div></div>
+    <div class="field"><div class="fl">Rationale</div><p>The calendar is a launch-track MVP surface and the single most-used "find a service" path. A mobile member literally cannot see Saturday services — it reads as broken and quietly undermines the streaming and attendance funnel.</p></div>
+    <div class="field"><div class="fl">Downsides</div><p class="downside">Two calendar renderings to keep in sync (grid + agenda); the breakpoint choice and "how many days ahead" for the agenda need a product call.</p></div>
+  </article>
+
+  <!-- I5 -->
+  <article class="idea" id="i5">
+    <div class="idea-head"><span class="id-chip">I5</span><h3>An operator health panel that speaks Rabbi, not <code>pg_dump</code></h3></div>
+    <div class="chips"><span class="chip axis">ops-launch</span><span class="chip conf">Confidence 80%</span><span class="chip cx">Complexity Medium</span></div>
+    <p class="idea"><strong>Description.</strong> The admin dashboard shows a non-technical admin a red "Backup Failure Detected … <code>pg_dump | openssl</code>" block, "Server uptime 4m", and "Last backup —", while Redis outages silently no-op the donation alert and drop queued email jobs with no operator signal at all. Replace raw internals with plain-language status ("Backups: not yet configured — here's how", "Live chat: OK", "Email sending: degraded") plus a next-step link, and surface Redis/email-queue degradation as an honest banner instead of a swallowed log line.</p>
+    <div class="field"><div class="fl">Basis · direct</div><div class="basis"><span class="bt">direct:</span> <code>evidence-live-ui.md</code> — "prominent red 'Backup Failure Detected … pg_dump | openssl' … raw pipeline internals shown to the admin persona"; <code>evidence-ops-launch.md</code> — "Redis down = silent degradation (email queue loses jobs); no circuit-breaker."</div></div>
+    <div class="field"><div class="fl">Rationale</div><p>Self-hosted at ~$1K/yr with a Rabbi as the operator, silent degradation and engineer-speak mean real failures — lost donation alerts, no backups, dropped emails — go unnoticed until they cause harm. A readable panel is much of the difference between a runnable and an unrunnable launch.</p></div>
+    <div class="field"><div class="fl">Downsides</div><p class="downside">"Plain-language status" needs honest severity mapping so it doesn't cry wolf or, worse, hide a real red; some states (backup health) require a signal the app doesn't currently collect.</p></div>
+  </article>
+
+  <!-- I6 -->
+  <article class="idea" id="i6">
+    <div class="idea-head"><span class="id-chip">I6</span><h3>Versioned ciphertext envelope — a one-byte prefix that unlocks key rotation and AES-GCM</h3></div>
+    <div class="chips"><span class="chip axis">accounts-auth</span><span class="chip conf">Confidence 85%</span><span class="chip cx">Complexity Medium</span></div>
+    <p class="idea"><strong>Description.</strong> Member PII ciphertext is stored as <code>base64(IV_hex:ciphertext_hex)</code> with no key or algorithm tag, so there is no rotation mechanism and a re-save under a changed key can NULL still-recoverable data. Change the envelope to carry a leading version segment (<code>v1:base64(IV:ct)</code>), treat unprefixed values as legacy, and have decrypt select key + algorithm by version from a tiny keyring of current + previous keys. That one backward-compatible decision makes three deferred moves cheap and lazy: rotate <code>ENCRYPTION_KEY</code> (both keys coexist, re-encrypt on next write), migrate AES-256-CBC → AES-GCM, and stop clobbering recoverable data — the same trick TLS/PGP/KMS use.</p>
+    <figure>
+      <svg viewBox="0 0 760 150" role="img" aria-label="Before: ciphertext with no version tag, decryptable by only one key. After: a version-prefixed envelope selecting from a keyring of current and previous keys.">
+        <style>
+          .b{fill:#fff;stroke:#1a2f4b;stroke-width:1.4} .t{font:12px Inter,sans-serif;fill:#20272f} .m{font:11px Inter,sans-serif;fill:#5b6470}
+          .v{fill:#f6efdd;stroke:#b8912f;stroke-width:1.5} .h{font:700 11px Inter,sans-serif;fill:#8a929c;letter-spacing:.06em}
+          .key{fill:#eef2f7;stroke:#d3ddea;stroke-width:1.2}
+        </style>
+        <text x="20" y="16" class="h">TODAY</text>
+        <rect class="b" x="20" y="26" width="300" height="34" rx="5"/><text x="32" y="47" class="t" style="font-family:monospace">base64( IV : ciphertext )</text>
+        <text x="20" y="82" class="m">↳ one key, no tag — rotation = big-bang re-encrypt; re-save can NULL data.</text>
+        <text x="440" y="16" class="h">VERSIONED ENVELOPE</text>
+        <rect class="v" x="440" y="26" width="70" height="34" rx="5"/><text x="452" y="47" class="t" style="font-family:monospace">v2 :</text>
+        <rect class="b" x="514" y="26" width="226" height="34" rx="5"/><text x="526" y="47" class="t" style="font-family:monospace">base64( IV : ciphertext )</text>
+        <rect class="key" x="440" y="78" width="90" height="28" rx="5"/><text x="452" y="96" class="m">key v2 (current)</text>
+        <rect class="key" x="540" y="78" width="90" height="28" rx="5"/><text x="552" y="96" class="m">key v1 (previous)</text>
+        <text x="440" y="128" class="m">↳ decrypt picks key + algo by version; rotate + AES-GCM become lazy background migrations.</text>
+      </svg>
+      <figcaption>A single backward-compatible format change is the foundation the deferred rotation, the NULL-on-decrypt fix, and the AES-GCM upgrade all sit on.</figcaption>
+    </figure>
+    <div class="field"><div class="fl">Basis · direct</div><div class="basis"><span class="bt">direct:</span> <code>src/utils/encryptionHelper.js</code> returns <code>Buffer.from(`${iv}:${encrypted}`).toString('base64')</code> with no version tag; <code>evidence-accounts-auth.md</code> — "no key-rotation mechanism … no algorithm/version field in ciphertext"; grounding STILL-OPEN — "re-save can NULL still-recoverable ciphertext."</div></div>
+    <div class="field"><div class="fl">Rationale</div><p>Adopt the tiny format change now, while the member table is small, and every later security move — rotating the key, fixing the NULL-on-decrypt clobber, upgrading to authenticated AES-GCM — becomes a lazy migration instead of a risky big-bang re-encrypt of addresses and children's birthdays.</p></div>
+    <div class="field"><div class="fl">Downsides</div><p class="downside">Touches the encryption path, which demands careful, well-tested change and a legacy-format read path retained indefinitely; a keyring adds a small amount of key-management surface.</p></div>
+  </article>
+
+  <!-- I7 -->
+  <article class="idea" id="i7">
+    <div class="idea-head"><span class="id-chip">I7</span><h3>Delete the WebSocket query-string token fallback</h3></div>
+    <div class="chips"><span class="chip axis">live-engagement</span><span class="chip conf">Confidence 92%</span><span class="chip cx">Complexity Low</span></div>
+    <p class="idea"><strong>Description.</strong> The chat upgrade reads the JWT from the cookie <em>or</em> the query string, and the query-string branch leaks a full auth token into access logs, proxy history, and Referer headers. Browsers already send the httpOnly <code>auth_token</code> cookie on same-origin WS upgrades, and the real client uses the cookie — so the query fallback is redundant and exists only as a credential-exposure surface. Remove the branch and require the cookie: strictly safer, no loss of function.</p>
+    <div class="field"><div class="fl">Basis · direct</div><div class="basis"><span class="bt">direct:</span> <code>src/services/chatSocketServer.js:253</code> — <code>const token = cookies.auth_token || query.auth_token;</code>; verified that <code>live-chat.js</code> never sends <code>auth_token</code> in the WS query (it relies on the cookie). Grounding STILL-OPEN — "WS token-via-query-string fallback leaks to logs/history."</div></div>
+    <div class="field"><div class="fl">Rationale</div><p>A JWT in a URL is the textbook credentials-in-logs leak, and this token also gates chat identity and moderator status. Removing the branch is a pure-subtraction security win because the cookie path already delivers the token to the same handler.</p></div>
+    <div class="field"><div class="fl">Downsides</div><p class="downside">Essentially none for the shipped client; only matters if some non-browser/test client were relying on the query param — worth a quick grep before deleting.</p></div>
+  </article>
+
+  <!-- I8 -->
+  <article class="idea" id="i8">
+    <div class="idea-head"><span class="id-chip">I8</span><h3>Transactional outbox for donation receipts &amp; alerts — and a Redis-independent failure alert</h3></div>
+    <div class="chips"><span class="chip axis">donations</span><span class="chip conf">Confidence 78%</span><span class="chip cx">Complexity Medium–High</span></div>
+    <p class="idea"><strong>Description.</strong> <code>finalize()</code> flips a donation to "completed" and writes its audit inside the DB call, but the receipt email, the 3-strike admin alert, and their delivery all fire from the controller <em>after</em> finalize returns — and the Bull jobs don't persist, so a crash or Redis outage in that window leaves a completed gift with no receipt and no alert. Banks never emit a statement outside the committed ledger transaction. Port the transactional-outbox pattern: within the same transaction that commits the state change, insert an outbox row describing the side-effect; a separate poller drains it with at-least-once idempotent delivery. As a companion, when Redis is down the 3-strike failure counter should fall back to a <code>COUNT</code> over the already-persisted failure rows so the alert still fires instead of resetting every request.</p>
+    <figure>
+      <svg viewBox="0 0 760 180" role="img" aria-label="Before: finalize commits, then side-effects fire outside the transaction and are lost on crash. After: state change and an outbox row commit together, and a poller drains the outbox with idempotent retries.">
+        <style>
+          .b{fill:#fff;stroke:#1a2f4b;stroke-width:1.4} .t{font:12px Inter,sans-serif;fill:#20272f} .m{font:11px Inter,sans-serif;fill:#5b6470}
+          .tx{fill:#ecf3ee;stroke:#cbe0d1;stroke-width:1.5} .bad{fill:#f7ece9;stroke:#e6c7bf;stroke-width:1.4}
+          .h{font:700 11px Inter,sans-serif;fill:#8a929c;letter-spacing:.06em} .a{stroke:#5b6470;stroke-width:1.4;fill:none;marker-end:url(#a3)}
+        </style>
+        <defs><marker id="a3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#5b6470"/></marker></defs>
+        <text x="20" y="16" class="h">TODAY — SIDE-EFFECTS OUTSIDE THE COMMIT</text>
+        <rect class="tx" x="20" y="26" width="150" height="44" rx="6"/><text x="34" y="45" class="t">commit: completed</text><text x="34" y="61" class="m">+ audit</text>
+        <rect class="bad" x="196" y="26" width="150" height="44" rx="6"/><text x="210" y="45" class="t">receipt + alert</text><text x="210" y="61" class="m">controller, post-return</text>
+        <path class="a" d="M170,48 L196,48"/>
+        <text x="20" y="92" style="font:italic 11px Inter;fill:#b3402f">crash / Redis blip here → gift completed, receipt lost, alert silent.</text>
+        <text x="20" y="122" class="h">OUTBOX — COMMIT THE INTENT WITH THE STATE</text>
+        <rect class="tx" x="20" y="132" width="200" height="40" rx="6"/><text x="34" y="150" class="t">commit: completed + outbox row</text><text x="34" y="166" class="m">one transaction</text>
+        <rect class="b" x="250" y="132" width="130" height="40" rx="6"/><text x="264" y="150" class="t">poller drains</text><text x="264" y="166" class="m">at-least-once, idempotent</text>
+        <rect class="b" x="410" y="132" width="150" height="40" rx="6"/><text x="424" y="150" class="t">receipt + alert sent</text><text x="424" y="166" class="m">survives crash / Redis</text>
+        <path class="a" d="M220,152 L250,152"/><path class="a" d="M380,152 L410,152"/>
+      </svg>
+      <figcaption>One mechanism makes "donation completed" and "send its receipt" commit together — the same at-least-once durability the real PayPal capture will need.</figcaption>
+    </figure>
+    <div class="field"><div class="fl">Basis · reasoned + direct</div><div class="basis"><span class="bt">reasoned:</span> transactional-outbox (Debezium / microservices messaging) writes state + intent atomically and drains async with idempotent retry. <span class="bt">direct:</span> <code>evidence-donations.md</code> — "lines 114-122 run outside the transaction … donation is completed but receipt/alert emails are lost"; the Redis-down alert path resets the counter each request; <code>evidence-ops-launch.md</code> — "Bull jobs don't persist; pending emails lost until restart."</div></div>
+    <div class="field"><div class="fl">Rationale</div><p>One pattern closes both the lost-receipt-on-crash gap and the Redis-down alert hole, and it is exactly the at-least-once reliability the real PayPal capture will require — so it's on the critical path to real money, not throwaway MVP scaffolding. A tax receipt's durability stops depending on a disposable cache.</p></div>
+    <div class="field"><div class="fl">Downsides</div><p class="downside">The heaviest survivor: a new table, a poller lifecycle, and idempotency keys. At current volume the simpler half (the Redis-independent alert fallback) may be worth shipping first, with the full outbox landing alongside the PayPal work.</p></div>
+  </article>
+
+  <!-- I9 -->
+  <article class="idea" id="i9">
+    <div class="idea-head"><span class="id-chip">I9</span><h3>Revisit the just-shipped left-sidebar nav — it is the root of the layout-bug cluster</h3></div>
+    <div class="chips"><span class="chip axis">ui-quality</span><span class="chip conf med">Confidence 70%</span><span class="chip cx">Complexity Medium</span></div>
+    <p class="idea"><strong>Description.</strong> The persistent left sidebar is the newest merged feature (commit <code>3fef52a</code>) and is treated as settled — but the fresh UI pass traces a cluster of bugs straight back to it: a white dead zone bottom-left on long pages, the sidebar running <em>past</em> the footer on short pages, an L-shaped page edge where the footer starts at x≈240, no desktop active-page indicator, and arbitrarily boxed Donate/Login/Logout CTAs. A conventional top nav — the norm for an ~8-item content MPA rather than a dashboard app — dissolves the entire cluster structurally instead of patching each symptom.</p>
+    <figure>
+      <svg viewBox="0 0 620 180" role="img" aria-label="Before: a fixed sidebar column leaving an L-shaped footer and a white dead zone. After: a full-width top nav with the footer spanning the whole page.">
+        <style>
+          .pg{fill:#fff;stroke:#1a2f4b;stroke-width:1.4} .nav{fill:#1a2f4b} .ft{fill:#14243a}
+          .dead{fill:#f7ece9;stroke:#e6c7bf;stroke-width:1;stroke-dasharray:3 2} .t{font:11px Inter,sans-serif;fill:#20272f} .w{font:11px Inter,sans-serif;fill:#fff}
+          .h{font:700 11px Inter,sans-serif;fill:#8a929c;letter-spacing:.06em}
+        </style>
+        <text x="20" y="16" class="h">TODAY — SIDEBAR FIGHTS THE FOOTER</text>
+        <rect class="pg" x="20" y="26" width="250" height="140" rx="4"/>
+        <rect class="nav" x="20" y="26" width="60" height="118" rx="0"/><text x="30" y="60" class="w">nav</text>
+        <rect x="80" y="26" width="190" height="24" fill="#faf8f4"/><text x="92" y="42" class="t">content</text>
+        <rect class="ft" x="80" y="120" width="190" height="24"/><text x="92" y="136" class="w">footer (starts at x≈240)</text>
+        <rect class="dead" x="20" y="144" width="60" height="22"/><text x="26" y="159" style="font:italic 9px Inter;fill:#b3402f">dead zone</text>
+        <text x="360" y="16" class="h">TOP NAV — FOOTER SPANS FULL WIDTH</text>
+        <rect class="pg" x="360" y="26" width="240" height="140" rx="4"/>
+        <rect class="nav" x="360" y="26" width="240" height="26"/><text x="372" y="43" class="w">nav · active item underlined</text>
+        <rect x="360" y="52" width="240" height="70" fill="#faf8f4"/><text x="372" y="72" class="t">content</text>
+        <rect class="ft" x="360" y="130" width="240" height="30"/><text x="372" y="149" class="w">footer — edge to edge</text>
+      </svg>
+      <figcaption>Directional only — one nav decision produces (or dissolves) the whole footer/height/active-state cluster.</figcaption>
+    </figure>
+    <div class="field"><div class="fl">Basis · direct</div><div class="basis"><span class="bt">direct:</span> <code>evidence-live-ui.md</code> — "the sidebar's dark column ends at viewport height on long pages, leaving a white dead zone … on short pages the sidebar instead runs past the footer"; "the footer band starts at x=240, producing an L-shaped page edge"; commit <code>3fef52a</code> "render the global nav as a persistent left sidebar on desktop."</div></div>
+    <div class="field"><div class="fl">Rationale</div><p>One decision reversal retires roughly five separate UI-evidence items (dead zones, L-shaped footer, floating footer, the active-indicator gap, boxed-CTA arbitrariness). Patching each individually is more work and still can't fix the structural footer/height fight the sidebar creates.</p></div>
+    <div class="field"><div class="fl">Downsides</div><p class="downside">Reverses a feature that shipped days ago on stakeholder direction — needs that conversation, not a silent revert. If the sidebar was chosen deliberately, the alternative is to fix its layout contract (sticky footer, full-height column, active state); this idea's value is forcing that choice, and it carries the lowest confidence of the set for that reason.</p></div>
+  </article>
+
+  <!-- I10 -->
+  <article class="idea" id="i10">
+    <div class="idea-head"><span class="id-chip">I10</span><h3>Rebuild the donation form as one coherent, accessible money page</h3></div>
+    <div class="chips"><span class="chip axis">ui-quality</span><span class="chip conf">Confidence 85%</span><span class="chip cx">Complexity Medium</span></div>
+    <p class="idea"><strong>Description.</strong> The donation form mixes two design languages — styled amount pills beside raw browser-default fields (a tiny inset custom-amount spinner, a combobox truncating to "Choose a fund or typ…", an unstyled receipt-email input) — and the only required field, email, gets the least visual weight with no required marker; on mobile those native inputs collapse to ~130px boxes. This is the page that takes money, and donation forms are among the most common ADA-suit triggers. Give it one styled input system, a clear required-field treatment, and a mobile layout that doesn't shrink to unusable boxes.</p>
+    <div class="field"><div class="fl">Basis · direct</div><div class="basis"><span class="bt">direct:</span> <code>evidence-live-ui.md</code> — "the donations email field is the only required field but gets the least visual weight; no required marker"; "the custom-amount and email fields are ~130px-wide default boxes" on mobile; grounding — "donation forms/event registration are common [ADA] suit triggers" (WCAG 2.1 AA de facto).</div></div>
+    <div class="field"><div class="fl">Rationale</div><p>Every dollar toward the $120–150/mo target flows through this form. A form that looks half-finished and is hard to complete on mobile drives abandonment on the one revenue page, and carries disproportionate ADA-suit exposure for an under-$25M org.</p></div>
+    <div class="field"><div class="fl">Downsides</div><p class="downside">Best done <em>with</em> I15's component kit rather than as one-off CSS, or it just adds a fourth bespoke form style; native-control theming under the strict no-inline-style CSP needs care.</p></div>
+  </article>
+
+  <!-- I11 -->
+  <article class="idea" id="i11">
+    <div class="idea-head"><span class="id-chip">I11</span><h3>A production-parity "CSRF-on" critical-path test lane</h3></div>
+    <div class="chips"><span class="chip axis">ops-launch</span><span class="chip conf">Confidence 85%</span><span class="chip cx">Complexity Low–Medium</span></div>
+    <p class="idea"><strong>Description.</strong> <code>NODE_ENV=test</code> short-circuits CSRF globally (<code>if (NODE_ENV==='test') return next()</code>) — load-bearing, and it must stay — but it created a permanent blind spot where client-side <code>_csrf</code> token-wiring regressions are invisible to all 1,183 tests, and the same bug class has shipped at least three times (contact-form 403, admin Retry button, page-editor Save/Publish). Keep the global bypass, but add a thin dedicated Jest lane that boots <em>with</em> CSRF enforced and drives the real mint-token-then-submit flow for the highest-value forms (contact, donation checkout, admin writes). Bypass by default; exercise the real path deliberately.</p>
+    <div class="field"><div class="fl">Basis · direct</div><div class="basis"><span class="bt">direct:</span> <code>evidence-ops-launch.md</code> — "NODE_ENV=test skips CSRF entirely (server.js) … integration tests never catch CSRF failures"; QA feedback — "CSRF token missing on admin Retry button" and "Pages/CMS editor writes returned 403."</div></div>
+    <div class="field"><div class="fl">Rationale</div><p>CSRF-token regressions have shipped three times precisely because the suite is blind to them. A small CSRF-on lane makes that whole class visible in CI going forward — compounding across every future form the team adds — without removing the required test hatch.</p></div>
+    <div class="field"><div class="fl">Downsides</div><p class="downside">A second boot configuration to maintain; must stay scoped to a few high-value forms or it slows CI and duplicates coverage.</p></div>
+  </article>
+
+  <!-- I12 -->
+  <article class="idea" id="i12">
+    <div class="idea-head"><span class="id-chip">I12</span><h3>Make single-process an enforced, declared invariant (boot advisory lock)</h3></div>
+    <div class="chips"><span class="chip axis">ops-launch</span><span class="chip conf">Confidence 82%</span><span class="chip cx">Complexity Low–Medium</span></div>
+    <p class="idea"><strong>Description.</strong> The codebase assumes single-process everywhere — 7 in-memory rate limiters, a per-process WS 50-connection cap, and email/reminder workers started unconditionally — yet nothing enforces it, so a routine second deploy silently N-times's the rate limits and races the hourly reminder scan. For a $1K/yr self-hosted single box, single-process is a legitimate choice; make it explicit with a boot-time Postgres advisory lock that refuses a second web+worker, plus a one-line documented invariant. This is the deliberate opposite lane to externalizing state, and it turns today's silent failure mode into a loud, guarded one.</p>
+    <div class="field"><div class="fl">Basis · direct</div><div class="basis"><span class="bt">direct:</span> <code>evidence-ops-launch.md</code> — "7 in-memory rate-limit stores … won't work multi-process"; reminder worker "no single-runner guard; N instances = N reminder scans racing at the hour boundary"; <code>src/server.js</code> workers "started unconditionally."</div></div>
+    <div class="field"><div class="fl">Rationale</div><p>It forces a lane choice — the code is either honestly single-process (guarded) or it externalizes state — instead of today's unhappy middle where corrupted rate limits and doubled worker load are completely silent to the operator.</p></div>
+    <div class="field"><div class="fl">Downsides</div><p class="downside">An advisory lock is a deliberate scaling ceiling; if the temple ever needs two instances, this is the thing that must be revisited first (which is the point — it makes that explicit).</p></div>
+  </article>
+
+  <!-- I13 -->
+  <article class="idea" id="i13">
+    <div class="idea-head"><span class="id-chip">I13</span><h3>Honor the post-login redirect — and validate it as same-origin</h3></div>
+    <div class="chips"><span class="chip axis">accounts-auth</span><span class="chip conf">Confidence 88%</span><span class="chip cx">Complexity Low</span></div>
+    <p class="idea"><strong>Description.</strong> <code>requireAuth</code> bounces unauthenticated deep-links to <code>/login?redirect=&lt;originalUrl&gt;</code>, but <code>login.js</code> ignores the param and hardcodes <code>window.location.href='/'</code> on success — so a member trying to reach a members-only page logs in and lands on the homepage instead. Read the redirect param, validate it as a same-origin <em>relative</em> path (closing the noted unvalidated-redirect concern), and default to a member landing area rather than the public homepage.</p>
+    <div class="field"><div class="fl">Basis · direct</div><div class="basis"><span class="bt">direct:</span> <code>public/js/login.js</code> — <code>window.location.href = "/"</code> on success ignores the param built at <code>src/middleware/requireAuth.js:33</code> (<code>res.redirect("/login?redirect=" + encodeURIComponent(req.originalUrl))</code>); grounding STILL-OPEN — "unvalidated <code>?redirect=</code> in requireAuth."</div></div>
+    <div class="field"><div class="fl">Rationale</div><p>Deep-link-then-login is the core members-only flow (directory, member archive). Dumping every login on the homepage makes the site feel like it forgot what you were doing — and wiring the redirect <em>without</em> validation would open an open-redirect. This fixes the friction and the latent security note together.</p></div>
+    <div class="field"><div class="fl">Downsides</div><p class="downside">The validation must be strict (reject absolute URLs, protocol-relative <code>//host</code>, and non-path values) — the whole security value is in getting that allowlist right.</p></div>
+  </article>
+
+  <!-- I14 -->
+  <article class="idea" id="i14">
+    <div class="idea-head"><span class="id-chip">I14</span><h3>Error taxonomy: an <code>AppError</code> hierarchy plus one serialization middleware</h3></div>
+    <div class="chips"><span class="chip axis">ops-launch</span><span class="chip conf">Confidence 78%</span><span class="chip cx">Complexity Medium</span></div>
+    <p class="idea"><strong>Description.</strong> Services <code>throw new Error('User not found')</code> and controllers reply <code>res.status(400).json({message: error.message})</code>, so internal strings become HTTP bodies, and chat echoes raw <code>err.message</code> straight to clients. Introduce a small typed hierarchy (<code>ValidationError</code>→422, <code>NotFoundError</code>→404, <code>AuthError</code>→401/403, <code>ProviderError</code>→502, <code>InternalError</code>→500) plus one error-handling middleware that maps type→status and emits a safe client message while logging the detail. Once the convention exists, every current and future controller/chat/admin path inherits safe, consistent errors — and the PayPal work gets a ready-made <code>ProviderError</code>.</p>
+    <div class="field"><div class="fl">Basis · direct</div><div class="basis"><span class="bt">direct:</span> <code>evidence-ops-launch.md</code> — <code>res.status(400).json({ message: error.message })</code> with services doing <code>throw new Error("User not found")</code>; <code>evidence-chat-stream-calendar.md</code> — "err.message sent directly to client. No sanitization."</div></div>
+    <div class="field"><div class="fl">Rationale</div><p>One choice converts a scattered class of leaks — auth internals, decryption-failure strings, chat echoes, even the <code>pg_dump/openssl</code> text surfaced to a non-technical admin — into a single tested mapping, and pre-equips the PayPal integration instead of re-inventing safe error handling per call site.</p></div>
+    <div class="field"><div class="fl">Downsides</div><p class="downside">Touches many call sites to realize the full benefit; landing it incrementally (middleware + the highest-leak paths first) avoids a big-bang refactor that competes with launch work.</p></div>
+  </article>
+
+  <!-- I15 -->
+  <article class="idea" id="i15">
+    <div class="idea-head"><span class="id-chip">I15</span><h3>Shared EJS component kit with a traffic-signal action-color contract</h3></div>
+    <div class="chips"><span class="chip axis">ui-quality</span><span class="chip conf med">Confidence 75%</span><span class="chip cx">Complexity Medium</span></div>
+    <p class="idea"><strong>Description.</strong> The site has no shared component layer for interactive chrome, so it shows three different hero/page-header treatments, primary CTAs that flip gold/navy with no rule, raw native browser buttons for admin Delete/Feature with no danger styling, default-blue underlined links leaking into the footer and admin, and blank member cards with no empty-state. Build a small set of EJS partials — a page-header with one variant system, a button with an explicit semantic taxonomy (<strong>primary = gold, navigational = navy, destructive = red</strong>), and an empty-state partial — plus a CSS reset for native form controls, all in CSS with no inline styles. Color becomes a fixed contract (red = danger, never decoration) enforced by class, so a Delete can never render as an unstyled grey box.</p>
+    <div class="field"><div class="fl">Basis · direct</div><div class="basis"><span class="bt">direct:</span> <code>evidence-live-ui.md</code> — "row actions are raw native browser buttons … Delete has no visual danger treatment"; "three pages, three hero treatments"; "directory renders a completely blank member card … no fallback"; "primary CTA color flips between gold and navy with no discernible rule."</div></div>
+    <div class="field"><div class="fl">Rationale</div><p>The visual-consistency findings are all symptoms of one missing abstraction. A handful of partials plus a semantic color contract makes the CTA-color rule, the destructive-action affordance, and empty states enforceable in one place and free on every future admin/public screen — where the app is still actively growing new CRUD. It's the systemic version of I9 and I10.</p></div>
+    <div class="field"><div class="fl">Downsides</div><p class="downside">Lower-confidence because it's the largest surface-area change with the softest single failure; best sequenced as the substrate under I10 (donation form) and the admin tables rather than a standalone refactor.</p></div>
+  </article>
+</section>
+
+<section>
+  <h2 class="section"><span class="k">Considered and cut — with reasons</span>Rejection Summary</h2>
+  <p style="font-size:14px;color:var(--muted)">Adversarial verification read the live code for every defect claim. The most valuable rejections are the ones that would have been embarrassing to ship as "findings" — things already fixed on <code>dev</code>.</p>
+  <table>
+    <thead><tr><th>#</th><th>Idea</th><th>Verdict</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr class="tier"><td colspan="4">Verified already-fixed or refuted against current code</td></tr>
+      <tr><td class="rid">C6</td><td>Unify streams/events so the calendar popup gets a watch link</td><td><span class="verdict fixed">already fixed</span></td><td><code>getEventsInRange</code> already merges/annotates linked streams and the popup already renders a stream link; the screenshot showed a seeded event with no attached stream.</td></tr>
+      <tr><td class="rid">C26</td><td>Canonical event read with surrogate-key cache purge</td><td><span class="verdict fixed">already fixed</span></td><td>Merge already exists; and CDN-style purge is over-engineered for a tiny events table (both critics cut).</td></tr>
+      <tr><td class="rid">C25</td><td>Game-netcode chat reconnect (jitter + resume cursor)</td><td><span class="verdict fixed">refuted</span></td><td>Reconnect jitter and a since-cursor are already implemented; the "no jitter" claim came from the stale deferred-work ledger.</td></tr>
+      <tr><td class="rid">C13</td><td>Self-healing dead-embed fallback on /watch</td><td><span class="verdict cut">seed artifact</span></td><td>The "Video Unavailable" box was a bad <em>seeded</em> video ID, not a real fallback gap; the no-liveness-check point is minor.</td></tr>
+      <tr class="tier"><td colspan="4">Cut on the merits</td></tr>
+      <tr><td class="rid">C16</td><td>Stop encrypting the donation amount</td><td><span class="verdict cut">cut</span></td><td>The "plaintext amounts are fine" premise is unsound — donation amounts are sensitive; questioning at-rest encryption is the wrong trade.</td></tr>
+      <tr><td class="rid">C20</td><td>Externalize all coordination state to Redis/Postgres</td><td><span class="verdict cut">cut</span></td><td>Two of four bases misdiagnosed; the sound part (rate limiters won't survive multi-process) is covered more honestly by I12.</td></tr>
+      <tr><td class="rid">C29</td><td>Paginate the directory, drop the 500-row limit</td><td><span class="verdict defer">premature</span></td><td>A 500-row cap against 40–50 members is not a real problem at congregation scale; revisit only if the directory grows.</td></tr>
+      <tr><td class="rid">C9</td><td>Incremental donation-aggregate ledger</td><td><span class="verdict defer">premature</span></td><td>Optimizes a decrypt-all-and-sum that is fine at this volume; the aggregate concern rides along with I8/I6 anyway.</td></tr>
+      <tr class="tier"><td colspan="4">Strong, but better developed as a brainstorm than shipped from here</td></tr>
+      <tr><td class="rid">C18</td><td>Rescope the WS chat around what Facebook Live comments can't do</td><td><span class="verdict defer">brainstorm</span></td><td>Genuinely meeting-worthy strategy (members-only value vs duplicating FB comments) — but a product-scope question, not a review finding.</td></tr>
+      <tr><td class="rid">C27</td><td>Zero-moderator chat: optimistic-publish veto window</td><td><span class="verdict defer">brainstorm</span></td><td>Real gap (guest messages pend with no mod online), best designed inside a chat-moderation brainstorm.</td></tr>
+      <tr><td class="rid">C28</td><td>Rabbi-issued invite tokens that skip the two-gate flow</td><td><span class="verdict defer">brainstorm</span></td><td>Nice friction reducer, but overlaps the deliberate two-gate registration; scope it as a variant, not a fix.</td></tr>
+      <tr><td class="rid">C30</td><td>Make WCAG-AA a hard launch blocker across every route</td><td><span class="verdict defer">folded</span></td><td>Its concrete a11y failures are absorbed into I3/I4/I10/I15; the "automated checks are comprehensive" predicate was off, so the blanket-gate framing was dropped.</td></tr>
+      <tr><td class="rid">C31–C35</td><td>Five cross-cutting "envelope" bundles</td><td><span class="verdict cut">redundant</span></td><td>Both critics cut them as repackaging of the sharper individual survivors they were built from (I1, I3, I4, I6, I7, I8).</td></tr>
+      <tr class="tier"><td colspan="4">Axis coverage</td></tr>
+      <tr><td class="rid">—</td><td>axis: live-engagement</td><td><span class="verdict fixed">healthy</span></td><td>Only one survivor (I7) — not a gap: its other candidates (stream/calendar merge, reconnect jitter) were verified already-fixed. A maturity signal.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<footer class="composition-signal">
+  Composed 2026-07-01 by ce-ideate (go-deep) from a live review of branch <code>dev</code> — 7 evidence passes, 43 raw ideas across 6 frames, adversarially verified against current code. Screenshots and evidence dossiers under <code>/tmp/compound-engineering/ce-ideate/5f2fcf40/</code>.
+</footer>
+
+</div>
+</body>
+</html>
