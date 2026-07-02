@@ -2,6 +2,47 @@ const form = document.getElementById('login-form');
 const errorDiv = document.getElementById('error-message');
 const successDiv = document.getElementById('success-message');
 
+// Resolve the post-login landing path from the ?redirect parameter that
+// requireAuth set on the login URL. A redirect value is honored only when it
+// resolves to the current origin. We parse it against window.location.origin and
+// require the parsed origin to match exactly, then navigate to the parsed
+// path/query/hash. Anything that resolves off-origin, fails to parse, or is
+// empty/whitespace-only fails closed to the member directory.
+//
+// Per-character inspection of the raw string is unsafe: browsers strip ASCII
+// tab (U+0009), LF (U+000A), and CR (U+000D) from a URL before navigating, so a
+// value like "/<TAB>/evil.example" is re-read as "//evil.example" (an external
+// host) even though the raw first two characters look like a same-origin path.
+// We therefore reject any control character up front and let the URL parser —
+// which applies the same normalization the browser will — decide the origin.
+function resolveLandingPath(search) {
+  const DEFAULT = '/directory';
+  let redirect;
+  try {
+    redirect = new URLSearchParams(search).get('redirect');
+  } catch (error) {
+    return DEFAULT;
+  }
+  if (!redirect || redirect.trim() === '') {
+    return DEFAULT;
+  }
+  // Reject C0 control characters and DEL; browsers strip tab/LF/CR from URLs,
+  // which would let an off-origin host slip past origin validation.
+  if (/[\u0000-\u001F\u007F]/.test(redirect)) {
+    return DEFAULT;
+  }
+  let parsed;
+  try {
+    parsed = new URL(redirect, window.location.origin);
+  } catch (error) {
+    return DEFAULT;
+  }
+  if (parsed.origin !== window.location.origin) {
+    return DEFAULT;
+  }
+  return parsed.pathname + parsed.search + parsed.hash;
+}
+
 if (form) {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -47,8 +88,9 @@ if (form) {
 
       if (result.success) {
         successDiv.textContent = 'Login successful! Redirecting...';
+        const landingPath = resolveLandingPath(window.location.search);
         setTimeout(() => {
-          window.location.href = '/';
+          window.location.href = landingPath;
         }, 1000);
         return;
       }
