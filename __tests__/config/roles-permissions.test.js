@@ -54,15 +54,16 @@ describe('Roles & Permissions Configuration', () => {
             const rabbiPerms = getRolePermissions(Roles.RABBI);
             expect(Array.isArray(rabbiPerms)).toBe(true);
             
-            // Rabbi can: post announcements, manage calendar, manage messages, view donations
+            // Rabbi can: post announcements, manage calendar, manage messages,
+            // view donations, manage content (KTD4: CMS editing for Rabbi/Admin)
             expect(rabbiPerms).toContain(Permissions.POST_ANNOUNCEMENTS);
             expect(rabbiPerms).toContain(Permissions.MANAGE_CALENDAR);
             expect(rabbiPerms).toContain(Permissions.MANAGE_MESSAGES);
             expect(rabbiPerms).toContain(Permissions.VIEW_DONATIONS);
-            
-            // Rabbi cannot: view metrics, manage content
+            expect(rabbiPerms).toContain(Permissions.MANAGE_CONTENT);
+
+            // Rabbi cannot: view metrics
             expect(rabbiPerms).not.toContain(Permissions.VIEW_METRICS);
-            expect(rabbiPerms).not.toContain(Permissions.MANAGE_CONTENT);
         });
 
         it('should return correct permissions for SOCIAL_CHAIR role', () => {

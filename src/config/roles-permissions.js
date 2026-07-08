@@ -85,6 +85,10 @@ const rolePermissionMap = {
         Permissions.MANAGE_CALENDAR,
         Permissions.MANAGE_MESSAGES,
         Permissions.VIEW_DONATIONS,
+        // Story 1.3: CMS page editing is a Rabbi/Admin capability. The grant
+        // spans every /admin/pages/* slug, legal pages included — the
+        // permission is deliberately all-or-nothing (temple content plan KTD4).
+        Permissions.MANAGE_CONTENT,
         Permissions.MANAGE_STREAMING,  // See Permissions block for rationale
         Permissions.MODERATE_CHAT,
         Permissions.MANAGE_DIRECTORY,
