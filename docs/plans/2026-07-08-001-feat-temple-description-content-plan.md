@@ -162,7 +162,7 @@ flowchart TB
 - **KTD1. Seed the About draft via a guarded data migration; publish stays in the admin UI.** A new migration updates the `about` row's title and content only while the row still holds the 001 placeholder, and leaves `published = FALSE`. Content is versioned in git and reproducible across environments (the `021_seed_legal_pages.sql` precedent); the guard cannot clobber live edits; and touching only draft state sidesteps the migration path's two gaps — no version snapshot and no Redis invalidation — because publish and all subsequent edits flow through `pageController`, which handles both. Rejected: admin-editor-only entry (content not in git; exposed to the toolbar traps) and `ON CONFLICT DO UPDATE` (unguarded overwrite, unprecedented shape in this repo).
 - **KTD2. Reuse `public/images/temple-building.jpg` as the About page image, inline in the CMS content.** The asset is already committed, production quality, and served from `public/`; the sanitizer allows `img[src, alt]`. A single-size JPEG matches current site practice — responsive variants stay deferred with the image guide's aspirational checklist.
 - **KTD3. SEO copy lands as code edits at the existing hardcoded sites.** The About description string in both branches of `src/routes/about.js`, and the homepage `title`/`description`/mission strings in `src/controllers/homeController.js`. No CMS meta column (deferred). The contact page's meta description is not touched (exact-string test).
-- **KTD4. Grant `MANAGE_CONTENT` to the Rabbi role.** The Product Contract's A2 and Story 1.3's intent ("CMS editing for Rabbi/Admin") both assume it; today the Rabbi role 403s on `/admin/pages/*`. One-line grant in `src/config/roles-permissions.js` plus an access test.
+- **KTD4. Grant `MANAGE_CONTENT` to the Rabbi role.** The Product Contract's A2 and Story 1.3's intent ("CMS editing for Rabbi/Admin") both assume it; today the Rabbi role 403s on `/admin/pages/*`. One-line grant in `src/config/roles-permissions.js` plus an access test. The permission is all-or-nothing across `/admin/pages/*`, so the grant deliberately covers every CMS page — including the legal pages (privacy, terms, accessibility) — rather than adding per-slug scoping machinery this site doesn't need; U5 asserts that reach explicitly.
 - **KTD5. Trim the editor toolbar to what the sanitizer supports.** Remove blockquote, code-block, and image from the Quill toolbar config. All three silently destroy content on save (tags unwrapped; image `data:` URI stripped to a broken `img`), which directly threatens R11 for future maintenance edits. The proper image pipeline is deferred follow-up work.
 
 ### High-Level Technical Design
@@ -207,7 +207,7 @@ U1 first — the authored content anchors the copy tone the other units echo. U2
 - **Goal:** The letter-derived About page HTML lands in the database as a draft, versioned in git.
 - **Requirements:** R1, R2, R3, R4, R6, R11; keeps R5/R10 intact (row stays unpublished).
 - **Dependencies:** none.
-- **Files:** `migrations/027_seed_about_page_content.sql` (new; confirm 027 is the next free number at implementation time), `__tests__/content/aboutContent.test.js` (new).
+- **Files:** `migrations/027_seed_about_page_content.sql` (new; confirm 027 is the next free number at implementation time), `__tests__/scripts/aboutPageContentMigration.test.js` (new; joins the five existing migration-content tests in `__tests__/scripts/`, e.g. `legalPagesMigration.test.js`).
 - **Approach:** Follow `migrations/021_seed_legal_pages.sql` for style — header comment block, dollar-quoted (`$html$...$html$`) HTML. One `UPDATE static_pages SET title, content, updated_at = NOW() WHERE slug = 'about' AND content LIKE '%vibrant and inclusive Jewish community%'` (a distinctive marker from the 001 placeholder) so the migration no-ops if the row was ever hand-edited; do not touch `published`. Author the content from Appendix A: welcome + identity section, Rabbi Nancy Tunick section, worship schedule + invitation, membership contact with a `mailto:` link, and `<img src="/images/temple-building.jpg" alt="..." />` with descriptive alt text. Allowed tags only — paragraph breaks via `<p>`, never `<br>`. Commit the HTML in the sanitizer's fixed-point form: run the drafted HTML through `sanitizeHtml()` once and commit that output — the sanitizer injects `rel="noopener noreferrer"` on every `<a>` and re-emits `<img>` self-closing, so hand-authored markup will not round-trip byte-identically.
 - **Execution note:** The content itself is the deliverable — hand-author the HTML against the transcription; don't generate it through Quill.
 - **Test scenarios** (the test extracts the dollar-quoted HTML block from the migration file):
@@ -261,8 +261,9 @@ U1 first — the authored content anchors the copy tone the other units echo. U2
 - **Dependencies:** none.
 - **Files:** `src/config/roles-permissions.js`, `__tests__/integration/adminPagesRoutes.test.js`, `__tests__/config/roles-permissions.test.js`.
 - **Approach:** Add `MANAGE_CONTENT` to the Rabbi role's permission list. No middleware changes — `requirePageManagementAccess` already keys on the permission. `__tests__/config/roles-permissions.test.js` currently asserts the Rabbi role does NOT hold `MANAGE_CONTENT` — flip that assertion to expect the grant, as the direct corollary of KTD4 (otherwise the full suite goes red on a file this unit doesn't touch).
-- **Test scenarios:**
-  - A rabbi-role user (test-mode `req.user`) reaches GET `/admin/pages/about` (200 with mocked controller) and POST save/publish endpoints pass RBAC.
+- **Test scenarios** (authenticate via a signed JWT `auth_token` cookie following the `mkToken` pattern in `__tests__/integration/directoryRouteProtection.test.js`, with a `src/config/db` mock added to `adminPagesRoutes.test.js` whose user-lookup query returns the target role — the `NODE_ENV=test` fallback injects only a hardcoded admin user, so rabbi/member roles cannot be exercised via test-mode `req.user`):
+  - A rabbi-role user reaches GET `/admin/pages/about` (200 with mocked controller) and the POST save/publish endpoints pass RBAC.
+  - Boundary: a rabbi-role user also reaches a legal-page slug (e.g. GET `/admin/pages/privacy` → 200), asserting the grant's full documented reach (KTD4) is intentional.
   - Regression: a member-role user still receives 403 on `/admin/pages/*`.
   - The roles-permissions unit test expects the Rabbi grant list to contain `MANAGE_CONTENT` (flipped from the current `not.toContain` assertion).
 - **Verification:** `npx jest __tests__/integration/adminPagesRoutes.test.js __tests__/config/roles-permissions.test.js` green.
@@ -285,12 +286,12 @@ U1 first — the authored content anchors the copy tone the other units echo. U2
 |---|---|---|
 | Full suite + coverage (60% global threshold, Node 18) | `npm test` | all units |
 | Lint (`src/**` only) | `npm run lint` | U2, U3, U5 |
-| Content round-trip + facts | `npx jest __tests__/content/aboutContent.test.js` | U1 |
+| Content round-trip + facts | `npx jest __tests__/scripts/aboutPageContentMigration.test.js` | U1 |
 | About route | `npx jest __tests__/routes/about.test.js` | U2 |
 | Homepage | `npx jest __tests__/controllers/homeController.test.js __tests__/routes/home.test.js` | U3 |
 | Contact + SEO lock | `npx jest __tests__/routes/contact.test.js __tests__/routes/seo.test.js` | U4 |
 | Admin pages RBAC | `npx jest __tests__/integration/adminPagesRoutes.test.js __tests__/config/roles-permissions.test.js` | U5 |
-| Accessibility | `npx jest __tests__/views/about.accessibility.test.js __tests__/views/contact.accessibility.test.js` | U1, U4 |
+| Accessibility | `npx jest __tests__/views/about.accessibility.test.js __tests__/views/contact.accessibility.test.js` | U4; the About suite covers the template shell only (it mocks `getPublishedPage` to null) — seeded-content a11y is carried by U1's alt-text check and runbook step 4 |
 | Migration smoke (local stack) | `docker compose up -d && npm run migrate` — row updated, `published` FALSE; second run no-ops | U1 |
 | Editor smoke (manual) | Load `/admin/pages/about`; toolbar trimmed; save round-trips | U6 |
 
@@ -309,7 +310,7 @@ Quality gates from `AGENTS.md` apply throughout: no `console.log` in `src/`, no 
 ### Operational Notes — publish runbook (post-merge, owner-gated)
 
 1. A3 confirms: president's name (letter: Traci Welch), Friday 7:00pm weekly cadence and rabbi/lay alternation, Saturday 9:30am Torah study, Rabbi Tunick's current role.
-2. For any unconfirmed fact, A2 edits the About content to timeless phrasing via `/admin/pages/about` (save sanitizes, snapshots a version, and invalidates the cache).
+2. For any unconfirmed fact, A2 edits the About content to timeless phrasing via `/admin/pages/about` (save sanitizes, snapshots a version, and invalidates the cache). The contact page's membership line ships nameless by design; if the owner confirms the president's name and wants it shown, that is a one-line follow-up code edit to `src/views/contact.ejs` in its own small PR — not an admin-UI action.
 3. A2 publishes via the admin UI Publish button — this flips `published` and invalidates the `page:about` Redis cache. Do not use `scripts/publish_about.js`: it bypasses cache invalidation (if it is used anyway, delete the `page:about` cache key afterward).
 4. Verify: `/about` renders the full content with the building photo; the nav link and homepage CTA no longer 404; no draft banner.
 
