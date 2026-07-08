@@ -12,12 +12,15 @@ document.addEventListener('DOMContentLoaded', function () {
         theme: 'snow',
         placeholder: 'Start typing your page content here...',
         modules: {
+            // Only controls whose output survives sanitizeHtml() on save:
+            // blockquote/code-block get unwrapped and the image button inserts
+            // data: URIs the sanitizer strips (no upload endpoint exists yet).
+            // Images enter content as hand-authored HTML until an image
+            // pipeline lands.
             toolbar: [
                 ['bold', 'italic', 'underline'],
                 ['link'],
                 [{ 'header': 2 }, { 'header': 3 }],
-                ['image'],
-                ['blockquote', 'code-block'],
                 [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                 ['clean']
             ]
