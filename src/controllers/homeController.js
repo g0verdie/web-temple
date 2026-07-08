@@ -71,14 +71,14 @@ exports.getHomepage = async (req, res) => {
     const stream = buildStreamViewModel(rawStream || defaultErrorState);
 
     res.render('layout', {
-      title: 'Temple B\'nai Israel - Welcome Home',
-      description: 'Temple B\'nai Israel is a warm, inclusive Jewish community in Florence, AL. Watch live services, see upcoming events, and connect with our congregation.',
+      title: 'Temple B\'nai Israel — Reform Jewish Congregation in Florence, AL',
+      description: 'Temple B\'nai Israel is a Reform Jewish congregation in Florence, AL, welcoming families of all denominations and interfaith families across the Shoals. Watch live services, see upcoming events, and connect with our congregation.',
       bodyView: 'home',
       stylesheets: ['/css/announcements.css'],
       viewData: {
         mission: {
           headline: 'Welcome to Temple B\'nai Israel',
-          statement: 'A warm, inclusive Jewish community in Florence, AL, celebrating tradition, fostering spiritual growth, and building lasting connections.',
+          statement: 'A warm Reform Jewish congregation rooted in the Shoals for more than a century, welcoming Jewish families of all denominations and interfaith families.',
           cta: {
             text: 'New Here? Learn More',
             link: '/about'
