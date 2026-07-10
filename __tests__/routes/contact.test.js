@@ -31,6 +31,16 @@ describe('Contact Route Integration', () => {
             expect(res.text).toContain('Contact Us');
             expect(res.text).toContain('<form');
         });
+
+        it('should show the membership line routed to the congregation president, without a personal name', async () => {
+            const res = await request(app).get('/contact');
+            expect(res.statusCode).toBe(200);
+            expect(res.text).toMatch(/membership/i);
+            expect(res.text).toContain('congregation president');
+            expect(res.text).toContain('mailto:info@florencetemple.org');
+            // The president's name ships only after owner confirmation (R10).
+            expect(res.text).not.toContain('Traci Welch');
+        });
     });
 
     describe('POST /contact', () => {

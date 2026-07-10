@@ -70,6 +70,17 @@ describe('About Page Route', () => {
     });
   });
 
+  describe('SEO Metadata', () => {
+    it('should name the Reform identity and the Florence / Shoals locality in the meta description', async () => {
+      const res = await request(app).get('/about');
+      const meta = res.text.match(/<meta name="description" content="([^"]*)"/);
+      expect(meta).toBeTruthy();
+      expect(meta[1]).toContain('Reform');
+      expect(meta[1]).toContain('Florence');
+      expect(meta[1]).toContain('Shoals');
+    });
+  });
+
   describe('Draft Status Indicator', () => {
     it('should NOT show draft indicator for published pages', async () => {
       const res = await request(app).get('/about');

@@ -96,6 +96,37 @@ describe('JSON-LD structured data (U6)', () => {
         expect(blocks[0]['@type']).toBe('PlaceOfWorship');
     });
 
+    test('homepage PlaceOfWorship description matches its meta description', async () => {
+        EventService.getNextService.mockResolvedValue(null);
+        EventService.getUpcomingEvents.mockResolvedValue([]);
+        const res = await request(app).get('/');
+        expect(res.status).toBe(200);
+        const document = new JSDOM(res.text).window.document;
+        const metaDescription = document.querySelector('meta[name="description"]').getAttribute('content');
+        const place = parseJsonLd(res.text).find((b) => b['@type'] === 'PlaceOfWorship');
+        expect(metaDescription).toContain('Reform');
+        expect(place.description).toBe(metaDescription);
+    });
+
+    test('PlaceOfWorship description matches a page-aware meta description', async () => {
+        const res = await request(app).get('/about');
+        const document = new JSDOM(res.text).window.document;
+        const metaDescription = document.querySelector('meta[name="description"]').getAttribute('content');
+        const place = parseJsonLd(res.text).find((b) => b['@type'] === 'PlaceOfWorship');
+        expect(metaDescription).toContain('Reform');
+        expect(place.description).toBe(metaDescription);
+    });
+
+    test('PlaceOfWorship description falls back to the sitewide default', async () => {
+        // /privacy passes no per-page description local.
+        const res = await request(app).get('/privacy');
+        const document = new JSDOM(res.text).window.document;
+        const metaDescription = document.querySelector('meta[name="description"]').getAttribute('content');
+        const place = parseJsonLd(res.text).find((b) => b['@type'] === 'PlaceOfWorship');
+        expect(metaDescription).toContain('warm, inclusive Jewish community');
+        expect(place.description).toBe(metaDescription);
+    });
+
     test('every JSON-LD block parses as valid JSON', async () => {
         EventService.getEventsInRange.mockResolvedValue([
             { id: 1, title: 'Shabbat Service', date: new Date(Date.now() + 86400000), description: 'svc', location: 'Sanctuary' }

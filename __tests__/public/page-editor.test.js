@@ -7,6 +7,11 @@
 // read-only. This gap ships green because CSRF is disabled under NODE_ENV=test,
 // so no server-side test can catch a missing client-side token.
 //
+// Also pins the Quill init config (PR #7 review): the toolbar must not expose
+// controls the sanitizer destroys on save, and the `formats` whitelist — the
+// mechanism that actually governs paste, which the toolbar trim alone does not —
+// must match the sanitizer-safe set.
+//
 // page-editor.js binds its handlers inside a DOMContentLoaded listener, so after
 // requiring the module we dispatch DOMContentLoaded to register them. Quill is a
 // vendored global at runtime; we stub it here.
@@ -35,7 +40,7 @@ const fire = async (el) => {
     await Promise.resolve();
 };
 
-describe('page editor CSRF token', () => {
+describe('page editor', () => {
     // Require once: the module registers a single DOMContentLoaded listener on the
     // (shared) jsdom document. Requiring per-test would stack listeners and fire the
     // bind logic N times. We re-dispatch DOMContentLoaded each test to (re)bind the
@@ -100,5 +105,20 @@ describe('page editor CSRF token', () => {
         const [url, options] = global.fetch.mock.calls[0];
         expect(url).toBe('/admin/pages/about/restore/2');
         expect(options.headers['CSRF-Token']).toBe('test-csrf');
+    });
+
+    it('trims sanitizer-destroyed controls from the toolbar', () => {
+        const options = global.Quill.mock.calls[0][1];
+        const controls = options.modules.toolbar
+            .flat()
+            .map((entry) => (typeof entry === 'string' ? entry : Object.keys(entry)[0]));
+        expect(controls).not.toContain('image');
+        expect(controls).not.toContain('blockquote');
+        expect(controls).not.toContain('code-block');
+    });
+
+    it('whitelists formats so paste cannot introduce sanitizer-destroyed content', () => {
+        const options = global.Quill.mock.calls[0][1];
+        expect(options.formats).toEqual(['bold', 'italic', 'underline', 'link', 'header', 'list', 'image']);
     });
 });

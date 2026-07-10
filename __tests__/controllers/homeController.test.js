@@ -62,6 +62,22 @@ describe('homeController', () => {
       }));
     });
 
+    it('should carry the Reform identity in the SEO copy and mission statement', async () => {
+      EventService.getNextService.mockResolvedValue(mockService);
+      EventService.getUpcomingEvents.mockResolvedValue(mockEvents);
+      StreamingService.getPublicEmbedMetadata.mockResolvedValue({
+        status: 'offline',
+        embedUrl: null
+      });
+
+      await homeController.getHomepage(req, res);
+
+      const renderCall = res.render.mock.calls[0][1];
+      expect(renderCall.description).toContain('Florence');
+      expect(renderCall.description).toContain('Reform');
+      expect(renderCall.viewData.mission.statement).toContain('interfaith');
+    });
+
     it('should render the branded error view (not plain text) on failure', async () => {
       EventService.getNextService.mockRejectedValue(new Error('Service failure'));
       StreamingService.getPublicEmbedMetadata.mockResolvedValue({

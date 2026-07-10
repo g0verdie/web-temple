@@ -11,13 +11,19 @@ document.addEventListener('DOMContentLoaded', function () {
     const quill = new Quill('#editor', {
         theme: 'snow',
         placeholder: 'Start typing your page content here...',
+        // Only formats whose output survives sanitizeHtml() on save. Without this
+        // whitelist Quill registers every format, so pasted blockquotes/code blocks
+        // would enter the document and be silently destroyed on save — trimming the
+        // toolbar alone doesn't govern paste. `image` stays registered despite having
+        // no button so existing hand-authored <img> content survives editor
+        // load/save until an image pipeline lands (the button inserted data: URIs
+        // the sanitizer strips; pasted images remain a known gap).
+        formats: ['bold', 'italic', 'underline', 'link', 'header', 'list', 'image'],
         modules: {
             toolbar: [
                 ['bold', 'italic', 'underline'],
                 ['link'],
                 [{ 'header': 2 }, { 'header': 3 }],
-                ['image'],
-                ['blockquote', 'code-block'],
                 [{ 'list': 'ordered' }, { 'list': 'bullet' }],
                 ['clean']
             ]
