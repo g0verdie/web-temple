@@ -20,6 +20,7 @@ require('dotenv').config();
 const bcrypt = require('bcrypt');
 const db = require('../src/config/db');
 const { Roles } = require('../src/config/roles-permissions');
+const { templeDayKey, toTempleIso } = require('../src/utils/templeTime');
 
 const BCRYPT_COST = 10;
 const DEMO_DOMAIN = 'florencetemple.org';
@@ -146,20 +147,59 @@ async function seedDemoAccounts(database) {
 // ---------------------------------------------------------------------------
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
+const WEEKDAY = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+
+// Temple-zone UTC offset in minutes at an instant, e.g. -360 for "-06:00".
+function templeOffsetMinutes(instant) {
+    const [, sign, hh, mm] = toTempleIso(instant).match(/([+-])(\d{2}):(\d{2})$/);
+    return (sign === '-' ? -1 : 1) * (Number(hh) * 60 + Number(mm));
+}
+
+// Instant for a temple-local wall-clock time; re-checks the offset so DST days land right.
+function templeWallTime(year, month, day, hour, minute) {
+    const asUtc = Date.UTC(year, month - 1, day, hour, minute);
+    const guess = asUtc - templeOffsetMinutes(new Date(asUtc)) * 60000;
+    return new Date(asUtc - templeOffsetMinutes(new Date(guess)) * 60000);
+}
+
+/**
+ * The next temple-local `weekday` at `time` ("HH:MM") strictly after `now`,
+ * shifted by `weeks` whole weeks (negative = earlier). Week shifts are done on
+ * calendar days, so the clock time survives DST changes.
+ */
+function templeSlot(now, weekday, time, weeks = 0) {
+    const [hour, minute] = time.split(':').map(Number);
+    const [y, m, d] = templeDayKey(new Date(now)).split('-').map(Number);
+    const todayDow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+    let offsetDays = (WEEKDAY[weekday] - todayDow + 7) % 7;
+    if (templeWallTime(y, m, d + offsetDays, hour, minute).getTime() <= now) {
+        offsetDays += 7;
+    }
+    const target = new Date(Date.UTC(y, m - 1, d + offsetDays + 7 * weeks));
+    return templeWallTime(
+        target.getUTCFullYear(), target.getUTCMonth() + 1, target.getUTCDate(), hour, minute
+    );
+}
 
 /**
  * Build the demo calendar events (6-8): a mix of past and future, including at
  * least one FUTURE event_type='service' to drive the homepage countdown.
+ * Times follow the temple's real schedule (Friday 7:00 PM, Saturday 9:30 AM)
+ * in the temple timezone, whatever moment the seeder runs.
+ * @param {number} [now] - epoch ms; defaults to the current time
  * @returns {Array<Object>}
  */
-function buildEvents() {
-    const now = Date.now();
+function buildEvents(now = Date.now()) {
+    const slot = (weekday, time, weeks, durationHours) => {
+        const startsAt = templeSlot(now, weekday, time, weeks);
+        return { startsAt, endsAt: new Date(startsAt.getTime() + durationHours * HOUR_MS) };
+    };
     return [
         {
             title: 'Friday Night Service',
             description: 'Weekly Kabbalat Shabbat.',
-            startsAt: new Date(now + 3 * DAY_MS),
-            endsAt: new Date(now + 3 * DAY_MS + 2 * 60 * 60 * 1000),
+            ...slot('fri', '19:00', 0, 2),
             visibility: 'public',
             eventType: 'service',
             location: 'Main Sanctuary',
@@ -168,8 +208,7 @@ function buildEvents() {
         {
             title: 'Shabbat Morning Service',
             description: 'Weekly Shabbat morning service and Torah reading.',
-            startsAt: new Date(now + 10 * DAY_MS),
-            endsAt: new Date(now + 10 * DAY_MS + 3 * 60 * 60 * 1000),
+            ...slot('sat', '09:30', 1, 3),
             visibility: 'public',
             eventType: 'service',
             location: 'Main Sanctuary',
@@ -178,8 +217,7 @@ function buildEvents() {
         {
             title: 'Adult Education: Intro to Talmud',
             description: 'Members-only weekly study session.',
-            startsAt: new Date(now + 5 * DAY_MS),
-            endsAt: new Date(now + 5 * DAY_MS + 90 * 60 * 1000),
+            ...slot('tue', '19:00', 0, 1.5),
             visibility: 'members',
             eventType: 'event',
             location: 'Library',
@@ -188,8 +226,7 @@ function buildEvents() {
         {
             title: 'Community Potluck Dinner',
             description: 'Bring a dish to share. Open to all.',
-            startsAt: new Date(now + 18 * DAY_MS),
-            endsAt: new Date(now + 18 * DAY_MS + 3 * 60 * 60 * 1000),
+            ...slot('sun', '17:30', 2, 3),
             visibility: 'public',
             eventType: 'event',
             location: 'Social Hall',
@@ -198,8 +235,7 @@ function buildEvents() {
         {
             title: 'Board Meeting',
             description: 'Monthly board meeting (members welcome to observe).',
-            startsAt: new Date(now + 25 * DAY_MS),
-            endsAt: new Date(now + 25 * DAY_MS + 2 * 60 * 60 * 1000),
+            ...slot('thu', '19:00', 3, 2),
             visibility: 'members',
             eventType: 'event',
             location: 'Conference Room',
@@ -208,8 +244,7 @@ function buildEvents() {
         {
             title: 'Friday Night Service',
             description: 'Past Kabbalat Shabbat service.',
-            startsAt: new Date(now - 4 * DAY_MS),
-            endsAt: new Date(now - 4 * DAY_MS + 2 * 60 * 60 * 1000),
+            ...slot('fri', '19:00', -1, 2),
             visibility: 'public',
             eventType: 'service',
             location: 'Main Sanctuary',
@@ -218,8 +253,7 @@ function buildEvents() {
         {
             title: 'Past Community Lecture',
             description: 'A recent guest lecture.',
-            startsAt: new Date(now - 11 * DAY_MS),
-            endsAt: new Date(now - 11 * DAY_MS + 90 * 60 * 1000),
+            ...slot('wed', '19:00', -2, 1.5),
             visibility: 'public',
             eventType: 'event',
             location: 'Social Hall',
