@@ -135,6 +135,54 @@ describe('seed-demo script', () => {
             expect(futureService).toBe(true);
         });
 
+        describe('event schedule is anchored to temple weekdays and times', () => {
+            const { formatEventDateTime } = require('../../src/utils/templeTime');
+
+            // Seeder run moments: mid-week afternoon, Friday after the 7pm service,
+            // the Friday before DST starts (Mar 8), and the Friday before DST ends (Nov 1).
+            const runMoments = [
+                '2026-11-09T19:06:00Z',
+                '2026-11-14T02:30:00Z',
+                '2026-03-06T15:00:00Z',
+                '2026-10-30T15:00:00Z'
+            ];
+
+            const expected = {
+                'Weekly Kabbalat Shabbat.': /^Friday, .* at 7:00 PM$/,
+                'Past Kabbalat Shabbat service.': /^Friday, .* at 7:00 PM$/,
+                'Weekly Shabbat morning service and Torah reading.': /^Saturday, .* at 9:30 AM$/
+            };
+
+            test.each(runMoments)('run at %s', (iso) => {
+                const now = new Date(iso).getTime();
+                const events = seed.buildEvents(now);
+
+                events.forEach((evt) => {
+                    expect(evt.startsAt.getUTCSeconds()).toBe(0);
+                    expect(evt.endsAt.getTime()).toBeGreaterThan(evt.startsAt.getTime());
+                    if (expected[evt.description]) {
+                        expect(formatEventDateTime(evt.startsAt)).toMatch(expected[evt.description]);
+                    }
+                });
+
+                const upcomingFriday = events.find((e) => e.description === 'Weekly Kabbalat Shabbat.');
+                const pastFriday = events.find((e) => e.description === 'Past Kabbalat Shabbat service.');
+                expect(upcomingFriday.startsAt.getTime()).toBeGreaterThan(now);
+                expect(pastFriday.startsAt.getTime()).toBeLessThan(now);
+
+                // The next Friday service is the soonest upcoming service (drives the countdown).
+                const nextService = events
+                    .filter((e) => e.eventType === 'service' && e.startsAt.getTime() > now)
+                    .sort((a, b) => a.startsAt - b.startsAt)[0];
+                expect(nextService).toBe(upcomingFriday);
+
+                // Past events stay past and future events stay future.
+                expect(events.filter((e) => e.startsAt.getTime() < now).map((e) => e.title))
+                    .toEqual(expect.arrayContaining(['Friday Night Service', 'Past Community Lecture']));
+                expect(events.filter((e) => e.startsAt.getTime() > now).length).toBe(5);
+            });
+        });
+
         test('seeds >=3 announcements with exactly one featured, idempotent on fixed id', async () => {
             await seed.seedContent(db, OWNER_ID);
 
