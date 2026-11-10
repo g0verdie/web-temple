@@ -112,4 +112,38 @@ const toTempleIso = (value) => {
     return `${parts.year}-${parts.month}-${parts.day}T${hour}:${parts.minute}:${parts.second}${offset}`;
 };
 
-module.exports = { formatEventDateTime, formatEventTime, formatEventDay, templeDayKey, toTempleIso };
+/**
+ * [start, end] instants of a temple-local calendar month (month is 1-based):
+ * start = 00:00:00.000 on the 1st in the temple zone, end = the last millisecond
+ * of the month. Used to scope a "month" query to the temple's calendar rather
+ * than UTC's, so an evening event on the last day still belongs to its own month.
+ * DST-correct: the offset is read from the zone at the resolved instant.
+ */
+const zoneOffsetMs = (instant) => {
+    const p = new Intl.DateTimeFormat('en-US', {
+        timeZone: templeTimezone(), hourCycle: 'h23',
+        year: 'numeric', month: 'numeric', day: 'numeric',
+        hour: 'numeric', minute: 'numeric', second: 'numeric'
+    }).formatToParts(instant).reduce((acc, part) => {
+        acc[part.type] = Number(part.value);
+        return acc;
+    }, {});
+    const wallAsUtc = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+    return wallAsUtc - Math.floor(instant.getTime() / 1000) * 1000;
+};
+
+const startOfTempleMonth = (year, month) => {
+    const wall = Date.UTC(year, month - 1, 1);
+    // Resolve twice: the first pass uses the offset at the naive instant, the second
+    // re-reads it at the candidate so a month that starts across a DST change is exact.
+    const first = wall - zoneOffsetMs(new Date(wall));
+    return new Date(wall - zoneOffsetMs(new Date(first)));
+};
+
+const templeMonthRange = (year, month) => {
+    const start = startOfTempleMonth(year, month);
+    const next = month === 12 ? startOfTempleMonth(year + 1, 1) : startOfTempleMonth(year, month + 1);
+    return { start, end: new Date(next.getTime() - 1) };
+};
+
+module.exports = { formatEventDateTime, formatEventTime, formatEventDay, templeDayKey, toTempleIso, templeMonthRange };

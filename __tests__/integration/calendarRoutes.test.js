@@ -80,8 +80,10 @@ describe('Public calendar page (U5)', () => {
         const [start, end] = EventService.getEventsInRange.mock.calls.at(-1);
         // Window is the requested month only — not a fixed now-relative range, which
         // is what made adjacent months render identical content.
-        expect(start.toISOString().slice(0, 10)).toBe('2026-07-01');
-        expect(end.toISOString().slice(0, 7)).toBe('2026-07');
+        // The window is the temple-local (America/Chicago, CDT = UTC-5 in July) month,
+        // so it ends at Jul 31 23:59:59.999 local == Aug 1 04:59:59.999Z.
+        expect(start.toISOString()).toBe('2026-07-01T05:00:00.000Z');
+        expect(end.toISOString()).toBe('2026-08-01T04:59:59.999Z');
         expect(end.getTime()).toBeGreaterThan(start.getTime());
     });
 
