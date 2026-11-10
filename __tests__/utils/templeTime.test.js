@@ -3,7 +3,8 @@ const {
     formatEventTime,
     formatEventDay,
     templeDayKey,
-    toTempleIso
+    toTempleIso,
+    templeMonthRange
 } = require('../../src/utils/templeTime');
 
 // The one temple-timezone formatter. Stored instants are absolute (TIMESTAMPTZ),
@@ -148,5 +149,36 @@ describe('templeTime formatter', () => {
             expect(formatEventTime(new Date('2026-07-04T19:00:00Z'))).toBe('3:00 PM');
             expect(toTempleIso(new Date('2026-07-04T19:00:00Z'))).toBe('2026-07-04T15:00:00-04:00');
         });
+    });
+});
+
+describe('templeMonthRange', () => {
+    const origTz = process.env.TEMPLE_TIMEZONE;
+    afterEach(() => {
+        if (origTz === undefined) delete process.env.TEMPLE_TIMEZONE;
+        else process.env.TEMPLE_TIMEZONE = origTz;
+    });
+
+    const iso = ({ start, end }) => [start.toISOString(), end.toISOString()];
+
+    it('returns the Chicago-local month bounds (CDT in summer)', () => {
+        expect(iso(templeMonthRange(2026, 7))).toEqual(['2026-07-01T05:00:00.000Z', '2026-08-01T04:59:59.999Z']);
+    });
+
+    it('is exact across the fall-back DST change (Nov 2026 starts CDT, ends CST)', () => {
+        expect(iso(templeMonthRange(2026, 11))).toEqual(['2026-11-01T05:00:00.000Z', '2026-12-01T05:59:59.999Z']);
+    });
+
+    it('is exact across the spring-forward DST change (Mar 2026 starts CST, ends CDT)', () => {
+        expect(iso(templeMonthRange(2026, 3))).toEqual(['2026-03-01T06:00:00.000Z', '2026-04-01T04:59:59.999Z']);
+    });
+
+    it('rolls December into the next year', () => {
+        expect(iso(templeMonthRange(2026, 12))).toEqual(['2026-12-01T06:00:00.000Z', '2027-01-01T05:59:59.999Z']);
+    });
+
+    it('honors TEMPLE_TIMEZONE', () => {
+        process.env.TEMPLE_TIMEZONE = 'America/New_York';
+        expect(iso(templeMonthRange(2026, 7))).toEqual(['2026-07-01T04:00:00.000Z', '2026-08-01T03:59:59.999Z']);
     });
 });

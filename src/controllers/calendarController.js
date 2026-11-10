@@ -6,7 +6,7 @@
 
 const EventService = require('../services/EventService');
 const logger = require('../utils/logger');
-const { toTempleIso, templeDayKey } = require('../utils/templeTime');
+const { toTempleIso, templeDayKey, templeMonthRange } = require('../utils/templeTime');
 
 const ALLOWED_FLASH_MAX_LENGTH = 200;
 const sanitizeFlashMessage = (msg) => {
@@ -182,18 +182,24 @@ exports.getCalendarPage = async (req, res) => {
         const includeMembersOnly = !!req.user;
 
         const now = new Date();
+        // "Today" is the temple-local calendar day — NOT UTC's, which is already
+        // tomorrow every evening in Chicago.
+        const [todayYear, todayMonth, todayDay] = templeDayKey(now).split('-').map(Number);
         const parsed = parseMonthParam(req.query.month);
-        // Anchor on the FIRST of the month (UTC) so the ±month window math below
-        // can't overflow on day 29-31 (setUTCMonth rolls overflow days forward).
+        // The anchor is a calendar-month container (first of the month, UTC) used only
+        // for month arithmetic/labels, so the ±month math below can't overflow on day
+        // 29-31 (setUTCMonth rolls overflow days forward). Which month it names comes
+        // from the temple-local date.
         const anchor = parsed
             ? new Date(Date.UTC(parsed.year, parsed.month - 1, 1))
-            : new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+            : new Date(Date.UTC(todayYear, todayMonth - 1, 1));
 
-        // Scope the fetched window to the viewed month so prev/next navigation shows
-        // that month's events. (The window must track the anchor — a fixed range that
-        // ignores the anchor makes every month render the same now-relative slice.)
-        const monthStart = new Date(anchor.getTime());
-        const monthEnd = new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth() + 1, 1) - 1); // last ms of the month
+        // Scope the fetched window to the viewed month (in temple time, so an evening
+        // event on the last day is fetched with its own month) so prev/next navigation
+        // shows that month's events. (The window must track the anchor — a fixed range
+        // that ignores the anchor makes every month render the same now-relative slice.)
+        const { start: monthStart, end: monthEnd } =
+            templeMonthRange(anchor.getUTCFullYear(), anchor.getUTCMonth() + 1);
 
         const events = await EventService.getEventsInRange(monthStart, monthEnd, includeMembersOnly);
 
@@ -203,8 +209,9 @@ exports.getCalendarPage = async (req, res) => {
         const upcoming = events.filter(e => e.date >= now);
 
         // Build the month grid (weeks × 7 days) for the calendar table view
-        // (backlog item 5). UTC throughout, matching the UTC month windowing and
-        // month label, so the cells line up with the fetched range.
+        // (backlog item 5). Pure calendar arithmetic on the anchor; each event is
+        // bucketed by its temple-local day so it lands in the same cell its listed
+        // time (and the agenda heading) says.
         const gridYear = anchor.getUTCFullYear();
         const gridMonth = anchor.getUTCMonth();
         const firstWeekday = new Date(Date.UTC(gridYear, gridMonth, 1)).getUTCDay();
@@ -212,14 +219,14 @@ exports.getCalendarPage = async (req, res) => {
         const eventsByDay = {};
         for (const ev of events) {
             if (!ev.date) continue;
-            const day = ev.date.getUTCDate();
+            const day = Number(templeDayKey(ev.date).slice(8, 10));
             (eventsByDay[day] = eventsByDay[day] || []).push(ev);
         }
-        const todayIsThisMonth = now.getUTCFullYear() === gridYear && now.getUTCMonth() === gridMonth;
+        const todayIsThisMonth = todayYear === gridYear && todayMonth - 1 === gridMonth;
         const weeks = [];
         let week = new Array(firstWeekday).fill(null);
         for (let day = 1; day <= daysInMonth; day++) {
-            week.push({ day, events: eventsByDay[day] || [], isToday: todayIsThisMonth && day === now.getUTCDate() });
+            week.push({ day, events: eventsByDay[day] || [], isToday: todayIsThisMonth && day === todayDay });
             if (week.length === 7) { weeks.push(week); week = []; }
         }
         if (week.length) {
