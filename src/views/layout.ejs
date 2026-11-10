@@ -150,7 +150,7 @@
           <% if (user) { %>
           <li><a href="/directory"<%- isActive('/directory') %>>Directory</a></li>
           <li><a href="/account/settings"<%- isActive('/account/settings') %>>Account</a></li>
-          <% if (user.role === 'admin' || user.role === 'rabbi') { %>
+          <% if (isStaff()) { %>
           <li><a href="/admin"<%- isActive('/admin') %>>Admin</a></li>
           <% } %>
           <li><a href="/login" class="nav-logout" id="logout-link">Logout</a></li>
