@@ -114,15 +114,7 @@
     <section class="card mb-4" aria-labelledby="manage-heading">
         <div class="card-header"><h2 class="h5 mb-0" id="manage-heading">Manage</h2></div>
         <div class="card-body">
-            <% if (hasPermission(Permissions.POST_ANNOUNCEMENTS)) { %><a href="/admin/announcements" class="btn btn-outline-primary me-2 mb-2">Announcements</a><% } %>
-            <% if (hasPermission(Permissions.MANAGE_CALENDAR)) { %><a href="/admin/calendar" class="btn btn-outline-primary me-2 mb-2">Calendar</a><% } %>
-            <% if (hasPermission(Permissions.VIEW_DONATIONS)) { %><a href="/admin/donations" class="btn btn-outline-primary me-2 mb-2">Donations</a><% } %>
-            <% if (hasPermission(Permissions.MANAGE_DIRECTORY)) { %><a href="/admin/directory" class="btn btn-outline-primary me-2 mb-2">Member Directory</a><% } %>
-            <% if (hasPermission(Permissions.MANAGE_MEMBERS)) { %><a href="/admin/members" class="btn btn-outline-primary me-2 mb-2">Pending Members</a><% } %>
-            <% if (hasPermission(Permissions.MANAGE_MESSAGES)) { %><a href="/admin/messages" class="btn btn-outline-primary me-2 mb-2">Messages</a><% } %>
-            <% if (hasPermission(Permissions.MANAGE_STREAMING)) { %><a href="/admin/streaming" class="btn btn-outline-primary me-2 mb-2">Livestreams</a><% } %>
-            <% if (hasPermission(Permissions.MODERATE_CHAT)) { %><a href="/admin/chat-moderation" class="btn btn-outline-primary me-2 mb-2">Chat Moderation</a><% } %>
-            <% if (hasPermission(Permissions.MANAGE_CONTENT)) { %><a href="/admin/pages" class="btn btn-outline-primary me-2 mb-2">Pages</a><% } %>
+            <%- include('partials/manage-links') %>
             <a href="/admin/audit-logs" class="btn btn-outline-secondary me-2 mb-2">Audit Logs</a>
         </div>
     </section>

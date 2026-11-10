@@ -1,0 +1,11 @@
+<div class="container mt-5">
+    <h1>Admin</h1>
+    <p class="mt-4">Signed in as <%= String(role).replace(/_/g, ' ') %>. These are the admin screens you can use.</p>
+
+    <section class="card mb-4" aria-labelledby="manage-heading">
+        <div class="card-header"><h2 class="h5 mb-0" id="manage-heading">Manage</h2></div>
+        <div class="card-body">
+            <%- include('partials/manage-links') %>
+        </div>
+    </section>
+</div>
