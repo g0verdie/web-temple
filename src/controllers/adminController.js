@@ -293,6 +293,18 @@ exports.getDashboard = async (req, res) => {
     }
 };
 
+// Light landing for staff roles without the full dashboard (social chair, treasurer):
+// only the permission-filtered links. Deliberately no data reads — none of the
+// dashboard's metrics, health panel or audit data belong on this page.
+exports.getStaffHome = (req, res) => {
+    res.render('layout', {
+        title: 'Admin',
+        bodyView: 'admin/staff-home',
+        stylesheets: ['/css/admin.css'],
+        viewData: { role: req.user.role }
+    });
+};
+
 // JSON metrics for the 30s client-side auto-refresh (Story 9.1). Fully guarded —
 // a polling endpoint degrades to defaults, never 500. RBAC (admin/rabbi) is
 // enforced by the route middleware.

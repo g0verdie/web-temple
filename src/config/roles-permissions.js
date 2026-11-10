@@ -151,6 +151,18 @@ const hasPermission = (user, permission) => {
 };
 
 /**
+ * Check if a user is staff: their role holds at least one permission
+ * @param {Object} user - User object with 'role' property
+ * @returns {boolean} True for any role with permissions, false for members, unknown roles and no user
+ */
+const isStaff = (user) => {
+    if (!user || !user.role) {
+        return false;
+    }
+    return getRolePermissions(user.role).length > 0;
+};
+
+/**
  * Check if a user has a specific role
  * @param {Object} user - User object with 'role' property
  * @param {string} role - Role to check (from Roles enum)
@@ -187,6 +199,7 @@ module.exports = {
     Permissions,
     getRolePermissions,
     hasPermission,
+    isStaff,
     hasRole,
     hasAnyRole,
     isAdmin

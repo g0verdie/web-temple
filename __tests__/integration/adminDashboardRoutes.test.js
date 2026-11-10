@@ -150,4 +150,97 @@ describe('Admin dashboard routes (Story 9.1)', () => {
             expect(res.text).toContain('Unable to load the dashboard.');
         });
     });
+
+    describe('role-aware /admin (staff access)', () => {
+        const loginAs = (role) => {
+            const id = `${role}-1`;
+            db.query.mockResolvedValue({ rows: [{ id, token_version: 1, role, email: `${id}@x.com` }] });
+            return [`auth_token=${sign(id, role)}`];
+        };
+        const manageLinks = (html) => {
+            const section = html.match(/<section class="card mb-4" aria-labelledby="manage-heading">[\s\S]*?<\/section>/);
+            expect(section).not.toBeNull();
+            return [...section[0].matchAll(/href="(\/admin[^"]*)"/g)].map(m => m[1]);
+        };
+        const READ_SERVICES = () => [
+            DonationService.getMtdTotalCents,
+            userService.getNewMemberCountThisMonth,
+            messageService.getNewMessageCount,
+            ChatService.getPendingMessageCount,
+            EventService.getUpcomingEvents,
+            backupLogService.getLastSuccessfulBackup,
+            backupLogService.getLastBackupAttempt,
+            emailQueueService.getQueueStats
+        ];
+
+        test('social chair sees the landing with only the links their permissions allow (AE1)', async () => {
+            const res = await request(app).get('/admin').set('Cookie', loginAs('social_chair'));
+            expect(res.status).toBe(200);
+            expect(manageLinks(res.text)).toEqual(['/admin/announcements', '/admin/calendar', '/admin/chat-moderation']);
+            for (const href of ['/admin/donations', '/admin/members', '/admin/messages', '/admin/audit-logs']) {
+                expect(res.text).not.toContain(`href="${href}"`);
+            }
+            expect(res.text).not.toContain('metric-donations');
+        });
+
+        test('treasurer sees the landing with Donations only and no dashboard data (AE2)', async () => {
+            const res = await request(app).get('/admin').set('Cookie', loginAs('treasurer'));
+            expect(res.status).toBe(200);
+            expect(manageLinks(res.text)).toEqual(['/admin/donations']);
+            expect(res.text).not.toContain('metric-donations');
+            expect(res.text).not.toContain('metric-new-members');
+            expect(res.text).not.toContain('Audit Logs');
+        });
+
+        test('the staff landing makes no service reads', async () => {
+            await request(app).get('/admin').set('Cookie', loginAs('social_chair'));
+            await request(app).get('/admin').set('Cookie', loginAs('treasurer'));
+            READ_SERVICES().forEach(fn => expect(fn).not.toHaveBeenCalled());
+        });
+
+        const FULL_DASHBOARD_LINKS = {
+            admin: [
+                '/admin/announcements', '/admin/calendar', '/admin/donations', '/admin/directory',
+                '/admin/members', '/admin/messages', '/admin/streaming', '/admin/chat-moderation',
+                '/admin/pages', '/admin/audit-logs'
+            ],
+            rabbi: [
+                '/admin/announcements', '/admin/calendar', '/admin/donations', '/admin/directory',
+                '/admin/members', '/admin/messages', '/admin/streaming', '/admin/chat-moderation',
+                '/admin/audit-logs'
+            ],
+            membership_director: [
+                '/admin/announcements', '/admin/calendar', '/admin/donations', '/admin/directory',
+                '/admin/members', '/admin/messages', '/admin/pages', '/admin/audit-logs'
+            ]
+        };
+        test.each(Object.keys(FULL_DASHBOARD_LINKS))('%s still gets the full dashboard with the same Manage links', async (role) => {
+            const res = await request(app).get('/admin').set('Cookie', loginAs(role));
+            expect(res.status).toBe(200);
+            expect(res.text).toContain('metric-donations');
+            expect(manageLinks(res.text)).toEqual(FULL_DASHBOARD_LINKS[role]);
+        });
+
+        test('a member gets 403 on /admin', async () => {
+            const res = await request(app).get('/admin').set('Cookie', loginAs('member'));
+            expect(res.status).toBe(403);
+        });
+
+        test('the choice follows the DB role, not a stale token claim', async () => {
+            // Token claims admin; the database says social_chair.
+            db.query.mockResolvedValue({ rows: [{ id: 'admin-1', token_version: 1, role: 'social_chair', email: 'admin-1@x.com' }] });
+            const res = await request(app).get('/admin').set('Cookie', [`auth_token=${adminToken}`]);
+            expect(res.status).toBe(200);
+            expect(res.text).not.toContain('metric-donations');
+            expect(manageLinks(res.text)).toEqual(['/admin/announcements', '/admin/calendar', '/admin/chat-moderation']);
+        });
+
+        test.each(['social_chair', 'treasurer'])('%s gets 403 on the dashboard-only routes (R4)', async (role) => {
+            const cookie = loginAs(role);
+            expect((await request(app).get('/admin/metrics.json').set('Cookie', cookie)).status).toBe(403);
+            expect((await request(app).get('/admin/audit-logs').set('Cookie', cookie)).status).toBe(403);
+            expect((await request(app).post('/admin/email-queue/42/retry').set('Cookie', cookie)).status).toBe(403);
+            expect(emailQueueService.retryFailedJob).not.toHaveBeenCalled();
+        });
+    });
 });

@@ -1,4 +1,4 @@
-const { Roles, Permissions, getRolePermissions, hasPermission } = require('../../src/config/roles-permissions');
+const { Roles, Permissions, getRolePermissions, hasPermission, isStaff } = require('../../src/config/roles-permissions');
 
 describe('Roles & Permissions Configuration', () => {
     describe('Roles enum', () => {
@@ -92,6 +92,23 @@ describe('Roles & Permissions Configuration', () => {
             const unknownPerms = getRolePermissions('unknown_role');
             expect(Array.isArray(unknownPerms)).toBe(true);
             expect(unknownPerms.length).toBe(0);
+        });
+    });
+
+    describe('isStaff', () => {
+        it.each([Roles.ADMIN, Roles.RABBI, Roles.MEMBERSHIP_DIRECTOR, Roles.SOCIAL_CHAIR, Roles.TREASURER])(
+            'is true for %s',
+            (role) => {
+                expect(isStaff({ role })).toBe(true);
+            }
+        );
+
+        it('is false for member, an unknown role and no user', () => {
+            expect(isStaff({ role: Roles.MEMBER })).toBe(false);
+            expect(isStaff({ role: 'janitor' })).toBe(false);
+            expect(isStaff({})).toBe(false);
+            expect(isStaff(null)).toBe(false);
+            expect(isStaff(undefined)).toBe(false);
         });
     });
 

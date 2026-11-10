@@ -209,6 +209,10 @@ app.use((req, res, next) => {
     const { hasPermission: hasPerm } = require('./config/roles-permissions');
     return hasPerm(req.user, permission);
   };
+  res.locals.isStaff = () => {
+    const { isStaff: isStaffUser } = require('./config/roles-permissions');
+    return isStaffUser(req.user);
+  };
   res.locals.Permissions = require('./config/roles-permissions').Permissions;
   next();
 });
