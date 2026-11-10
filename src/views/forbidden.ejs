@@ -1,0 +1,12 @@
+<div class="container mt-5">
+    <%- include('partials/page-header', {
+        title: "You don't have access to this page",
+        subtitle: 'Your account is not set up to use this page. If you think this is a mistake, please contact the temple office.'
+    }) %>
+
+    <% if (isStaff()) { %>
+        <%- include('partials/button', { variant: 'navigational', label: 'Back to admin', href: '/admin' }) %>
+    <% } else { %>
+        <%- include('partials/button', { variant: 'navigational', label: 'Back to the homepage', href: '/' }) %>
+    <% } %>
+</div>

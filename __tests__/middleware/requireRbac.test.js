@@ -442,4 +442,161 @@ describe('RBAC Middleware', () => {
             expect(logAudit).not.toHaveBeenCalled();
         });
     });
+
+    describe('Browser denial page (R5/R6)', () => {
+        // accepts() mimicking Express: 'html' is the preferred type for ['json','html'].
+        const browserAccepts = (types) => (Array.isArray(types) ? 'html' : types === 'html');
+        const withRender = () => {
+            const res = makeRes();
+            res.render = jest.fn().mockReturnValue(res);
+            return res;
+        };
+
+        it('renders the 403 page through the layout when the browser prefers html', () => {
+            const middleware = requireRbac.requireRole(Roles.ADMIN);
+            const req = makeReq({
+                user: { id: '1', role: Roles.MEMBER },
+                originalUrl: '/admin/donations',
+                accepts: browserAccepts
+            });
+            const res = withRender();
+
+            middleware(req, res, jest.fn());
+
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.render).toHaveBeenCalledWith(
+                'layout',
+                expect.objectContaining({ bodyView: 'forbidden', noindex: true })
+            );
+            expect(res.json).not.toHaveBeenCalled();
+            expect(res.send).not.toHaveBeenCalled();
+        });
+
+        it('does not name the allowed roles or permissions in the page data', () => {
+            const middleware = requireRbac.requireAnyRole([Roles.ADMIN, Roles.RABBI]);
+            const req = makeReq({
+                user: { id: '1', role: Roles.MEMBER },
+                originalUrl: '/admin',
+                accepts: browserAccepts
+            });
+            const res = withRender();
+
+            middleware(req, res, jest.fn());
+
+            expect(JSON.stringify(res.render.mock.calls[0][1])).not.toMatch(/requires one of|rabbi/);
+        });
+
+        it('keeps the JSON response for a browser-style request under /api', () => {
+            const middleware = requireRbac.requirePermission(Permissions.MODERATE_CHAT);
+            const req = makeReq({
+                user: { id: '1', role: Roles.MEMBER },
+                originalUrl: '/api/chat/message/1/approve?x=1',
+                accepts: (types) => (Array.isArray(types) ? 'html' : types === 'json')
+            });
+            const res = withRender();
+
+            middleware(req, res, jest.fn());
+
+            expect(res.render).not.toHaveBeenCalled();
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Access Denied',
+                message: `This resource requires ${Permissions.MODERATE_CHAT} permission`
+            });
+        });
+
+        it('keeps the JSON response when json is preferred', () => {
+            const middleware = requireRbac.requireRole(Roles.ADMIN);
+            const req = makeReq({
+                user: { id: '1', role: Roles.MEMBER },
+                originalUrl: '/admin/donations',
+                accepts: (types) => (Array.isArray(types) ? 'json' : types === 'json')
+            });
+            const res = withRender();
+
+            middleware(req, res, jest.fn());
+
+            expect(res.render).not.toHaveBeenCalled();
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Access Denied',
+                message: 'This resource requires admin role'
+            });
+        });
+
+        it('falls back to JSON when res.render is unavailable', () => {
+            const middleware = requireRbac.requireRole(Roles.ADMIN);
+            const req = makeReq({
+                user: { id: '1', role: Roles.MEMBER },
+                originalUrl: '/admin/donations',
+                accepts: (types) => (Array.isArray(types) ? 'html' : types === 'json')
+            });
+            const res = makeRes();
+
+            middleware(req, res, jest.fn());
+
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: 'Access Denied' }));
+        });
+
+        it('still logs the audit entry once per denial when rendering the page', () => {
+            const middleware = requireRbac.requireAnyPermission([Permissions.VIEW_DONATIONS]);
+            const req = makeReq({
+                user: { id: 'user-9', role: Roles.MEMBER },
+                originalUrl: '/admin/donations',
+                accepts: browserAccepts
+            });
+            const res = withRender();
+
+            middleware(req, res, jest.fn());
+
+            expect(logAudit).toHaveBeenCalledTimes(1);
+            expect(logAudit).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    user_id: 'user-9',
+                    action: 'UNAUTHORIZED_ACCESS',
+                    entity_type: 'permission_check'
+                })
+            );
+        });
+    });
+
+    describe('requireStaff middleware', () => {
+        it.each([
+            Roles.ADMIN, Roles.RABBI, Roles.MEMBERSHIP_DIRECTOR, Roles.SOCIAL_CHAIR, Roles.TREASURER
+        ])('allows %s', (role) => {
+            const req = makeReq({ user: { id: '1', role } });
+            const res = makeRes();
+            const next = jest.fn();
+
+            requireRbac.requireStaff()(req, res, next);
+
+            expect(next).toHaveBeenCalled();
+            expect(res.status).not.toHaveBeenCalled();
+        });
+
+        it('denies a member with a 403 JSON body and an audit entry', () => {
+            const req = makeReq({ user: { id: 'm1', role: Roles.MEMBER }, accepts: () => true });
+            const res = makeRes();
+            const next = jest.fn();
+
+            requireRbac.requireStaff()(req, res, next);
+
+            expect(next).not.toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(res.json).toHaveBeenCalledWith({
+                error: 'Access Denied',
+                message: 'This resource requires a staff role'
+            });
+            expect(logAudit).toHaveBeenCalledWith(
+                expect.objectContaining({ user_id: 'm1', action: 'UNAUTHORIZED_ACCESS' })
+            );
+        });
+
+        it('sends the plain text fallback when JSON is not acceptable', () => {
+            const req = makeReq({ user: { id: 'm1', role: Roles.MEMBER } });
+            const res = makeRes();
+
+            requireRbac.requireStaff()(req, res, jest.fn());
+
+            expect(res.send).toHaveBeenCalledWith('Access Denied');
+        });
+    });
 });
